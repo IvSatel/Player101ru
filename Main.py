@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import configparser
@@ -63,48 +64,40 @@ class RadioWin(Gtk.Window):
             pass
         else:# Если файл с адресами станций отсутствует то получаем его
             print('Файл с адресами создается '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            values = {'Name' : 'Player 4 Radio 101'}
+            ##
 
-            data  = urllib.parse.urlencode(values)
-            data = data.encode('utf-8-sig')
+            ad_101_opener = urllib.request.build_opener()
+            ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
-            headers = {'Get' : '/?an=port_allchannels HTTP/1.1',
-            'Host' : '101.ru',
-            'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0',
-            'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language' : 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Accept-Encoding' : 'gzip, deflate',
-            'Referer' : 'http://101.ru/static/js/uppod/uppod.swf',
-            'Connection' : 'keep-alive'}
+            # Запрос всех разделов
+            with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
+                razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', source_101_http.read().decode('utf-8-sig', errors='ignore'), re.M)
 
-            req = urllib.request.Request('http://101.ru/?an=port_allchannels', data, headers)
+            dict_101_ru = []
 
-            response = urllib.request.urlopen(req)
-            # Используем zlib для чтения gzip кодировки
-            html = zlib.decompress(response.read(), 16+zlib.MAX_WBITS).decode('utf-8-sig', errors='ignore')
-            spisock_razdelov = re.findall(r'<ul class="tabs vertical">(.+?)</ul>', html, re.S)
-            adresa_razdelov = re.findall(r'<li class="h4 tab-item "><a href="(.+?)">(.+?) </a></li>', str(spisock_razdelov), re.S)
-
-            all_canal_list = ''
-            proccent_adr = int(len(adresa_razdelov))
+            ## x = adr razdel, y = name razdel
+            percent = len(razdel_101_http)
             check = 1
+            for x, y in razdel_101_http:
+                a = []
+                with ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as source_101_razdel:
+                    source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', source_101_razdel.read().decode('utf-8-sig', errors='ignore'), re.M)
+                    for z, c in source_101_http_razdel:
+                        a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
+                    dict_101_ru.append(a)
+                    sys.stdout.write("\r%d %%" % int(check//(percent/100)))
+                    sys.stdout.flush()
+                    check += 1
 
-            for x in adresa_razdelov:
-                response = urllib.request.urlopen('http://101.ru'+x[0])
-                html = response.read().decode('utf-8-sig')
-                all_canal_list += ''.join(re.findall(r'>(.+?)</a></h2>', html, re.M))
-                sys.stdout.write("\r%d %%" % int(check//(proccent_adr/100)))
-                sys.stdout.flush()
-                check += 1
+            final_conf = []
+            for x in dict_101_ru:
+                for d in x:
+                    final_conf.append(d+'\n')
 
-            all_canal_list = re.sub(r'"', r"'", all_canal_list)
+            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as adr101file:
+                adr101file.writelines(final_conf)
 
-            str_spisok = re.findall(r"(?:<a href='(.+?)\'\>)([\"\'\&\-\w+\s*]+)", all_canal_list)
-
-            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as file_w:
-                for x in str_spisok:
-                    file_w.write(re.sub(r'\s+$', r'', x[1], re.S)+' = '+re.sub(r'amp;', r'', x[0])+'\n')
-            print('\n')
+            #####
 
         with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig') as file_w:
             read_adr = file_w.readlines()
@@ -403,7 +396,7 @@ class RadioWin(Gtk.Window):
         self.main_menu_items_about.connect("activate", self.dialog_about)
         self.main_menu_items_about.show()
 
-        print('Создание меню в трее '+str(datetime.datetime.now().strftime('%H:%M:%S')))
+        print('Создание AppIndicator3 '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
         # Создание иконки/меню в трее
         if APP_INDICATOR:
@@ -1210,7 +1203,7 @@ class RadioWin(Gtk.Window):
 
     # Создание меню в трее
     def create_main_menu(self, icon, button, time):
-        print('Создание меню в трее '+str(datetime.datetime.now().strftime('%H:%M:%S')))
+        print('Создание StatusIcon '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
         def pos(menu, icon):
             return (Gtk.StatusIcon.position_menu(menu, icon))
@@ -2111,7 +2104,7 @@ class RadioWin(Gtk.Window):
                     chek += 1
             except:
                 pass
-            
+
             eq_config.set('EQ-Settings','lasteq',''.join(str(eq_set)).strip('][').replace(',', ''))
             with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
                 eq_config.write(cfgfile)
@@ -2130,10 +2123,10 @@ class RadioWin(Gtk.Window):
             #self.hide()
             dialog = EQWindow(self)
             response = dialog.run()
-    
+
             if response == Gtk.ResponseType.OK:
                 m_edit_eq = dialog.mdict
-    
+
                 print('m_edit_eq ==> ', m_edit_eq)
                 self.eq_set_preset = [int(x) for x in m_edit_eq]
                 eq = self.pipeline.get_by_name('equalizer-nbands')
@@ -2147,7 +2140,7 @@ class RadioWin(Gtk.Window):
             elif response == Gtk.ResponseType.CANCEL:
                 print("The Cancel button was clicked")
                 dialog.destroy()
-    
+
         dialog.destroy()
         #self.show()
 
@@ -2751,11 +2744,11 @@ class DialogC_A_L(Gtk.Dialog):
         fin_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
         fin_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8-sig')
         all_sections = fin_config.sections()
-        
+
         for x in all_sections:
             if len(fin_config.options(x)) == 0:
                 fin_config.remove_section(x)
-        
+
         with open(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', 'w', encoding='utf-8-sig') as configfile:
             fin_config.write(configfile)
         #
