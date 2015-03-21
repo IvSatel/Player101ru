@@ -40,10 +40,6 @@ try:
 except:
     APP_INDICATOR = False
 
-#uri = 'http://http-live.sr.se/p1-mp3-192'
-#uri = 'http://icecast.omroep.nl:80/radio1-bb-mp3'
-#uri = 'http://radio.zaycev.fm:9002/ZaycevFM(256)'
-
 class RadioWin(Gtk.Window):
 
     def __init__(self):
@@ -64,7 +60,6 @@ class RadioWin(Gtk.Window):
             pass
         else:# Если файл с адресами станций отсутствует то получаем его
             print('Файл с адресами создается '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            ##
 
             ad_101_opener = urllib.request.build_opener()
             ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
@@ -96,8 +91,6 @@ class RadioWin(Gtk.Window):
 
             with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as adr101file:
                 adr101file.writelines(final_conf)
-
-            #####
 
         with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig') as file_w:
             read_adr = file_w.readlines()
@@ -412,7 +405,6 @@ class RadioWin(Gtk.Window):
             self.tray_icon.set_visible(True)
 
         # Иконка программы по умолчанию
-        #self.connect('move-focus', self.on_freez_widget)
         self.set_title("Radio Player")
         self.set_default_icon(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
         self.set_icon(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
@@ -585,10 +577,9 @@ class RadioWin(Gtk.Window):
         self.grid_for_IRC.set_column_homogeneous(True)# Ровнять
         self.grid_for_IRC.set_row_homogeneous(False)
         self.grid_for_IRC.set_column_spacing(1)
-
+        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         '''# Радио рекорд
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         record_opener = urllib.request.build_opener()
         record_opener.addheaders = [('Host', 'www.radiorecord.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
@@ -679,16 +670,10 @@ class RadioWin(Gtk.Window):
 
         ## Создание левого и правого "Эквалайзеров"
         self.level_bar_l = Gtk.ProgressBar.new()
-        #self.level_bar_l.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(0.0, 1.0, 0.6))
-        #self.level_bar_l.modify_bg(Gtk.StateType.ACTIVE, Gdk.Color.from_floats(0.0, 1.0, 0.6))
-        #self.level_bar_l.modify_bg(Gtk.StateType.PRELIGHT, Gdk.Color.from_floats(0.0, 1.0, 0.6))
         self.level_bar_l.set_show_text(False)
         self.level_bar_l.set_inverted(True)
         self.level_bar_l.set_orientation(Gtk.Orientation.VERTICAL)
         self.level_bar_r = Gtk.ProgressBar.new()
-        #self.level_bar_r.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(0.0, 1.0, 0.6))
-        #self.level_bar_r.modify_bg(Gtk.StateType.ACTIVE, Gdk.Color.from_floats(0.0, 1.0, 0.6))
-        #self.level_bar_r.modify_bg(Gtk.StateType.PRELIGHT, Gdk.Color.from_floats(0.0, 1.0, 0.6))
         self.level_bar_r.set_show_text(False)
         self.level_bar_r.set_inverted(True)
         self.level_bar_r.set_orientation(Gtk.Orientation.VERTICAL)
@@ -822,11 +807,6 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
         ###################################################
-    #
-    def on_freez_widget(self, *args):
-        print('self.level_bar ', args)
-        self.level_bar_l.freeze_child_notify()
-        self.level_bar_r.freeze_child_notify()
 
     def check_internet_connection(self, *args):
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR,
@@ -835,7 +815,7 @@ class RadioWin(Gtk.Window):
             "Соединение с интернет не обнаружено\nпрограмма будет закрыта.")
         dialog.run()
         dialog.destroy()
-        #sys.exit([0])
+
     # Диалог о программе
     def dialog_about(self, widget):
         about = Gtk.AboutDialog('О Программе', self, Gtk.DialogFlags.MODAL)
@@ -1144,53 +1124,40 @@ class RadioWin(Gtk.Window):
         progress = Gtk.ProgressBar(show_text=True)
 
         def example_target():
-            #
-            values = {'Name' : 'Player 4 Radio 101'}
 
-            data  = urllib.parse.urlencode(values)
-            data = data.encode('utf-8-sig')
+            loc_ad_101_opener = urllib.request.build_opener()
+            loc_ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
-            headers = {'Get' : '/?an=port_allchannels HTTP/1.1',
-            'Host' : '101.ru',
-            'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0',
-            'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language' : 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Accept-Encoding' : 'gzip, deflate',
-            'Referer' : 'http://101.ru/static/js/uppod/uppod.swf',
-            'Connection' : 'keep-alive'}
+            # Запрос всех разделов
+            with loc_ad_101_opener.open('http://101.ru/?an=port_allchannels') as loc_source_101_http:
+                loc_razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', loc_source_101_http.read().decode('utf-8-sig', errors='ignore'), re.M)
 
-            req = urllib.request.Request('http://101.ru/?an=port_allchannels', data, headers)
+            loc_dict_101_ru = []
 
-            response = urllib.request.urlopen(req)
-            # Используем zlib для чтения gzip кодировки
-            html = zlib.decompress(response.read(), 16+zlib.MAX_WBITS).decode('utf-8-sig', errors='ignore')
-            spisock_razdelov = re.findall(r'<ul class="tabs vertical">(.+?)</ul>', html, re.S)
-            adresa_razdelov = re.findall(r'<li class="h4 tab-item "><a href="(.+?)">(.+?) </a></li>', str(spisock_razdelov), re.S)
-
-            all_canal_list = ''
-            proccent_adr = int(len(adresa_razdelov))
+            percent = len(loc_razdel_101_http)
             check = 1
+            for x, y in loc_razdel_101_http:
+                a = []
+                with loc_ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as loc_source_101_razdel:
+                    loc_source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', loc_source_101_razdel.read().decode('utf-8-sig', errors='ignore'), re.M)
+                    for z, c in loc_source_101_http_razdel:
+                        a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
+                    loc_dict_101_ru.append(a)
+                    Gdk.threads_enter()
+                    progress.set_fraction(float(check//(percent/100)) / 100)
+                    progress.set_text(str(int(check//(percent/100)))+' %')
+                    Gdk.threads_leave()
+                    check += 1
 
-            for x in adresa_razdelov:
-                response = urllib.request.urlopen('http://101.ru'+x[0])
-                html = response.read().decode('utf-8-sig')
-                all_canal_list += ' '.join(re.findall(r'>(.+?)</a></h2>', html, re.M))
-                Gdk.threads_enter()
-                progress.set_fraction(float(check//(proccent_adr/100)) / 100)
-                progress.set_text(str(int(check//(proccent_adr/100)))+' %')
-                Gdk.threads_leave()
-                check += 1
+            loc_final_conf = []
+            for x in loc_dict_101_ru:
+                for d in x:
+                    loc_final_conf.append(d+'\n')
 
-            all_canal_list = re.sub(r'"', r"'", all_canal_list)
-
-            str_spisok = re.findall(r"(?:<a href='(.+?)\'\>)([\"\'\&\-\w+\s*]+)", all_canal_list)
-
-            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as file_w:
-                for x in str_spisok:
-                    file_w.write(re.sub(r'\s+$', r'', x[1], re.S)+' = '+re.sub(r'amp;', r'', x[0])+'\n')
+            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as loc_adr101file:
+                loc_adr101file.writelines(loc_final_conf)
 
             win.destroy()
-            #
 
         box = Gtk.Box()
         box.pack_start(progress, True, True, 0)
@@ -1302,7 +1269,7 @@ class RadioWin(Gtk.Window):
 
         queue = Gst.ElementFactory.make('multiqueue', 'queue')
         queue.set_property('use-buffering', True)
-        queue.set_property('max-size-bytes', 2048576)
+        queue.set_property('max-size-bytes', 2097152)
 
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
 
@@ -1416,26 +1383,14 @@ class RadioWin(Gtk.Window):
 
         id_chan_req  = adres[0]
 
-        values = {'Name' : 'Player 4 Radio 101'}
-
-        data  = urllib.parse.urlencode(values).encode('utf-8-sig')
-
-        headers = {'Get' : '/?an=channel_playlist&channel='+str(id_chan_req)+' HTTP/1.1',
-        'Host' : '101.ru',
-        'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0',
-        'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language' : 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-        'Accept-Encoding' : 'chunked',
-        'Connection' : 'keep-alive',
-        'Cache-Control' : 'max-age=0'}
-
-        req = urllib.request.Request('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req), data, headers)
+        title_opener = urllib.request.build_opener()
+        title_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
         try:
-            response = urllib.request.urlopen(req)
-            #html = zlib.decompress(response.read(), 16+zlib.MAX_WBITS).decode('utf-8-sig', errors='ignore')
-            html = response.read().decode('utf-8-sig', errors='ignore')
-            find_url_stream = re.findall(r'</i>(.+?)</a></h4>', str(html), re.S)
+            # Запрос
+            with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
+                razdel_title_http = source_title_http.read().decode('utf-8-sig', errors='ignore')
+            find_url_stream = re.findall(r'</i>(.+?)</a></h4>', razdel_title_http, re.M)
         except HTTPError as e:
             print('The server couldn\'t fulfill the request.')
             print('Error code: ', e.code)
@@ -1484,19 +1439,8 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             status_pipe = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]
             s = Gst.Message.get_structure(message)
-            self.m_buffers.append(s['buffer-percent'])
-            #print('Буферизация = ', s['buffer-percent'])
-            #if s['buffer-percent'] == 100 or self.m_buffers.count(0) == 2 and not 'PLAYING' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]):
-            #if s['buffer-percent'] == 100 and '<enum GST_STATE_PAUSED of type GstState>' == str(status_pipe):
-                ##print('1 Буферизация = ', s['buffer-percent'], status_pipe)
-                #self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
-                #self.m_buffers = []
-            #elif s['buffer-percent'] < 100 and '<enum GST_STATE_PLAYING of type GstState>' == str(status_pipe):
-                ##print('2 Буферизация = ', s['buffer-percent'], status_pipe)
-                #self.ret_state = self.pipeline.set_state(Gst.State.PAUSED)
-            #elif s['buffer-percent'] < 100 and '<enum GST_STATE_PAUSED of type GstState>' == str(status_pipe):
-                ##print('3 Буферизация = ', s['buffer-percent'], status_pipe)
-                #self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+            if s['buffer-percent'] == 100 and '<enum GST_STATE_PAUSED of type GstState>' == str(status_pipe):
+                print('1 Буферизация = ', s['buffer-percent'], status_pipe)
 
     # Обработка сообщений элементов
     def message_element(self, bus, message):
@@ -1898,7 +1842,6 @@ class RadioWin(Gtk.Window):
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
                     self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
-                    #self.pipeline.set_state(Gst.State.PAUSED)
                     self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                 if 'rtmp' in str(f_name):
                     self.file_play = 0
@@ -1931,7 +1874,6 @@ class RadioWin(Gtk.Window):
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
                     self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
-                    #self.pipeline.set_state(Gst.State.PAUSED)
                     self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                     print('self.real_adress ==> 2 ', self.real_adress)
                     thread_2 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
@@ -2080,16 +2022,8 @@ class RadioWin(Gtk.Window):
     # Обработка выбора пункта в меню Equalizer
     def change_equlaizer(self, *gain):
         if self.radio_rtmp_play == 1 or self.radio_play == 1 or self.file_play == 1 and str(gain[1]) != 'Редактировать положение эквалайзера':
-            #
             eq_config = configparser.ConfigParser()
             eq_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-            #config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-            #leq = config['EQ-Settings']['lasteq'].split(' ')
-            #for x in leq:
-                #self.mdict.append(x)
-            #for x in config.items('EQ-Settings'):
-                #self.name_combo.append_text(str(x[0]))
-            #
             eq_set = []
             self.eq_set_preset = gain[1]
             eq = self.pipeline.get_by_name('equalizer-nbands')
@@ -2120,7 +2054,6 @@ class RadioWin(Gtk.Window):
     # Диалог редактирования пользовательских пресетов эквалайзера
     def edit_eq(self, widget):
         if self.radio_play == 1 or self.radio_rtmp_play == 1 or self.file_play == 1:
-            #self.hide()
             dialog = EQWindow(self)
             response = dialog.run()
 
@@ -2142,37 +2075,22 @@ class RadioWin(Gtk.Window):
                 dialog.destroy()
 
         dialog.destroy()
-        #self.show()
 
     # Получение названия трека персональных станций
     def get_title_song(self, idch):
         if self.radio_rtmp_play == 1:
             id_ch = idch
             print('id_ch ==> ', id_ch)
-            adres = 'http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal'
 
-            values = {'Name' : 'Player 4 Radio 101'}
+            person_opener = urllib.request.build_opener()
+            person_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
-            data  = urllib.parse.urlencode(values)
-            data = data.encode('utf-8-sig')
-
-            headers = {'Get' : '/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal HTTP/1.1',
-            'Host' : 'f1.101.ru',
-            'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0',
-            'Accept' : 'application/json, text/javascript, */*; q=0.01',
-            'Accept-Language' : 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Accept-Encoding' : 'chanked',
-            'Referer' : 'http://101.ru/static/js/uppod/uppod.swf',
-            'Origin': 'http://101.ru',
-            'Connection' : 'keep-alive',
-            'Cache-Control' : 'max-age=0'}
-
-            req = urllib.request.Request(adres, data, headers)
             chek = 0
             while chek < 3:
                 try:
-                    response = urllib.request.urlopen(req, None, 15)
-                    html = response.read().decode('utf-8-sig', errors='ignore')
+                    # Запрос
+                    with person_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal') as source_person:
+                        html = source_person.read().decode('utf-8-sig', errors='ignore')
                     print(html)
                     find_pars = json.loads(html)
 
@@ -2217,6 +2135,8 @@ class RadioWin(Gtk.Window):
 
 # Класс получения источника потока 101.RU
 class HackURL(object):
+
+
     def __init__(self):
         self.used_stream_adress = []
         self.check_stream_adress = 0
@@ -2250,7 +2170,6 @@ class HackURL(object):
                 print('res_rtmp_url ==> ', res_rtmp_url)
                 return res_rtmp_url
             print('$$$$$$$$$$ find_url_stream $$$$$$$$$$$$$$ => \n', find_url_stream)
-            print('\n')
             if '.flv' in str(find_url_stream):
                 '''http://f1.101.ru/api/getplayingtrackinfo.php?station_id=82&typechannel=channel'''
                 return find_url_stream[0]
@@ -2284,8 +2203,7 @@ class HackURL(object):
                         len_adr_list += 1
                     else:
                         print('OK ==> ', response.info(), response.geturl())
-                        print('\n')
-                        print('Возвращение результата запроса', '\n', self.used_stream_adress)
+                        print('Возвращение результата запроса', self.used_stream_adress)
                         if not x in self.used_stream_adress and self.check_stream_adress <= len(find_url_stream2):
                             print('self.check_stream_adress ==> ', self.check_stream_adress)
                             self.check_stream_adress += 1
