@@ -1439,7 +1439,7 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             status_pipe = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]
             s = Gst.Message.get_structure(message)
-            if s['buffer-percent'] == 100 and '<enum GST_STATE_PAUSED of type GstState>' == str(status_pipe):
+            if s['buffer-percent'] == 100:
                 print('1 Буферизация = ', s['buffer-percent'], status_pipe)
 
     # Обработка сообщений элементов
