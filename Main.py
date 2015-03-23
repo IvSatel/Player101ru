@@ -1242,8 +1242,6 @@ class RadioWin(Gtk.Window):
     # Создание объекта Pipeline
     def create_pipeline(self, args):
 
-        pipeline = Gst.Pipeline.new('MyRadioPlayer')
-
         ## decodebin имеет динамические pad'ы, которые так же динамически необходимо линковать
         def on_pad_added(decodebin, pad):
             print('Name Gst.Pad => ', pad.get_name())
@@ -1257,6 +1255,7 @@ class RadioWin(Gtk.Window):
             self.pipeline = 0
             return 0
         decodebin = Gst.ElementFactory.make('decodebin', 'decodebin')
+        decodebin.set_property('post-stream-topology', True)
         decodebin.connect('pad-added', on_pad_added)
 
         audioconvert = Gst.ElementFactory.make('audioconvert', 'audioconvert')
@@ -1264,12 +1263,17 @@ class RadioWin(Gtk.Window):
         audioconvert.set_property('noise-shaping', 'High 8-pole noise shaping')
 
         equalizer = Gst.ElementFactory.make('equalizer-nbands', 'equalizer-nbands')
-        volume = Gst.ElementFactory.make('volume', 'volume')
+        self.volume = Gst.ElementFactory.make('volume', 'volume')
         level = Gst.ElementFactory.make('level', 'level')
 
-        queue = Gst.ElementFactory.make('multiqueue', 'queue')
+        queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
+        queue.set_property('sync-by-running-time', True)
         queue.set_property('use-buffering', True)
-        queue.set_property('max-size-bytes', 2097152)
+        queue.set_property('extra-size-buffers', 20)
+        queue.set_property('extra-size-bytes', 10485760)
+        queue.set_property('max-size-buffers', 20)
+        queue.set_property('max-size-time', 100000000)
+        queue.set_property('max-size-bytes', 10485760)
 
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
 
@@ -1304,7 +1308,10 @@ class RadioWin(Gtk.Window):
                 chek += 1
 
         ## добавляем все созданные элементы в pipeline
-        if [pipeline.add(k) for k in [source, decodebin, audioconvert, equalizer, volume, level, queue, audiosink]]:
+        self.pipeline = Gst.Pipeline()
+        self.pipeline.set_property('async-handling', True)
+        print('Создан self.pipeline '+str(datetime.datetime.now().strftime('%H:%M:%S')))        
+        if [self.pipeline.add(k) for k in [source, decodebin, audioconvert, equalizer, self.volume, level, queue, audiosink]]:
             print('OK Pipeline Add Elements '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
         # линкуем элементы между собой
@@ -1312,17 +1319,14 @@ class RadioWin(Gtk.Window):
             print('1 source.link(decodebin) ==> OK LINKED')
         if audioconvert.link(level):
             print('2 audioconvert.link(level) ==> OK LINKED')
-        if level.link(volume):
+        if level.link(self.volume):
             print('3 level.link(volume) ==> OK LINKED')
-        if volume.link(equalizer):
+        if self.volume.link(equalizer):
             print('4 volume.link(equalizer) ==> OK LINKED')
         if equalizer.link(queue):
             print('5 equalizer.link(queue) ==> OK LINKED')
         if queue.link(audiosink):
             print('6 queue.link(audiosink) ==> OK LINKED')
-
-        self.pipeline = pipeline
-        print('Создан self.pipeline '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
         ## получаем шину по которой рассылаются сообщения
         ## и вешаем на нее обработчики
@@ -1345,12 +1349,10 @@ class RadioWin(Gtk.Window):
 
         if self.run_radio_window != 1:
             self.scal_sl.set_value(0.50)
-            vol = self.pipeline.get_by_name('volume')
-            vol.set_property('volume', 0.50)
+            self.volume.set_property('volume', 0.50)
         if self.real_vol_save != 0:
             self.scal_sl.set_value(self.real_vol_save)
-            vol = self.pipeline.get_by_name('volume')
-            vol.set_property('volume', self.real_vol_save)
+            self.volume.set_property('volume', self.real_vol_save)
 
     # Конвертация полученых наносекунд в часы минуты секунды милисекунды
     def convert_time(self, t):
@@ -1439,6 +1441,7 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             status_pipe = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]
             s = Gst.Message.get_structure(message)
+            print('1 Буферизация = ', s['buffer-percent'], status_pipe)
             if s['buffer-percent'] == 100:
                 print('1 Буферизация = ', s['buffer-percent'], status_pipe)
 
@@ -2045,11 +2048,11 @@ class RadioWin(Gtk.Window):
 
     # Функция установки громкости
     def on_valu_ch(self, scale, value):
+        #self.pipeline.set_property('volume', round(value, 2))
         if self.pipeline:
             self.real_vol_save = round(value, 2)
             get_param_volume = round(value, 2)
-            vol = self.pipeline.get_by_name('volume')
-            vol.set_property('volume', get_param_volume)
+            self.volume.set_property('volume', get_param_volume)
 
     # Диалог редактирования пользовательских пресетов эквалайзера
     def edit_eq(self, widget):
