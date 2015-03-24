@@ -307,7 +307,7 @@ class RadioWin(Gtk.Window):
         self.id_chan = [0,0]
         self.real_adress = ''# Адрес потока с контентом
         self.uri = []# Список хранящий адреса на поток вещания
-        self.My_ERROR_Mess = False# СЧекер ошибок
+        self.My_ERROR_Mess = False# Чекер ошибок
 
         # Создание меню в трее
         self.main_menu = Gtk.Menu()
@@ -837,7 +837,9 @@ class RadioWin(Gtk.Window):
                 if key == self.record_liststore.get_value(c, 0):
                     self.id_chan = ['RREC', val]
                     self.real_adress = val
-                    print('Выбрана станция = ', key)
+                    print('----------------------------------------')
+                    print(self.record_liststore.get_value(c, 0))
+                    print('----------------------------------------')
         for row in self.record_liststore:
             row[1] = (row.path == selected_path)
 
@@ -984,6 +986,9 @@ class RadioWin(Gtk.Window):
             self.liststore_sub.clear()
             for x in self.c_s:
                 if x == self.liststore_RIC.get_value(source_cell, 0):
+                    print('----------------------------------------')
+                    print(self.liststore_RIC.get_value(source_cell, 0))
+                    print('----------------------------------------')
                     self.RIC_url = x
                     for j in self.loc_config[x]:
                         self.liststore_sub.append([re.sub(r'&', r'&amp;', j), False])
@@ -995,7 +1000,9 @@ class RadioWin(Gtk.Window):
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
             source_cell = self.liststore_sub.get_iter(path)
+            print('----------------------------------------')
             print(source_cell, ' $$$ ', self.liststore_sub.get_value(source_cell, 0))
+            print('----------------------------------------')
             for row in self.liststore_sub:
                 row[1] = (row.path == selected_path)
             nam_adr_irc = re.sub(r'&amp;', r'&', self.liststore_sub.get_value(source_cell, 0), re.M)
@@ -1008,6 +1015,9 @@ class RadioWin(Gtk.Window):
         source_cell = self.di_liststore.get_iter(path)
         for key, val in self.d_fm_dict.items():
             if key == self.di_liststore.get_value(source_cell, 0):
+                print('----------------------------------------')
+                print(self.di_liststore.get_value(source_cell, 0))
+                print('----------------------------------------')
                 self.real_adress = val
                 self.id_chan = ['DI', val]
         for row in self.di_liststore:
@@ -1255,6 +1265,7 @@ class RadioWin(Gtk.Window):
             self.pipeline = 0
             return 0
         decodebin = Gst.ElementFactory.make('decodebin', 'decodebin')
+        decodebin.set_property('use-buffering', True)
         decodebin.set_property('post-stream-topology', True)
         decodebin.connect('pad-added', on_pad_added)
 
@@ -1269,11 +1280,7 @@ class RadioWin(Gtk.Window):
         queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
         queue.set_property('sync-by-running-time', True)
         queue.set_property('use-buffering', True)
-        queue.set_property('extra-size-buffers', 20)
-        queue.set_property('extra-size-bytes', 10485760)
-        queue.set_property('max-size-buffers', 20)
-        queue.set_property('max-size-time', 100000000)
-        queue.set_property('max-size-bytes', 10485760)
+        queue.set_property('max-size-time', 3000000000)
 
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
 
@@ -1314,18 +1321,31 @@ class RadioWin(Gtk.Window):
         if [self.pipeline.add(k) for k in [source, decodebin, audioconvert, equalizer, self.volume, level, queue, audiosink]]:
             print('OK Pipeline Add Elements '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
-        # линкуем элементы между собой
+        ## линкуем элементы между собой
+        #if source.link(decodebin):
+            #print('1 source.link(decodebin) ==> OK LINKED')
+        #if audioconvert.link(level):
+            #print('2 audioconvert.link(level) ==> OK LINKED')
+        #if level.link(self.volume):
+            #print('3 level.link(volume) ==> OK LINKED')
+        #if self.volume.link(equalizer):
+            #print('4 volume.link(equalizer) ==> OK LINKED')
+        #if equalizer.link(queue):
+            #print('5 equalizer.link(queue) ==> OK LINKED')
+        #if queue.link(audiosink):
+            #print('6 queue.link(audiosink) ==> OK LINKED')
+        ## линкуем элементы между собой
         if source.link(decodebin):
             print('1 source.link(decodebin) ==> OK LINKED')
-        if audioconvert.link(level):
+        if audioconvert.link(queue):
             print('2 audioconvert.link(level) ==> OK LINKED')
-        if level.link(self.volume):
+        if queue.link(level):
             print('3 level.link(volume) ==> OK LINKED')
-        if self.volume.link(equalizer):
+        if level.link(self.volume):
             print('4 volume.link(equalizer) ==> OK LINKED')
-        if equalizer.link(queue):
+        if self.volume.link(equalizer):
             print('5 equalizer.link(queue) ==> OK LINKED')
-        if queue.link(audiosink):
+        if equalizer.link(audiosink):
             print('6 queue.link(audiosink) ==> OK LINKED')
 
         ## получаем шину по которой рассылаются сообщения
@@ -1441,7 +1461,6 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             status_pipe = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]
             s = Gst.Message.get_structure(message)
-            print('1 Буферизация = ', s['buffer-percent'], status_pipe)
             if s['buffer-percent'] == 100:
                 print('1 Буферизация = ', s['buffer-percent'], status_pipe)
 
@@ -1814,7 +1833,9 @@ class RadioWin(Gtk.Window):
                 if str(x[0][0]) == str(self.liststore_101.get_value(c, 0)):
                     self.id_chan[0] = re.findall(r'.+?(\d+)$', x[0][1])
                     self.real_adress = re.sub(r'amp;', r'', 'http://101.ru'+x[0][1])
-                    print('Выбрана станция = ', x[0][0])
+                    print('----------------------------------------')
+                    print(self.liststore_101.get_value(c, 0))
+                    print('----------------------------------------')
             # Установка точки в радиобаттон
             for row in self.liststore_101:
                 row[1] = (row.path == selected_path)
@@ -1861,6 +1882,7 @@ class RadioWin(Gtk.Window):
             if self.My_ERROR_Mess:
                 print('if self.My_ERROR_Mess: ==> self.pipeline.set_state(Gst.State.NULL)')
                 self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                self.My_ERROR_Mess = 0
             else:
                 self.My_ERROR_Mess = False
                 return True
@@ -2527,7 +2549,9 @@ class DialogFindPersonalStation(Gtk.Dialog):
         c = self.s_liststore.get_iter(path)
         for x in self.s_res_find_name:
             if str(x) == str(self.s_liststore.get_value(c, 0)):
-                print('Выбрана персональная станция = ', x, 'Значение в таблице = ', self.s_liststore.get_value(c, 0))
+                print('----------------------------------------')
+                print(self.s_liststore.get_value(c, 0))
+                print('----------------------------------------')
                 print(self.s_find_dict.get(str(x)))
                 self.return_adres = self.hurl.hack_url_adres(self.s_find_dict.get(str(x)))
         for row in self.s_liststore:
