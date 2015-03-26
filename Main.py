@@ -29,6 +29,7 @@ from gi.repository import GLib
 from gi.repository import Pango
 from gi.repository import GObject
 
+GObject.threads_init()
 Gst.init_check(None)# Разместить здесь, что-бы не вызвать ошибку инициализации у GstPbutils
 
 from gi.repository import GdkPixbuf
@@ -43,7 +44,7 @@ except:
 class RadioWin(Gtk.Window):
 
     def __init__(self):
-        Gtk.Window.__init__(self, type=Gtk.WindowType.TOPLEVEL)
+        super(RadioWin, self).__init__()
 
         # Проверка наличия интернет соединения
         try:
@@ -57,7 +58,6 @@ class RadioWin(Gtk.Window):
         # Если файл с адресами станций есть, то пропускаем
         if os.path.isfile(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini'):
             print('Файл с адресами найден '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            pass
         else:# Если файл с адресами станций отсутствует то получаем его
             print('Файл с адресами создается '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
@@ -118,7 +118,6 @@ class RadioWin(Gtk.Window):
             for x in leq:
                 self.eq_set_preset.append(x)
 
-        self.ret_state = 0
         self.HURL = HackURL()# Получение адреса потока 101 RU
         self.wr_station_name_adr = WriteLastStation()# Запись последнего адреса потока
 
@@ -404,6 +403,7 @@ class RadioWin(Gtk.Window):
             self.tray_icon.set_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png')
             self.tray_icon.set_visible(True)
 
+        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         # Иконка программы по умолчанию
         self.set_title("Radio Player")
         self.set_default_icon(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
@@ -412,7 +412,7 @@ class RadioWin(Gtk.Window):
         self.set_border_width(10)# Ширина границ края основной формы
         self.set_position(Gtk.WindowPosition.CENTER)# Установки позиции окна на экране по центру
         self.set_keep_above(True)# Быть поверх всех окон
-        self.set_property('type-hint', Gdk.WindowTypeHint.NORMAL)# Быть поверх всех окон
+        self.set_property('type-hint', Gdk.WindowTypeHint.NORMAL)
 
         # Создание List с именами всех станций 101 RU
         self.liststore_101 = Gtk.ListStore(str, bool)
@@ -1265,8 +1265,6 @@ class RadioWin(Gtk.Window):
             self.pipeline = 0
             return 0
         decodebin = Gst.ElementFactory.make('decodebin', 'decodebin')
-        decodebin.set_property('use-buffering', True)
-        decodebin.set_property('post-stream-topology', True)
         decodebin.connect('pad-added', on_pad_added)
 
         audioconvert = Gst.ElementFactory.make('audioconvert', 'audioconvert')
@@ -1280,7 +1278,6 @@ class RadioWin(Gtk.Window):
         queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
         queue.set_property('sync-by-running-time', True)
         queue.set_property('use-buffering', True)
-        queue.set_property('max-size-time', 3000000000)
 
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
 
@@ -1317,7 +1314,7 @@ class RadioWin(Gtk.Window):
         ## добавляем все созданные элементы в pipeline
         self.pipeline = Gst.Pipeline()
         self.pipeline.set_property('async-handling', True)
-        print('Создан self.pipeline '+str(datetime.datetime.now().strftime('%H:%M:%S')))        
+        print('Создан self.pipeline '+str(datetime.datetime.now().strftime('%H:%M:%S')))
         if [self.pipeline.add(k) for k in [source, decodebin, audioconvert, equalizer, self.volume, level, queue, audiosink]]:
             print('OK Pipeline Add Elements '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
@@ -1334,29 +1331,28 @@ class RadioWin(Gtk.Window):
             #print('5 equalizer.link(queue) ==> OK LINKED')
         #if queue.link(audiosink):
             #print('6 queue.link(audiosink) ==> OK LINKED')
+
         ## линкуем элементы между собой
         if source.link(decodebin):
             print('1 source.link(decodebin) ==> OK LINKED')
         if audioconvert.link(queue):
-            print('2 audioconvert.link(level) ==> OK LINKED')
+            print('2 audioconvert.link(queue) ==> OK LINKED')
         if queue.link(level):
-            print('3 level.link(volume) ==> OK LINKED')
+            print('3 queue.link(level) ==> OK LINKED')
         if level.link(self.volume):
-            print('4 volume.link(equalizer) ==> OK LINKED')
+            print('4 level.link(self.volume) ==> OK LINKED')
         if self.volume.link(equalizer):
-            print('5 equalizer.link(queue) ==> OK LINKED')
+            print('5 self.volume.link(equalizer) ==> OK LINKED')
         if equalizer.link(audiosink):
-            print('6 queue.link(audiosink) ==> OK LINKED')
+            print('6 equalizer.link(audiosink) ==> OK LINKED')
 
         ## получаем шину по которой рассылаются сообщения
         ## и вешаем на нее обработчики
         message_bus = self.pipeline.get_bus()
-        message_bus.add_signal_watch()
-        message_bus.connect('message::any', self.show_any_message)
+        message_bus.add_signal_watch_full(1)
         message_bus.connect('message::eos', self.message_eos)
         message_bus.connect('message::tag', self.message_tag)
         message_bus.connect('message::error', self.message_error)
-        message_bus.connect('message::buffering', self.message_buffer)
         message_bus.connect('message::element', self.message_element)
         message_bus.connect('message::duration', self.message_duration)
 
@@ -1373,6 +1369,8 @@ class RadioWin(Gtk.Window):
         if self.real_vol_save != 0:
             self.scal_sl.set_value(self.real_vol_save)
             self.volume.set_property('volume', self.real_vol_save)
+
+        self.pipeline.set_state(Gst.State.PLAYING)
 
     # Конвертация полученых наносекунд в часы минуты секунды милисекунды
     def convert_time(self, t):
@@ -1434,9 +1432,9 @@ class RadioWin(Gtk.Window):
     def new_seek_pos_set(self, bas, pos):
         if self.pipeline:
             a = self.seek_line.get_value()
-            self.ret_state = self.pipeline.set_state(Gst.State.PAUSED)
+            self.pipeline.set_state(Gst.State.PAUSED)
             self.pipeline.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, int(a*(int(self.pipeline.query_duration(Gst.Format.TIME)[1])/100)))
-            self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+            self.pipeline.set_state(Gst.State.PLAYING)
         elif self.pipeline:
             self.seek_line.set_value(float(1.0))
 
@@ -1455,14 +1453,6 @@ class RadioWin(Gtk.Window):
                     GObject.source_remove(self.timer)
         except ZeroDivisionError:
             return True
-
-    # Обработка сообщений буфера
-    def message_buffer(self, bus, message):
-        if message.type == Gst.MessageType.BUFFERING:
-            status_pipe = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]
-            s = Gst.Message.get_structure(message)
-            if s['buffer-percent'] == 100:
-                print('1 Буферизация = ', s['buffer-percent'], status_pipe)
 
     # Обработка сообщений элементов
     def message_element(self, bus, message):
@@ -1483,7 +1473,7 @@ class RadioWin(Gtk.Window):
                         self.s_rms_chek.append(v_rms_1)
                     if sum(self.s_rms_chek) < -2000:
                         print('if sum(self.s_rms_chek) < -2000: ==> self.pipeline.set_state(Gst.State.NULL)')
-                        self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                        self.pipeline.set_state(Gst.State.NULL)
                         self.label_ldb.set_label('')
                         self.label_rdb.set_label('')
                         self.s_rms_chek = [0]
@@ -1529,11 +1519,11 @@ class RadioWin(Gtk.Window):
                 #
                 try:
                     socket.gethostbyaddr('www.yandex.ru')
-                    self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                    self.pipeline.set_state(Gst.State.NULL)
                     self.pipeline = 0
                     self.play_stat_now()
                 except socket.gaierror:
-                    self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                    self.pipeline.set_state(Gst.State.NULL)
                     self.pipeline = 0
                     self.label_title.set_text('Отсутствует интернет соединение')
                     self.My_ERROR_Mess = 0
@@ -1726,7 +1716,7 @@ class RadioWin(Gtk.Window):
                 self.label_ltime.set_label('00:00:00:00')
                 self.seek_line.set_value(float(0.01))
                 print('self.pipeline.set_state(Gst.State.NULL) ==> self.pipeline.set_state(Gst.State.NULL)')
-                self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                self.pipeline.set_state(Gst.State.NULL)
 
                 Gst.Event.new_flush_stop(True)
 
@@ -1734,70 +1724,22 @@ class RadioWin(Gtk.Window):
                     print('len(self.f_name_len) ==> ', len(self.f_name_len))
                     self.f_name_len.pop(0)
                     print('self.pipeline.set_state(Gst.State.NULL) ==> self.pipeline.set_state(Gst.State.NULL)')
-                    self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                    self.pipeline.set_state(Gst.State.NULL)
                     self.pipeline = 0
                     try:
                         self.create_pipeline(self.f_name_len[0])
-                        self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                        self.pipeline.set_state(Gst.State.PLAYING)
                     except:
                         print('except: ++> self.pipeline.set_state(Gst.State.NULL)')
-                        self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                        self.pipeline.set_state(Gst.State.NULL)
                 else:
                     print('************** self.on_click_bt5()')
                     self.on_click_bt5()
             elif self.radio_play == 1:
                 print('Gst.MessageType.EOS self.My_ERROR_Mess = '+str(datetime.datetime.now().strftime('%H:%M:%S')), self.My_ERROR_Mess, 'total_length = ', total_length)
-                self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                self.pipeline.set_state(Gst.State.NULL)
                 self.pipeline = 0
                 self.play_stat_now()
-
-    # Обработка остальных сообщений
-    def show_any_message(self, bus, message):
-
-        if message.type == Gst.MessageType.UNKNOWN:
-            print('message.type == Gst.MessageType.UNKNOWN')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.WARNING:
-            print('message.type == Gst.MessageType.WARNING')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.REQUEST_STATE:
-            print('message.type == Gst.MessageType.REQUEST_STATE')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.HAVE_CONTEXT:
-            print('message.type == Gst.MessageType.HAVE_CONTEXT')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.TOC:
-            print('message.type == Gst.MessageType.TOC')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.PROGRESS:
-            print('message.type == Gst.MessageType.PROGRESS')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.LATENCY:
-            print('message.type == Gst.MessageType.LATENCY')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.SEGMENT_DONE:
-            print('message.type == Gst.MessageType.SEGMENT_DONE')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.NEW_CLOCK:
-            print('message.type == Gst.MessageType.NEW_CLOCK')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.STATE_DIRTY:
-            print('message.type == Gst.MessageType.STATE_DIRTY')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
-        if message.type == Gst.MessageType.INFO:
-            print('message.type == Gst.MessageType.INFO')
-            s = Gst.Message.get_structure(message)
-            print(s.to_string())
 
         ###################################################
         ###################################################
@@ -1865,7 +1807,7 @@ class RadioWin(Gtk.Window):
                 self.label_title.set_label('')
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
-                    self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                    #self.pipeline.set_state(Gst.State.PLAYING)
                     self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                 if 'rtmp' in str(f_name):
                     self.file_play = 0
@@ -1877,11 +1819,11 @@ class RadioWin(Gtk.Window):
                     self.radio_rtmp_play = 0
             elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)):
                 print(" 1 'elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE))")
-                self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                #self.pipeline.set_state(Gst.State.PLAYING)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
             if self.My_ERROR_Mess:
                 print('if self.My_ERROR_Mess: ==> self.pipeline.set_state(Gst.State.NULL)')
-                self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+                self.pipeline.set_state(Gst.State.NULL)
                 self.My_ERROR_Mess = 0
             else:
                 self.My_ERROR_Mess = False
@@ -1898,7 +1840,7 @@ class RadioWin(Gtk.Window):
                 self.label_title.set_label('')
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
-                    self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                    #self.pipeline.set_state(Gst.State.PLAYING)
                     self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                     print('self.real_adress ==> 2 ', self.real_adress)
                     thread_2 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
@@ -1907,7 +1849,7 @@ class RadioWin(Gtk.Window):
 
             elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)):
                 print(" 2 elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)):")
-                self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                #self.pipeline.set_state(Gst.State.PLAYING)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                 return True
         elif self.id_chan[0] == 'file':# Если не пусто то файл
@@ -1923,12 +1865,12 @@ class RadioWin(Gtk.Window):
                 for x in f_name:
                     self.f_name_len.append(x)
                 self.create_pipeline(self.f_name_len[0])
-                self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                #self.pipeline.set_state(Gst.State.PLAYING)
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
             else:
                 self.create_pipeline(f_name)
-                self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                #self.pipeline.set_state(Gst.State.PLAYING)
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
         elif f_name == 0:
@@ -2005,10 +1947,10 @@ class RadioWin(Gtk.Window):
         print('Нажата кнопка Pause')
         if self.pipeline:
             if '<enum GST_STATE_PLAYING of type GstState>' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]):
-                self.ret_state = self.pipeline.set_state(Gst.State.PAUSED)
+                self.pipeline.set_state(Gst.State.PAUSED)
                 return True
             elif '<enum GST_STATE_PAUSED of type GstState>' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]):
-                self.ret_state = self.pipeline.set_state(Gst.State.PLAYING)
+                self.pipeline.set_state(Gst.State.PLAYING)
                 return True
 
     # Кнопка стоп
@@ -2037,7 +1979,7 @@ class RadioWin(Gtk.Window):
             self.main_note_for_cont.set_show_tabs(True)
             self.main_note_for_cont.set_show_border(True)
             print('if self.pipeline: $$$ ==> self.pipeline.set_state(Gst.State.NULL) '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            self.ret_state = self.pipeline.set_state(Gst.State.NULL)
+            self.pipeline.set_state(Gst.State.NULL)
         self.pipeline = 0
         self.level_bar_l.set_fraction(0.0)
         self.level_bar_r.set_fraction(0.0)
