@@ -2098,13 +2098,12 @@ class Script_Version_Compare():
         version_opener = urllib.request.build_opener()
         version_opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
         with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
-            if SCRIP_VERSION < fo.read().decode():
-                dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK)
-                dialog.set_markup("<a href=\"https://github.com/IvSatel/Player101ru\">\n<b>Открыть страницу скрипта</b>\n</a>")
-                dialog.run()
-                dialog.destroy()
-            else:
-                return False
+            self.remote_vers = fo.read().decode()
+        if SCRIP_VERSION < self.remote_vers:
+            dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK)
+            dialog.set_markup("<a href=\"https://github.com/IvSatel/Player101ru\">\n<b>Открыть страницу скрипта</b>\n</a>")
+            dialog.run()
+            dialog.destroy()
 
 # Класс получения источника потока 101.RU
 class HackURL(object):
