@@ -816,7 +816,7 @@ class RadioWin(Gtk.Window):
     def dialog_about(self, widget):
         about = Gtk.AboutDialog('О Программе', self, Gtk.DialogFlags.MODAL)
         about.set_program_name("Radio")
-        about.set_version("0.1")
+        about.set_version(SCRIP_VERSION)
         about.set_copyright("(c) IvSatel 2015")
         about.set_comments("Internet Radio Player")
         about.set_logo(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
