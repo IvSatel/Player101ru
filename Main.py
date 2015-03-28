@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import configparser
-import subprocess
 import threading
 import datetime
 import socket
 import math
 import json
 import time
-import zlib
 import sys
 import re
 import os
@@ -41,6 +39,9 @@ try:
 except:
     APP_INDICATOR = False
 
+# Версия скрипта
+SCRIP_VERSION = '0.0.0.1'
+
 class RadioWin(Gtk.Window):
 
     def __init__(self):
@@ -52,6 +53,9 @@ class RadioWin(Gtk.Window):
         except socket.gaierror:
             self.check_internet_connection()
             sys.exit(0)
+
+        # Проверка версии
+        Script_Version_Compare()
 
         self.eq_set_preset = []# Список действующей настройки эквалайзера
 
@@ -220,15 +224,6 @@ class RadioWin(Gtk.Window):
         'DFM  Deep': 'http://st24.fmtuner.ru',
         'DFM Club': 'http://st01.fmtuner.ru',
         'DFM Russian Dance': 'http://st03.fmtuner.ru'}
-
-        '''## Словарь Ди-ФМ резервный
-        self.d_fm_dict = {'101,2 онлайн': 'http://www.dfm.ru/listen/dfmonline/dfm/',
-        'Динамит онлайн': 'http://www.dfm.ru/listen/dfmonline/dfmdinamit/',
-        'Russian Dance онлайн': 'http://www.dfm.ru/listen/dfmonline/dfmrussiandance/',
-        'Спокойной ночи, голыши! онлайн': 'http://www.dfm.ru/listen/dfmonline/dfmgolyshi/',
-        'Deep онлайн': 'http://www.dfm.ru/listen/dfmonline/dfmdeep/',
-        'ДИСКАЧ 90-х онлайн': 'http://www.dfm.ru/listen/dfmonline/dfmdiskach90/',
-        'Club онлайн': 'http://www.dfm.ru/listen/dfmonline/dfmclub/'}'''
 
         self.di_grid = Gtk.Grid()
 
@@ -808,6 +803,7 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
+    # Диалог вывода сообщения об отсутствии соединения с интернет
     def check_internet_connection(self, *args):
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR,
             Gtk.ButtonsType.OK, "Ошибка!")
@@ -845,7 +841,6 @@ class RadioWin(Gtk.Window):
 
     # Создание тултипа для медиа информации о потоке
     def media_tool_hint(self, widget, x, y, keyboard_mode, tooltip):
-        #
         def local_convert_time(t):
             if t != 18446744073709551615:
                 dt = datetime.datetime.utcfromtimestamp(t/1e9)
@@ -854,7 +849,6 @@ class RadioWin(Gtk.Window):
                     return x
             else:
                 return '99:99:99.999999999'
-        #
         '''
         print(self.radio_play, self.radio_rtmp_play, self.file_play)
         print(self.media_location)
@@ -868,7 +862,6 @@ class RadioWin(Gtk.Window):
 
                 discoverer = GstPbutils.Discoverer()
                 info = discoverer.discover_uri(self.media_location)# Create = GstPbutils.DiscovererInfo =
-
                 for ainfo in info.get_audio_streams():# Create = GstPbutils.DiscovererStreamInfo =get_language()
                     m_caps = str(ainfo.get_caps()).split(',')
                     if m_caps != None:
@@ -913,7 +906,7 @@ class RadioWin(Gtk.Window):
             tooltip.set_text('Нет информации')
         return True
 
-    # Создание адресного листа для IRC
+    # Создание адресного листа для IRC при первом запуске
     def create_irc_list(self, *args):
 
         # Удаление элементов на основной форме
@@ -977,7 +970,7 @@ class RadioWin(Gtk.Window):
 
             dialog.destroy()
 
-    # Реакция на выбор в таблице Internet Radio 1
+    # Реакция на выбор в таблице Internet Radio Top
     def on_cell_radio_toggled_RIC(self, widget, path):
         self.RIC_url = ''
         if self.file_play == 0 and self.radio_play == 0:
@@ -995,7 +988,7 @@ class RadioWin(Gtk.Window):
             for row in self.liststore_RIC:
                 row[1] = (row.path == selected_path)
 
-    # Реакция на выбор Internet Radio 2
+    # Реакция на выбор Internet Radio Sub
     def on_cell_radio_toggled_s_RIC(self, widget, path):
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
@@ -1065,8 +1058,6 @@ class RadioWin(Gtk.Window):
             print('res $$$$$$$$$$$$ ==>>>> ', type(res), res)
             if res != 0:
                 self.play_stat_now(res)
-            else:
-                pass
         elif 'Internet Radio COM' in str(best_adr):
             print('OK => Internet Radio COM')
             self.id_chan[0] = 'IRC'
@@ -1107,8 +1098,6 @@ class RadioWin(Gtk.Window):
                 print('res &&&&&&&&&&&>>>> ', type(res), res)
                 if res != 0:
                     self.play_stat_now(res)
-                else:
-                    pass
 
     # Диалоговое окно поиска персональных станций
     def search_in_personal_station(self, widget):
@@ -1129,7 +1118,7 @@ class RadioWin(Gtk.Window):
             dialog.destroy()
 
     # Обновление адресного листа 101
-    # Модальное окно с прогрессбаром в отдельном патоке
+    # Модальное окно с прогрессбаром в отдельном потоке
     def on_refresh_list(self, widget):
 
         def w_d(*args):
@@ -1197,9 +1186,8 @@ class RadioWin(Gtk.Window):
         self.main_menu.popup(None, None, pos, self.tray_icon, button, time)
         self.main_menu.show_all()
 
-    # Определение источник "файл или http"
+    # Определение источник "файл или http" и создание элемента source
     def create_source(self, location):
-        """create_source(str) -> Gst.Element"""
         """ ***** location ==> 23:22:05 <class 'str'> 22 http://st16.fmtuner.ru """
         """ ***** location ==> 23:23:16 <class 'tuple'> 2 ('http://st16.fmtuner.ru', 'D-FM') """
         if location == 0:
@@ -1264,7 +1252,6 @@ class RadioWin(Gtk.Window):
 
     # Создание объекта Pipeline
     def create_pipeline(self, args):
-
         ## decodebin имеет динамические pad'ы, которые так же динамически необходимо линковать
         def on_pad_added(decodebin, pad):
             print('Name Gst.Pad => ', pad.get_name())
@@ -1289,7 +1276,7 @@ class RadioWin(Gtk.Window):
         level = Gst.ElementFactory.make('level', 'level')
 
         queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
-        queue.set_property('sync-by-running-time', True)
+        #queue.set_property('sync-by-running-time', True)
         queue.set_property('use-buffering', True)
 
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
@@ -1413,12 +1400,11 @@ class RadioWin(Gtk.Window):
 
     # Получение названия
     def get_title_from_url(self, adres):
-
         id_chan_req  = adres[0]
-
         title_opener = urllib.request.build_opener()
-        title_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
-
+        title_opener.addheaders = [
+        ('Host', '101.ru'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
         try:
             # Запрос
             with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
@@ -1469,7 +1455,6 @@ class RadioWin(Gtk.Window):
 
     # Обработка сообщений элементов
     def message_element(self, bus, message):
-
         if message.type == Gst.MessageType.ELEMENT:
             s = Gst.Message.get_structure(message)
             if str(Gst.Structure.get_name(s)) == 'level':
@@ -1479,8 +1464,8 @@ class RadioWin(Gtk.Window):
                 except:
                     v_rms_0 = s.get_value('rms')[0]
                     v_rms_1 = s.get_value('rms')[0]
-                if v_rms_0 < -80 or v_rms_1 < -80 and self.radio_play == 1:
-                    if  s['rms'][0] < -80:
+                if v_rms_0 < -80 or v_rms_1 < -80 and self.radio_play:
+                    if  v_rms_0 < -80:
                         self.s_rms_chek.append(v_rms_0)
                     elif v_rms_1 < -80:
                         self.s_rms_chek.append(v_rms_1)
@@ -1884,7 +1869,7 @@ class RadioWin(Gtk.Window):
 
     # Кнопка плей
     def on_click_bt1(self, b1):
-        print('Нажата кнопка Play', self.main_note_for_cont.get_current_page())
+        print('Нажата кнопка Play')
         if self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'RREC':
             self.main_note_for_cont.set_show_tabs(False)
             self.play_stat_now(self.real_adress)
@@ -2016,7 +2001,6 @@ class RadioWin(Gtk.Window):
 
     # Функция установки громкости
     def on_valu_ch(self, scale, value):
-        #self.pipeline.set_property('volume', round(value, 2))
         if self.pipeline:
             self.real_vol_save = round(value, 2)
             get_param_volume = round(value, 2)
@@ -2054,7 +2038,9 @@ class RadioWin(Gtk.Window):
             print('id_ch ==> ', id_ch)
 
             person_opener = urllib.request.build_opener()
-            person_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+            person_opener.addheaders = [
+            ('Host', '101.ru'),
+            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
             chek = 0
             while chek < 3:
@@ -2103,6 +2089,15 @@ class RadioWin(Gtk.Window):
             if self.timer_title_rtmp:
                 GLib.source_remove(self.timer_title_rtmp)
             return False
+
+class Script_Version_Compare():
+
+
+    def __init__(self):
+        dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK)
+        dialog.set_markup("<a href=\"https://github.com/IvSatel/Player101ru\">\n<b>Открыть страницу скрипта</b>\n</a>")
+        dialog.run()
+        dialog.destroy()
 
 # Класс получения источника потока 101.RU
 class HackURL(object):
