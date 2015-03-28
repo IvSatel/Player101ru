@@ -1122,12 +1122,14 @@ class RadioWin(Gtk.Window):
     def on_refresh_list(self, widget):
 
         def w_d(*args):
+            print('def w_d(self, *args):')
             win.destroy()
 
         win = Gtk.Window(default_height=50, default_width=300)
         win.set_modal(True)
         win.set_transient_for(self)
         win.connect("delete-event", w_d)
+        win.connect("destroy", w_d)
 
         progress = Gtk.ProgressBar(show_text=True)
 
