@@ -1033,7 +1033,10 @@ class RadioWin(Gtk.Window):
             self.id_chan[0] = re.sub(r'(.+?\=)(\d+)$', r'\2', str(last_adr[0]), re.S)
             res = self.HURL.hack_url_adres(last_adr[0])
             print('res ^^^^^^^^^^^^ ==>>>> ', type(res), res)
-            self.play_stat_now(res)
+            if res != 0:
+                self.play_stat_now(res)
+            else:
+                pass
         elif 'pradio22' in str(last_adr[0]):
             self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(last_adr[0]), re.S)
             print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr[0]), last_adr[0])
@@ -1060,7 +1063,10 @@ class RadioWin(Gtk.Window):
             self.id_chan[0] = int(re.sub(r'(?:.+?channel\=)(\d+)\D+(?:.*?)', r'\1', str(best_adr), re.M))
             res = self.HURL.hack_url_adres(best_adr[0])
             print('res $$$$$$$$$$$$ ==>>>> ', type(res), res)
-            self.play_stat_now(res)
+            if res != 0:
+                self.play_stat_now(res)
+            else:
+                pass
         elif 'Internet Radio COM' in str(best_adr):
             print('OK => Internet Radio COM')
             self.id_chan[0] = 'IRC'
@@ -1099,7 +1105,10 @@ class RadioWin(Gtk.Window):
                 print('444 ****************************')
                 res = self.HURL.hack_url_adres(self.wr_station_name_adr.read_best_station())
                 print('res &&&&&&&&&&&>>>> ', type(res), res)
-                self.play_stat_now(res)
+                if res != 0:
+                    self.play_stat_now(res)
+                else:
+                    pass
 
     # Диалоговое окно поиска персональных станций
     def search_in_personal_station(self, widget):
@@ -1193,6 +1202,10 @@ class RadioWin(Gtk.Window):
         """create_source(str) -> Gst.Element"""
         """ ***** location ==> 23:22:05 <class 'str'> 22 http://st16.fmtuner.ru """
         """ ***** location ==> 23:23:16 <class 'tuple'> 2 ('http://st16.fmtuner.ru', 'D-FM') """
+        if location == 0:
+            self.label_title.set_text('Канал не передает звукового потока!')
+            raise IOError("Источник %s не найден" % location)
+            return 0
         if len(location) != 0:
             print('***** location ==> '+str(datetime.datetime.now().strftime('%H:%M:%S')), type(location), len(location), location)
 
@@ -1807,7 +1820,6 @@ class RadioWin(Gtk.Window):
                 self.label_title.set_label('')
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
-                    #self.pipeline.set_state(Gst.State.PLAYING)
                     self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                 if 'rtmp' in str(f_name):
                     self.file_play = 0
@@ -1817,10 +1829,9 @@ class RadioWin(Gtk.Window):
                     self.get_title_song(re.sub(r'(rtmp:\/\/wz7\.101\.ru\/pradio22\/)(.+?)(\?setst\=\&uid\=\-1\/main)', r'\2', f_name))
                 elif not 'rtmp' in str(f_name):
                     self.radio_rtmp_play = 0
-            elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)):
-                print(" 1 'elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE))")
-                #self.pipeline.set_state(Gst.State.PLAYING)
-                self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
+            else:
+                self.on_click_bt5()
+                self.label_title.set_label('Нет рабочих потоков')
             if self.My_ERROR_Mess:
                 print('if self.My_ERROR_Mess: ==> self.pipeline.set_state(Gst.State.NULL)')
                 self.pipeline.set_state(Gst.State.NULL)
@@ -1833,25 +1844,21 @@ class RadioWin(Gtk.Window):
             self.radio_play = 1
             print('Включение радио 2 '+str(datetime.datetime.now().strftime('%H:%M:%S')))
             self.uri = self.HURL.hack_url_adres(re.sub(r'&amp;', r'&', self.real_adress))
-            if not self.pipeline:
+            if not self.pipeline and self.uri != 0:
                 for x in range(3):
                     self.button_array[x].hide()
                 self.seek_line.hide()#SeekLine
                 self.label_title.set_label('')
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
-                    #self.pipeline.set_state(Gst.State.PLAYING)
                     self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                     print('self.real_adress ==> 2 ', self.real_adress)
                     thread_2 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
                     thread_2.daemon = True
                     thread_2.start()
-
-            elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)):
-                print(" 2 elif 'GST_STATE_PAUSED' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)):")
-                #self.pipeline.set_state(Gst.State.PLAYING)
-                self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
-                return True
+            else:
+                self.on_click_bt5()
+                self.label_title.set_label('Нет рабочих потоков')
         elif self.id_chan[0] == 'file':# Если не пусто то файл
             self.radio_play = 0
             self.file_play = 1
@@ -1865,12 +1872,10 @@ class RadioWin(Gtk.Window):
                 for x in f_name:
                     self.f_name_len.append(x)
                 self.create_pipeline(self.f_name_len[0])
-                #self.pipeline.set_state(Gst.State.PLAYING)
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
             else:
                 self.create_pipeline(f_name)
-                #self.pipeline.set_state(Gst.State.PLAYING)
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
         elif f_name == 0:
@@ -1880,7 +1885,6 @@ class RadioWin(Gtk.Window):
     # Кнопка плей
     def on_click_bt1(self, b1):
         print('Нажата кнопка Play', self.main_note_for_cont.get_current_page())
-        # 'get_nth_page( int )' ret object
         if self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'RREC':
             self.main_note_for_cont.set_show_tabs(False)
             self.play_stat_now(self.real_adress)
