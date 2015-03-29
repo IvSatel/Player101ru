@@ -40,7 +40,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.1'
+SCRIP_VERSION = '0.0.0.2'
 
 class RadioWin(Gtk.Window):
 
@@ -121,7 +121,7 @@ class RadioWin(Gtk.Window):
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
-
+        print('self.eq_set_preset ==> ', self.eq_set_preset)
         self.HURL = HackURL()# Получение адреса потока 101 RU
         self.wr_station_name_adr = WriteLastStation()# Запись последнего адреса потока
 
@@ -1310,6 +1310,7 @@ class RadioWin(Gtk.Window):
                 band = equalizer.get_child_by_index(chek)
                 band.set_property('freq', self.freq[chek])
                 band.set_property('bandwidth', self.bandwidth[chek])
+                print(x, type(x), self.eq_set_preset)
                 band.set_property('gain', float(x))
                 chek += 1
 
@@ -1979,7 +1980,8 @@ class RadioWin(Gtk.Window):
 
     # Обработка выбора пункта в меню Equalizer
     def change_equlaizer(self, *gain):
-        if self.radio_rtmp_play == 1 or self.radio_play == 1 or self.file_play == 1 and str(gain[1]) != 'Редактировать положение эквалайзера':
+        if (self.radio_rtmp_play == 1 or self.radio_play == 1 or self.file_play == 1) and str(gain[1]) != 'Редактировать положение эквалайзера':
+            print('def change_equlaizer(self, *gain):', str(gain[1]))
             eq_config = configparser.ConfigParser()
             eq_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
             eq_set = []
@@ -2029,9 +2031,8 @@ class RadioWin(Gtk.Window):
                     chek += 1
             elif response == Gtk.ResponseType.CANCEL:
                 print("The Cancel button was clicked")
-                dialog.destroy()
 
-        dialog.destroy()
+            dialog.destroy()
 
     # Получение названия трека персональных станций
     def get_title_song(self, idch):
@@ -2668,23 +2669,24 @@ class EQWindow(Gtk.Dialog):
 
         # Установлен эквалайзер или нет
         try:
-            config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-            leq = config['EQ-Settings']['lasteq'].split(' ')
+            test_config = configparser.ConfigParser()
+            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+            leq = test_config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.mdict.append(x)
-            for x in config.items('EQ-Settings'):
+            for x in test_config.items('EQ-Settings'):
                 self.name_combo.append_text(str(x[0]))
         except:
-            config = configparser.ConfigParser()
-            config.add_section('EQ-Settings')
-            config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
+            test_config = configparser.ConfigParser()
+            test_config.add_section('EQ-Settings')
+            test_config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
             with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
-                config.write(cfgfile)
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-            for x in config.items('EQ-Settings'):
+                test_config.write(cfgfile)
+            print('Zap1')
+            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+            for x in test_config.items('EQ-Settings'):
                 self.name_combo.append_text(str(x[0]))
-            leq = config['EQ-Settings']['lasteq'].split(' ')
+            leq = test_config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.mdict.append(x)
 
@@ -2748,7 +2750,7 @@ class EQWindow(Gtk.Dialog):
                 if self.mdict[c] == v:
                     self.label_l[c].set_label(v)
                     x.set_value(float(k))
-            x.connect("change-value", self.v)
+            x.connect("change-value", self.write_arr_in)
             self.grid_w_eq.attach(self.label_l[c], c, 2, 1, 1)
             self.grid_w_eq.attach(x, c, 3, 1, 10)
             self.label_Hz[c].modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(0.9, 0.9, 0.95))
@@ -2762,9 +2764,6 @@ class EQWindow(Gtk.Dialog):
 
         self.show_all()
 
-    def w_c_l(self):
-        self.destroy()
-
     def chenge_bat_label(self, *args):
         if self.name_entry.get_text() != '':
             self.button_save.set_label('Сохранить настройки')
@@ -2773,13 +2772,13 @@ class EQWindow(Gtk.Dialog):
         return True
 
     def on_currency_combo_changed(self, combo):
+        combo_config = configparser.ConfigParser()
+        combo_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
         self.arr_eq = []
         text = combo.get_active_text()
         if text != None:
             print("Selected: currency=%s" % text)
-            config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-            leq = config['EQ-Settings'][text].split(' ')
+            leq = combo_config['EQ-Settings'][text].split(' ')
             for x in leq:
                 self.arr_eq.append(x)
             print('self.arr_eq', self.arr_eq)
@@ -2801,10 +2800,42 @@ class EQWindow(Gtk.Dialog):
             c += 1
         #
 
+    # Запись результата настроек в файл
+    def write_cfg_prs(self, *args):
+        wr_config = configparser.ConfigParser()
+        wr_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+        if len(self.arr_eq) != 18:
+            if self.name_entry.get_text() != '':
+                print('Есть текст в интри')
+                lasteq = self.name_entry.get_text()
+                wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
+                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
+                    wr_config.write(configfile)
+                print('Zap2')
+            elif self.name_entry.get_text() == '':
+                print('Нет текста в интри')
+                lasteq = 'lasteq'
+                try:
+                    wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
+                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
+                        wr_config.write(configfile)
+                except:
+                    wr_config.add_section('EQ-Settings')
+                    wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
+                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as configfile:
+                        wr_config.write(configfile)
+        elif len(self.arr_eq) == 18:
+            self.mdict = self.arr_eq
+            if self.name_entry.get_text() != '':
+                lasteq = self.name_entry.get_text()
+            else:
+                lasteq = 'lasteq'
+            wr_config.set('EQ-Settings', lasteq, str(' '.join(self.arr_eq)))
+            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
+                wr_config.write(configfile)
+
     # Реакция на нажатие кнопки "Установить / Сохранить"
     def ret_md(self, *args):
-        print('self.mdict ', self.mdict)
-        print('len(self.arr_eq)', len(self.arr_eq))
         if self.name_entry.get_text() != '':
             self.name_combo.append_text(self.name_entry.get_text())
         self.mdict = []
@@ -2814,51 +2845,9 @@ class EQWindow(Gtk.Dialog):
         if len(self.arr_eq) == 18:
             self.mdict = self.arr_eq
         self.write_cfg_prs()
-        print('In def ret_md(self, *args): len(self.arr_eq) ==> ', len(self.arr_eq))
-
-    # Запись результата настроек в файл
-    def write_cfg_prs(self, *args):
-        if len(self.arr_eq) != 18:
-            print('1 len(self.arr_eq) ', type(len(self.arr_eq)), len(self.arr_eq))
-            if self.name_entry.get_text() != '':
-                print('Есть текст в интри')
-                lasteq = self.name_entry.get_text()
-                config = configparser.ConfigParser()
-                config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-                config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
-                    config.write(configfile)
-            elif self.name_entry.get_text() == '':
-                print('Нет текста в интри')
-                try:
-                    config = configparser.ConfigParser()
-                    config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-                    config.set('EQ-Settings', 'lasteq', ' '.join(self.mdict))
-                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
-                        config.write(configfile)
-                    print('Записано 1 секц', ' '.join(self.mdict))
-                except:
-                    config = configparser.ConfigParser()
-                    config.add_section('EQ-Settings')
-                    config.set('EQ-Settings','lasteq', ' '.join(self.mdict))
-                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
-                        config.write(cfgfile)
-                    print('Записано 2 секц', ' '.join(self.mdict))
-        elif len(self.arr_eq) == 18:
-            self.mdict = self.arr_eq
-            print('2 len(self.arr_eq) ', type(len(self.arr_eq)), len(self.arr_eq))
-            if self.name_entry.get_text() != '':
-                lasteq = self.name_entry.get_text()
-            else:
-                lasteq = 'lasteq'
-            config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
-            config.set('EQ-Settings', lasteq, str(' '.join(self.arr_eq)))
-            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
-                config.write(configfile)
 
     # Запись результата настроек в массив self.mdict
-    def v(self, *value):
+    def write_arr_in(self, *value):
         for x in range(18):
             if round(self.sc_l[x].get_value()) == round(value[2]):
                 self.label_l[x].set_label(self.scale_n.get(round(value[2])))
