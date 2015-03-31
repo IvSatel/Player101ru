@@ -34,13 +34,13 @@ from gi.repository import GdkPixbuf
 from gi.repository import GstPbutils
 
 try:
-    from gi.repository import AppIndicator3# Если в системе нет трея
+    from gi.repository import AppIndicator3
     APP_INDICATOR = True
 except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.2'
+SCRIP_VERSION = '0.0.0.3'
 
 class RadioWin(Gtk.Window):
 
@@ -121,7 +121,6 @@ class RadioWin(Gtk.Window):
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
-        print('self.eq_set_preset ==> ', self.eq_set_preset)
         self.HURL = HackURL()# Получение адреса потока 101 RU
         self.wr_station_name_adr = WriteLastStation()# Запись последнего адреса потока
 
@@ -137,7 +136,7 @@ class RadioWin(Gtk.Window):
         self.freq = [16,20,60,120,200,250,400,500,800,1000,2000,3000,4000,5000,6000,10000,12000,16000]
         # Установки ширины полосы частот
         #self.bandwidth = [1,2,37,20,40,1,90,5,150,50,800,100,800,100,800,1500,500,3000]
-        self.bandwidth = [2, 20, 30, 40, 25, 75, 50, 150, 100, 500, 500, 500, 500, 500, 2000, 1000, 2000, 1000]
+        self.bandwidth = [2, 2, 30, 40, 25, 75, 50, 150, 100, 500, 500, 500, 500, 500, 1000, 1000, 1000, 1000]
         # Предустановки эквалайзера
         self.equalizer_presets_dict = {
         'EQ Premaster': [0, 1, 3, 0, -3, -3, 0, 0, 0, 2, 0, 0, 3, 0, 3, 1, 3, 2],
@@ -233,6 +232,7 @@ class RadioWin(Gtk.Window):
             self.di_liststore.append([x, False])
 
         self.di_treeview = Gtk.TreeView(model=self.di_liststore)
+        # self.di_treeview.connect("button-press-event", self.button_press)
         self.di_treeview.set_enable_search(True)
         self.di_treeview.set_show_expanders(False)
 
@@ -803,6 +803,15 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
+    ## Pop-up menu
+    #def button_press(self,widget,event):
+        #if event.button == 3:
+            #self.menu = Gtk.Menu()
+            #self.menu_copy = Gtk.MenuItem("Popup Menu")
+            #self.menu.append(self.menu_copy)
+            #self.menu.show_all()
+            #self.menu.popup(None, None, None, None, event.button, event.get_time())
+
     # Диалог вывода сообщения об отсутствии соединения с интернет
     def check_internet_connection(self, *args):
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR,
@@ -1122,7 +1131,6 @@ class RadioWin(Gtk.Window):
     def on_refresh_list(self, widget):
 
         def w_d(*args):
-            print('def w_d(self, *args):')
             win.destroy()
 
         win = Gtk.Window(default_height=50, default_width=300)
@@ -1278,7 +1286,6 @@ class RadioWin(Gtk.Window):
         level = Gst.ElementFactory.make('level', 'level')
 
         queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
-        #queue.set_property('sync-by-running-time', True)
         queue.set_property('use-buffering', True)
 
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
@@ -1305,14 +1312,31 @@ class RadioWin(Gtk.Window):
                     chek += 1
         elif str(type(self.eq_set_preset)) == "<class 'list'>":
             equalizer.set_property('num-bands', 18)
-            chek= 0
-            for x in self.eq_set_preset:
-                band = equalizer.get_child_by_index(chek)
-                band.set_property('freq', self.freq[chek])
-                band.set_property('bandwidth', self.bandwidth[chek])
-                print(x, type(x), self.eq_set_preset)
-                band.set_property('gain', float(x))
-                chek += 1
+            try:
+                chek= 0
+                for x in self.eq_set_preset:
+                    band = equalizer.get_child_by_index(chek)
+                    band.set_property('freq', self.freq[chek])
+                    band.set_property('bandwidth', self.bandwidth[chek])
+                    band.set_property('gain', float(x))
+                    chek += 1
+            except:# Если отсутствует значение
+                no_config = configparser.ConfigParser()
+                no_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+                no_config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
+                leq = config['EQ-Settings']['lasteq'].split(' ')
+                self.eq_set_preset = []
+                for x in leq:
+                    self.eq_set_preset.append(x)
+                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
+                    no_config.write(cfgfile)
+                chek= 0
+                for x in self.eq_set_preset:
+                    band = equalizer.get_child_by_index(chek)
+                    band.set_property('freq', self.freq[chek])
+                    band.set_property('bandwidth', self.bandwidth[chek])
+                    band.set_property('gain', float(x))
+                    chek += 1
 
         ## добавляем все созданные элементы в pipeline
         self.pipeline = Gst.Pipeline()
@@ -1320,20 +1344,6 @@ class RadioWin(Gtk.Window):
         print('Создан self.pipeline '+str(datetime.datetime.now().strftime('%H:%M:%S')))
         if [self.pipeline.add(k) for k in [source, decodebin, audioconvert, equalizer, self.volume, level, queue, audiosink]]:
             print('OK Pipeline Add Elements '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-
-        ## линкуем элементы между собой
-        #if source.link(decodebin):
-            #print('1 source.link(decodebin) ==> OK LINKED')
-        #if audioconvert.link(level):
-            #print('2 audioconvert.link(level) ==> OK LINKED')
-        #if level.link(self.volume):
-            #print('3 level.link(volume) ==> OK LINKED')
-        #if self.volume.link(equalizer):
-            #print('4 volume.link(equalizer) ==> OK LINKED')
-        #if equalizer.link(queue):
-            #print('5 equalizer.link(queue) ==> OK LINKED')
-        #if queue.link(audiosink):
-            #print('6 queue.link(audiosink) ==> OK LINKED')
 
         ## линкуем элементы между собой
         if source.link(decodebin):
@@ -1349,8 +1359,7 @@ class RadioWin(Gtk.Window):
         if equalizer.link(audiosink):
             print('6 equalizer.link(audiosink) ==> OK LINKED')
 
-        ## получаем шину по которой рассылаются сообщения
-        ## и вешаем на нее обработчики
+        ## получаем шину и вешаем на нее обработчики
         message_bus = self.pipeline.get_bus()
         message_bus.add_signal_watch_full(1)
         message_bus.connect('message::eos', self.message_eos)
@@ -1358,13 +1367,6 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::error', self.message_error)
         message_bus.connect('message::element', self.message_element)
         message_bus.connect('message::duration', self.message_duration)
-
-        for x in self.pipeline.iterate_elements():
-            print('elements', x)
-        for x in self.pipeline.iterate_sinks():
-            print('sinks', x)
-        for x in self.pipeline.iterate_sources():
-            print('sources', x)
 
         if self.run_radio_window != 1:
             self.scal_sl.set_value(0.50)
@@ -1543,8 +1545,7 @@ class RadioWin(Gtk.Window):
                 return
             else:
                 self.test_tag_list = s_tag_l
-            print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n')
-            print('s_tag_l ==> ', s_tag_l)
+            print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', 's_tag_l ==> ', s_tag_l)
             if s_tag_l[1] != None and s_tag_l[2] != None:
                 self.label_title.set_label(s_tag_l[2]+' - '+s_tag_l[1])
             else:
@@ -1791,8 +1792,7 @@ class RadioWin(Gtk.Window):
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
         if str(type(self.id_chan[0])) == "<class 'int'>" or self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
-            print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ", f_name)
-            print('self.real_adress ==> 1 ', self.real_adress)
+            print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ", f_name, 'self.real_adress ==> 1 ', self.real_adress)
             thread_1 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
             thread_1.daemon = True
             thread_1.start()
@@ -2051,7 +2051,6 @@ class RadioWin(Gtk.Window):
                     # Запрос
                     with person_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal') as source_person:
                         html = source_person.read().decode('utf-8-sig', errors='ignore')
-                    print(html)
                     find_pars = json.loads(html)
 
                     find_title_song_from_stream = find_pars['result']['title']
@@ -2858,7 +2857,4 @@ Radio_for_101.connect("delete-event", Gtk.main_quit)
 Radio_for_101.show_all()
 Radio_for_101.seek_line.hide()
 
-Gdk.threads_init()
-Gdk.threads_enter()
 Gtk.main()
-Gdk.threads_leave()
