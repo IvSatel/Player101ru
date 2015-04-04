@@ -27,7 +27,6 @@ from gi.repository import GLib
 from gi.repository import Pango
 from gi.repository import GObject
 
-GObject.threads_init()
 Gst.init_check(None)# Разместить здесь, что-бы не вызвать ошибку инициализации у GstPbutils
 
 from gi.repository import GdkPixbuf
@@ -40,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.3'
+SCRIP_VERSION = '0.0.0.4'
 
 class RadioWin(Gtk.Window):
 
@@ -1130,16 +1129,12 @@ class RadioWin(Gtk.Window):
     # Модальное окно с прогрессбаром в отдельном потоке
     def on_refresh_list(self, widget):
 
-        def w_d(*args):
-            win.destroy()
-
-        win = Gtk.Window(default_height=50, default_width=300)
-        win.set_modal(True)
-        win.set_transient_for(self)
-        win.connect("delete-event", w_d)
-        win.connect("destroy", w_d)
-
-        progress = Gtk.ProgressBar(show_text=True)
+        def update_progess(fr):
+            progress.set_fraction(float(fr/100))
+            progress.set_text(str(int(fr))+' %')
+            if progress.get_fraction() == 1.0:
+                win.destroy()
+            return False
 
         def example_target():
 
@@ -1161,10 +1156,9 @@ class RadioWin(Gtk.Window):
                     for z, c in loc_source_101_http_razdel:
                         a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
                     loc_dict_101_ru.append(a)
-                    Gdk.threads_enter()
-                    progress.set_fraction(float(check//(percent/100)) / 100)
-                    progress.set_text(str(int(check//(percent/100)))+' %')
-                    Gdk.threads_leave()
+
+                    GLib.idle_add(update_progess, check//(percent/100))
+
                     check += 1
 
             loc_final_conf = []
@@ -1175,7 +1169,16 @@ class RadioWin(Gtk.Window):
             with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as loc_adr101file:
                 loc_adr101file.writelines(loc_final_conf)
 
+        def w_d(*args):
             win.destroy()
+
+        win = Gtk.Window(default_height=50, default_width=300)
+        win.set_modal(True)
+        win.set_transient_for(self)
+        win.connect("delete-event", w_d)
+        win.connect("destroy", w_d)
+
+        progress = Gtk.ProgressBar(show_text=True)
 
         box = Gtk.Box()
         box.pack_start(progress, True, True, 0)
@@ -1216,6 +1219,7 @@ class RadioWin(Gtk.Window):
                     return 0
                     print('Источник %s не найден' % location)
                     raise IOError("Источник %s не найден" % location)
+                    self.My_ERROR_Mess = 0
 
             media_for_location = location[0]
             if location[0].startswith('.flv'):
@@ -1267,7 +1271,8 @@ class RadioWin(Gtk.Window):
             print('Name Gst.Pad => ', pad.get_name())
             caps = pad.get_current_caps()
             print('Name Gst.Caps => ', caps.to_string())
-            pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
+            #pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
+            pad.link(audioconvert.get_static_pad('sink'))
 
         ## Создаем нужные элементы для плеера
         source = self.create_source(args)
@@ -1275,20 +1280,19 @@ class RadioWin(Gtk.Window):
             self.pipeline = 0
             return 0
         decodebin = Gst.ElementFactory.make('decodebin', 'decodebin')
-        decodebin.connect('pad-added', on_pad_added)
-
         audioconvert = Gst.ElementFactory.make('audioconvert', 'audioconvert')
-        audioconvert.set_property('dithering', 'High frequency triangular dithering')
-        audioconvert.set_property('noise-shaping', 'High 8-pole noise shaping')
-
         equalizer = Gst.ElementFactory.make('equalizer-nbands', 'equalizer-nbands')
         self.volume = Gst.ElementFactory.make('volume', 'volume')
         level = Gst.ElementFactory.make('level', 'level')
-
-        queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
-        queue.set_property('use-buffering', True)
-
+        #queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
+        queue = Gst.ElementFactory.make('queue2', 'myqueue')
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
+
+        decodebin.connect('pad-added', on_pad_added)
+        decodebin.set_property('use-buffering', True)
+        audioconvert.set_property('dithering', 'High frequency triangular dithering')
+        audioconvert.set_property('noise-shaping', 'High 8-pole noise shaping')
+        queue.set_property('use-buffering', True)
 
         print('type(self.eq_set_preset) ==> ', type(self.eq_set_preset), ' ', str(datetime.datetime.now().strftime('%H:%M:%S')))
 
@@ -1338,9 +1342,8 @@ class RadioWin(Gtk.Window):
                     band.set_property('gain', float(x))
                     chek += 1
 
-        ## добавляем все созданные элементы в pipeline
         self.pipeline = Gst.Pipeline()
-        self.pipeline.set_property('async-handling', True)
+
         print('Создан self.pipeline '+str(datetime.datetime.now().strftime('%H:%M:%S')))
         if [self.pipeline.add(k) for k in [source, decodebin, audioconvert, equalizer, self.volume, level, queue, audiosink]]:
             print('OK Pipeline Add Elements '+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -1359,6 +1362,13 @@ class RadioWin(Gtk.Window):
         if equalizer.link(audiosink):
             print('6 equalizer.link(audiosink) ==> OK LINKED')
 
+        if self.run_radio_window != 1:
+            self.scal_sl.set_value(0.50)
+            self.volume.set_property('volume', 0.50)
+        if self.real_vol_save != 0:
+            self.scal_sl.set_value(self.real_vol_save)
+            self.volume.set_property('volume', self.real_vol_save)
+
         ## получаем шину и вешаем на нее обработчики
         message_bus = self.pipeline.get_bus()
         message_bus.add_signal_watch_full(1)
@@ -1366,14 +1376,8 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::tag', self.message_tag)
         message_bus.connect('message::error', self.message_error)
         message_bus.connect('message::element', self.message_element)
+        message_bus.connect('message::buffering', self.message_buffering)
         message_bus.connect('message::duration', self.message_duration)
-
-        if self.run_radio_window != 1:
-            self.scal_sl.set_value(0.50)
-            self.volume.set_property('volume', 0.50)
-        if self.real_vol_save != 0:
-            self.scal_sl.set_value(self.real_vol_save)
-            self.volume.set_property('volume', self.real_vol_save)
 
         self.pipeline.set_state(Gst.State.PLAYING)
 
@@ -1533,6 +1537,10 @@ class RadioWin(Gtk.Window):
 
     # Обработка сообщений содержащих ТЭГИ
     def message_tag(self, bus, message):
+        #
+        def tr_ms_call():
+            self.timer_title = GLib.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+        #
         if message.type == Gst.MessageType.TAG:
             tag_l = message.parse_tag()
             s_tag_l = []
@@ -1575,7 +1583,11 @@ class RadioWin(Gtk.Window):
                                 print('################ UnicodeEncodeError artist: self.label_title.set_label(title_set) ==> ', title_set)
                         except:
                             if self.file_play == 0 and not self.timer_title:
-                                self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                print('1 threading.Thread(target=tr_ms_call)')
+                                thread_title = threading.Thread(target=tr_ms_call)
+                                thread_title.daemon = True
+                                thread_title.start()
+
                 # Проверка наличия тэга album
                 if str(type(tag_l.get_string('album')[1])) != "<class 'NoneType'>":
                     try:
@@ -1590,8 +1602,10 @@ class RadioWin(Gtk.Window):
                                     print('################ album: self.label_title.set_label(title_set) ==> ', title_set)
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
-                                        print('1 self.timer_title album')
-                                        self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                        print('2 threading.Thread(target=tr_ms_call)')
+                                        thread_title = threading.Thread(target=tr_ms_call)
+                                        thread_title.daemon = True
+                                        thread_title.start()
                             except:
                                 title_set = ''
                                 title_set += tag_l.get_string('album')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
@@ -1600,8 +1614,10 @@ class RadioWin(Gtk.Window):
                                     print('################ album: self.label_title.set_label(title_set) ==> ', title_set)
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
-                                        print('2 self.timer_title album')
-                                        self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                        print('3 threading.Thread(target=tr_ms_call)')
+                                        thread_title = threading.Thread(target=tr_ms_call)
+                                        thread_title.daemon = True
+                                        thread_title.start()
                     except UnicodeEncodeError:
                         if tag_l.get_string('album')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text():
                             pass
@@ -1613,8 +1629,10 @@ class RadioWin(Gtk.Window):
                                 self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
                             else:
                                 if self.file_play == 0 and not self.timer_title:
-                                    print('3 self.timer_title album')
-                                    self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                    print('4 threading.Thread(target=tr_ms_call)')
+                                    thread_title = threading.Thread(target=tr_ms_call)
+                                    thread_title.daemon = True
+                                    thread_title.start()
                 # Проверка наличия тэга artist
                 if str(type(tag_l.get_string('artist')[1])) != "<class 'NoneType'>":
                     try:
@@ -1629,8 +1647,10 @@ class RadioWin(Gtk.Window):
                                     print('################ artist: self.label_title.set_label(title_set) ==> ', title_set)
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
-                                        print('1 self.timer_title artist')
-                                        self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                        print('5 threading.Thread(target=tr_ms_call)')
+                                        thread_title = threading.Thread(target=tr_ms_call)
+                                        thread_title.daemon = True
+                                        thread_title.start()
                             except:
                                 title_set = ''
                                 title_set += tag_l.get_string('artist')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
@@ -1639,8 +1659,10 @@ class RadioWin(Gtk.Window):
                                     print('################ artist: self.label_title.set_label(title_set) ==> ', title_set)
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
-                                        print('2 self.timer_title artist')
-                                        self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                        print('6 threading.Thread(target=tr_ms_call)')
+                                        thread_title = threading.Thread(target=tr_ms_call)
+                                        thread_title.daemon = True
+                                        thread_title.start()
                     except UnicodeEncodeError:
                         if tag_l.get_string('artist')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text():
                             pass
@@ -1652,8 +1674,10 @@ class RadioWin(Gtk.Window):
                                 self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
                             else:
                                 if self.file_play == 0 and not self.timer_title:
-                                    print('3 self.timer_title artist')
-                                    self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                    print('7 threading.Thread(target=tr_ms_call)')
+                                    thread_title = threading.Thread(target=tr_ms_call)
+                                    thread_title.daemon = True
+                                    thread_title.start()
                 # Проверка наличия тэга organization
                 if str(type(tag_l.get_string('organization')[1])) != "<class 'NoneType'>":
                     try:
@@ -1672,8 +1696,10 @@ class RadioWin(Gtk.Window):
                                         print('################2 organization: self.label_title.set_label(title_set) ==> ', title_set)
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
-                                        print('1 self.timer_title organization')
-                                        self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                        print('8 threading.Thread(target=tr_ms_call)')
+                                        thread_title = threading.Thread(target=tr_ms_call)
+                                        thread_title.daemon = True
+                                        thread_title.start()
                             except:
                                 title_set = ''
                                 title_set += tag_l.get_string('organization')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
@@ -1686,8 +1712,10 @@ class RadioWin(Gtk.Window):
                                         print('################4 organization: self.label_title.set_label(title_set)  => ', title_set)
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
-                                        print('2 self.timer_title organization')
-                                        self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                        print('9 threading.Thread(target=tr_ms_call)')
+                                        thread_title = threading.Thread(target=tr_ms_call)
+                                        thread_title.daemon = True
+                                        thread_title.start()
                     except UnicodeEncodeError:
                         if tag_l.get_string('organization')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text() and s_tag_l[1] == None:
                             pass
@@ -1702,8 +1730,10 @@ class RadioWin(Gtk.Window):
                                     self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
                             else:
                                 if self.file_play == 0 and not self.timer_title:
-                                    print('3 self.timer_title organization')
-                                    self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                                    print('10 threading.Thread(target=tr_ms_call)')
+                                    thread_title = threading.Thread(target=tr_ms_call)
+                                    thread_title.daemon = True
+                                    thread_title.start()
 
     # Обработка сообщений конца потока
     def message_eos(self, bus, message):
@@ -1742,6 +1772,13 @@ class RadioWin(Gtk.Window):
                 self.pipeline.set_state(Gst.State.NULL)
                 self.pipeline = 0
                 self.play_stat_now()
+
+    # Buffering
+    def message_buffering(self, bus, message):
+
+        if message.type == Gst.MessageType.BUFFERING:
+            if message.parse_buffering() > 99:
+                print('Buffering is done = ', message.parse_buffering())
 
         ###################################################
         ###################################################
@@ -1935,7 +1972,7 @@ class RadioWin(Gtk.Window):
         dialog.destroy()
 
     # Кнопка пауза
-    def on_click_bt4(self, b4):
+    def on_click_bt4(self, *b4):
         print('Нажата кнопка Pause')
         if self.pipeline:
             if '<enum GST_STATE_PLAYING of type GstState>' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]):
@@ -2857,4 +2894,5 @@ Radio_for_101.connect("delete-event", Gtk.main_quit)
 Radio_for_101.show_all()
 Radio_for_101.seek_line.hide()
 
+GObject.threads_init()
 Gtk.main()
