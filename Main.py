@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.4'
+SCRIP_VERSION = '0.0.0.5'
 
 class RadioWin(Gtk.Window):
 
@@ -196,7 +196,7 @@ class RadioWin(Gtk.Window):
         'EQ Clear 2': [0, -12, -7, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 7, 20],
         'EQ Classical': [3, 2, 1, 0, 2, 1, 2, 1, 2, 3, 1, 1, 1, 2, 4, 3, 2, 1]}
 
-        '''# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #'''# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         dinamit_opener = urllib.request.build_opener()
         dinamit_opener.addheaders = [('Host', 'www.dfm.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
@@ -205,23 +205,22 @@ class RadioWin(Gtk.Window):
 
         dinamit_res = {x[1]:'http://www.dfm.ru'+x[0] for x in re.findall(r'<p><a href="(.+?)" title="Слушать.+?"><strong>(.+?)</strong>', dinamit_http_read_1, re.M)}
 
-        dinamit_fin_dict = dict()
+        self.d_fm_dict = dict()
 
         for key, val in dinamit_res.items():
             with dinamit_opener.open(val) as dinamit_http_source_2:
                 dinamit_http_read = dinamit_http_source_2.read().decode('utf-8-sig', errors='ignor')
-                dinamit_fin_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
+                self.d_fm_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
+        #'''
 
-        print(dinamit_fin_dict)'''
-
-        # Словарь Ди-ФМ
-        self.d_fm_dict = {'DFM Динамит': 'http://st16.fmtuner.ru',
-        'ДИСКАЧ 90-х': 'http://st07.fmtuner.ru',
-        'DFM Спокойной ночи, голыши!': 'http://st05.fmtuner.ru',
-        'DFM 101,2': 'http://dfm.fmtuner.ru',
-        'DFM  Deep': 'http://st24.fmtuner.ru',
-        'DFM Club': 'http://st01.fmtuner.ru',
-        'DFM Russian Dance': 'http://st03.fmtuner.ru'}
+        ## Словарь Ди-ФМ
+        #self.d_fm_dict = {'DFM Динамит': 'http://st16.fmtuner.ru',
+        #'ДИСКАЧ 90-х': 'http://st07.fmtuner.ru',
+        #'DFM Спокойной ночи, голыши!': 'http://st05.fmtuner.ru',
+        #'DFM 101,2': 'http://dfm.fmtuner.ru',
+        #'DFM  Deep': 'http://st24.fmtuner.ru',
+        #'DFM Club': 'http://st01.fmtuner.ru',
+        #'DFM Russian Dance': 'http://st03.fmtuner.ru'}
 
         self.di_grid = Gtk.Grid()
 
@@ -573,7 +572,7 @@ class RadioWin(Gtk.Window):
         self.grid_for_IRC.set_column_spacing(1)
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        '''# Радио рекорд
+        #'''# Радио рекорд
         record_opener = urllib.request.build_opener()
         record_opener.addheaders = [('Host', 'www.radiorecord.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
@@ -582,26 +581,27 @@ class RadioWin(Gtk.Window):
 
         record_res = re.findall(r'<div class="station".+?class="station-name">(.+?)</div><div class="station-track">.+?itemprop="url">(.+?)</div></div>', http_read, re.M)
 
-        self.record_dict = {x[0]:x[1] for x in record_res}'''
+        self.record_dict = {x[0]:x[1] for x in record_res}
+        #'''
 
-        self.record_dict = {"Pump'n'Klubb": 'http://air.radiorecord.ru:8102/pump_320',
-        'Rock Radio': 'http://air.radiorecord.ru:8102/rock_320',
-        'Супердискотека 90-х': 'http://air.radiorecord.ru:8102/sd90_320',
-        'Radio Record': 'http://air.radiorecord.ru:8101/rr_320',
-        'Record Chill-Out': 'http://air.radiorecord.ru:8102/chil_320',
-        'Record Dubstep': 'http://air.radiorecord.ru:8102/dub_320',
-        'Pirate Station': 'http://air.radiorecord.ru:8102/ps_320',
-        'Vip Mix': 'http://air.radiorecord.ru:8102/vip_320',
-        'Record Club': 'http://air.radiorecord.ru:8102/club_320',
-        'Record Breaks': 'http://air.radiorecord.ru:8102/brks_320',
-        'Russian Mix': 'http://air.radiorecord.ru:8102/rus_320',
-        'Record Trap': 'http://air.radiorecord.ru:8102/trap_320',
-        'Record Hardstyle': 'http://air.radiorecord.ru:8102/teo_320',
-        'Record Deep': 'http://air.radiorecord.ru:8102/deep_320',
-        'Медляк FM': 'http://air.radiorecord.ru:8102/mdl_320',
-        'Record Dancecore': 'http://air.radiorecord.ru:8102/dc_320',
-        'Trancemission': 'http://air.radiorecord.ru:8102/tm_320',
-        'Гоп FM': 'http://air.radiorecord.ru:8102/gop_320'}
+        #self.record_dict = {"Pump'n'Klubb": 'http://air.radiorecord.ru:8102/pump_320',
+        #'Rock Radio': 'http://air.radiorecord.ru:8102/rock_320',
+        #'Супердискотека 90-х': 'http://air.radiorecord.ru:8102/sd90_320',
+        #'Radio Record': 'http://air.radiorecord.ru:8101/rr_320',
+        #'Record Chill-Out': 'http://air.radiorecord.ru:8102/chil_320',
+        #'Record Dubstep': 'http://air.radiorecord.ru:8102/dub_320',
+        #'Pirate Station': 'http://air.radiorecord.ru:8102/ps_320',
+        #'Vip Mix': 'http://air.radiorecord.ru:8102/vip_320',
+        #'Record Club': 'http://air.radiorecord.ru:8102/club_320',
+        #'Record Breaks': 'http://air.radiorecord.ru:8102/brks_320',
+        #'Russian Mix': 'http://air.radiorecord.ru:8102/rus_320',
+        #'Record Trap': 'http://air.radiorecord.ru:8102/trap_320',
+        #'Record Hardstyle': 'http://air.radiorecord.ru:8102/teo_320',
+        #'Record Deep': 'http://air.radiorecord.ru:8102/deep_320',
+        #'Медляк FM': 'http://air.radiorecord.ru:8102/mdl_320',
+        #'Record Dancecore': 'http://air.radiorecord.ru:8102/dc_320',
+        #'Trancemission': 'http://air.radiorecord.ru:8102/tm_320',
+        #'Гоп FM': 'http://air.radiorecord.ru:8102/gop_320'}
 
         self.record_liststore = Gtk.ListStore(str, bool, bool)
         for x in sorted(self.record_dict):
@@ -2197,7 +2197,6 @@ class HackURL(object):
                 print("find_url_stream2 = re.findall(file:(.+?), str(html2), re.S)")
                 print('*********************************')
                 print('*********************************')
-                print('\n')
                 print(find_url_stream2)
                 print('*********************************')
                 print('*********************************')
