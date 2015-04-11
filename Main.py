@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.5'
+SCRIP_VERSION = '0.0.0.6'
 
 class RadioWin(Gtk.Window):
 
@@ -1796,7 +1796,7 @@ class RadioWin(Gtk.Window):
         if response == Gtk.ResponseType.OK:
             self.real_adress = dialog.entry.get_text()
             print("The OK button was clicked", self.real_adress)
-            self.id_chan[0] = ['My', self.real_adres]
+            self.id_chan = ['My', self.real_adress]
             self.play_stat_now(self.real_adress)
         elif response == Gtk.ResponseType.CANCEL:
             print("The Cancel button was clicked")
