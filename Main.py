@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.8'
+SCRIP_VERSION = '0.0.0.9'
 
 class RadioWin(Gtk.Window):
 
@@ -127,7 +127,7 @@ class RadioWin(Gtk.Window):
         self.media_location = ''
         self.tooltip_now_text = ''
         # Инфо ТАГ
-        self.get_info_tag = ['header', 'title', 'artist', 'album', 'speed', 'genre', 'start-time', 'end-time']
+        self.get_info_tag = ['organization', 'header', 'title', 'artist', 'album', 'speed', 'genre', 'start-time', 'end-time']
         self.test_tag_list = []
         self.tag_organization = ''
 
@@ -861,17 +861,31 @@ class RadioWin(Gtk.Window):
         b = []
 
         for x in get_text:
-            b.append(ord(x))
+            if ord(x):
+                b.append(ord(x))
 
-        if max(b) > 256:
-            lang_ident = 'Ru'
-            return get_text.encode('cp1251', errors='ignore').decode('utf_8', errors='ignore')
-        elif max(b) < 129 and min(b) < 129:
-            lang_ident = 'En'
-            return get_text.encode('utf_8', errors='ignore').decode('utf_8', errors='ignore')
-        elif max(b) < 256 and min(b) < 256:
-            lang_ident = 'EnRu'
-            return get_text.encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
+        try:
+            if max(b) > 256 and max(b) < 2000:
+                print('1 MAX', max(b), min(b))
+                lang_ident = 'Ru'
+                return get_text.encode('cp1251', errors='ignore').decode('cp1251', errors='ignore')
+            if max(b) > 2000:
+                print('2 MAX', max(b), min(b))
+                lang_ident = 'Ru'
+                return get_text.encode('cp1251', errors='ignore').decode('utf-8-sig', errors='ignore')
+            elif max(b) < 129 and min(b) < 129:
+                print('3 MAX', max(b), min(b))
+                lang_ident = 'En'
+                return get_text.encode('utf_8', errors='ignore').decode('utf-8-sig', errors='ignore')
+            elif max(b) < 256 and min(b) < 256:
+                print('4 MAX', max(b), min(b))
+                lang_ident = 'EnRu'
+                try:
+                    return get_text.encode('latin-1').decode('utf-8-sig')
+                except:
+                    return get_text.encode('latin-1').decode('cp1251')
+        except ValueError:
+            return False
 
     ## Pop-up menu
     #def button_press(self,widget,event):
@@ -1665,200 +1679,34 @@ class RadioWin(Gtk.Window):
         #
         if message.type == Gst.MessageType.TAG:
             tag_l = message.parse_tag()
-            s_tag_l = []
-            for x in self.get_info_tag:
-                try:
-                    s_tag_l.append(re.sub(r'\/', r'', self.lang_ident_str(tag_l.get_string(str(x))[1]), re.M))
-                except:
-                    s_tag_l.append(None)
-            self.test_tag_list = s_tag_l
-            print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', 's_tag_l ==> ', s_tag_l)
-            if s_tag_l[1] != None and s_tag_l[2] != None:
-                self.label_title.set_label(s_tag_l[2]+' - '+s_tag_l[1])
-            else:
-                # Проверка наличия тэга title
-                if str(type(tag_l.get_string('title')[1])) != "<class 'NoneType'>":
-                    try:
-                        if str(tag_l.get_string('title')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')) in str(self.label_title.get_text()):
-                            pass
-                        else:
-                            try:
-                                title_set = ''
-                                title_set = re.sub(r'(\w+?),\s+(\w+?)\s', r'\2 \1 ', re.sub(r' - 0:00$', r'', tag_l.get_string('artist')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore'), re.S))+' - '
-                                title_set += re.sub(r'(\w+?),\s+(\w+?)\s', r'\2 \1 ', re.sub(r' - 0:00$', r'', tag_l.get_string('title')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore'), re.S))
-                            except:
-                                title_set = ''
-                                title_set += re.sub(r'(\w+?),\s+(\w+?)\s', r'\2 \1 ', re.sub(r' - 0:00$', r'', tag_l.get_string('title')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore'), re.S))
-                            self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                            print('################ self.label_title.set_label(title_set) ==> ', self.lang_ident_str(title_set))
-                            #self.tag_organization = self.lang_ident_str(title_set)
-                    except UnicodeDecodeError:
-                        try:
-                            if tag_l.get_string('title')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text():
-                                pass
-                            else:
-                                title_set = tag_l.get_string('artist')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore')+' - '
-                                title_set += tag_l.get_string('title')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore')
-                                self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                                print('################ UnicodeEncodeError artist: self.label_title.set_label(title_set) ==> ', title_set)
-                                #self.tag_organization = self.lang_ident_str(title_set)
-                        except:
-                            if self.file_play == 0 and not self.timer_title:
-                                print('1 threading.Thread(target=tr_ms_call)')
-                                thread_title = threading.Thread(target=tr_ms_call)
-                                thread_title.daemon = True
-                                thread_title.start()
 
-                # Проверка наличия тэга album
-                if str(type(tag_l.get_string('album')[1])) != "<class 'NoneType'>":
-                    try:
-                        if str(tag_l.get_string('album')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')) in str(self.label_title.get_text()):
-                            pass
-                        else:
-                            try:
-                                title_set = ''
-                                title_set =  tag_l.get_string('album')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
-                                if not '101.ru' in str(title_set):
-                                    self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                                    print('################ album: self.label_title.set_label(title_set) ==> ', title_set)
-                                else:
-                                    if self.file_play == 0 and not self.timer_title:
-                                        print('2 threading.Thread(target=tr_ms_call)')
-                                        thread_title = threading.Thread(target=tr_ms_call)
-                                        thread_title.daemon = True
-                                        thread_title.start()
-                            except:
-                                title_set = ''
-                                title_set += tag_l.get_string('album')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
-                                if not '101.ru' in str(title_set):
-                                    self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                                    print('################ album: self.label_title.set_label(title_set) ==> ', title_set)
-                                else:
-                                    if self.file_play == 0 and not self.timer_title:
-                                        print('3 threading.Thread(target=tr_ms_call)')
-                                        thread_title = threading.Thread(target=tr_ms_call)
-                                        thread_title.daemon = True
-                                        thread_title.start()
-                    except UnicodeEncodeError:
-                        if tag_l.get_string('album')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text():
-                            pass
-                        else:
-                            title_set = tag_l.get_string('album')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore')
-                            if not '101.ru' in str(title_set):
-                                print('################ album UnicodeEncodeError: self.label_title.set_label(title_set)')
-                                print(title_set)
-                                self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                            else:
-                                if self.file_play == 0 and not self.timer_title:
-                                    print('4 threading.Thread(target=tr_ms_call)')
-                                    thread_title = threading.Thread(target=tr_ms_call)
-                                    thread_title.daemon = True
-                                    thread_title.start()
-                # Проверка наличия тэга artist
-                if str(type(tag_l.get_string('artist')[1])) != "<class 'NoneType'>":
-                    try:
-                        if str(tag_l.get_string('artist')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')) in str(self.label_title.get_text()):
-                            pass
-                        else:
-                            try:
-                                title_set = ''
-                                title_set =  tag_l.get_string('artist')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
-                                if not '101.ru' in str(title_set):
-                                    self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                                    print('################ artist: self.label_title.set_label(title_set) ==> ', title_set)
-                                else:
-                                    if self.file_play == 0 and not self.timer_title:
-                                        print('5 threading.Thread(target=tr_ms_call)')
-                                        thread_title = threading.Thread(target=tr_ms_call)
-                                        thread_title.daemon = True
-                                        thread_title.start()
-                            except:
-                                title_set = ''
-                                title_set += tag_l.get_string('artist')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
-                                if not '101.ru' in str(title_set):
-                                    self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                                    print('################ artist: self.label_title.set_label(title_set) ==> ', title_set)
-                                else:
-                                    if self.file_play == 0 and not self.timer_title:
-                                        print('6 threading.Thread(target=tr_ms_call)')
-                                        thread_title = threading.Thread(target=tr_ms_call)
-                                        thread_title.daemon = True
-                                        thread_title.start()
-                    except UnicodeEncodeError:
-                        if tag_l.get_string('artist')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text():
-                            pass
-                        else:
-                            title_set = tag_l.get_string('artist')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore')
-                            if not '101.ru' in str(title_set):
-                                print('################ artist UnicodeEncodeError: self.label_title.set_label(title_set)')
-                                print(title_set)
-                                self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                            else:
-                                if self.file_play == 0 and not self.timer_title:
-                                    print('7 threading.Thread(target=tr_ms_call)')
-                                    thread_title = threading.Thread(target=tr_ms_call)
-                                    thread_title.daemon = True
-                                    thread_title.start()
-                # Проверка наличия тэга organization
-                if str(type(tag_l.get_string('organization')[1])) != "<class 'NoneType'>":
-                    try:
-                        if str(tag_l.get_string('organization')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')) in str(self.label_title.get_text()) and s_tag_l[1] == None:
-                            pass
-                        else:
-                            try:
-                                title_set = ''
-                                title_set +=  tag_l.get_string('organization')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
-                                if not '101.ru' in str(title_set):
-                                    if s_tag_l[1] != None:
-                                        self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S)+' - '+str(s_tag_l[1]))
-                                        print('################1 organization: self.label_title.set_label(title_set) ==> ', title_set+' - '+str(s_tag_l[1]))
-                                        self.tag_organization = title_set
-                                    else:
-                                        self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                                        print('################2 organization: self.label_title.set_label(title_set) ==> ', title_set)
-                                        self.tag_organization = title_set
-                                else:
-                                    if self.file_play == 0 and not self.timer_title:
-                                        print('8 threading.Thread(target=tr_ms_call)')
-                                        thread_title = threading.Thread(target=tr_ms_call)
-                                        thread_title.daemon = True
-                                        thread_title.start()
-                            except:
-                                title_set = ''
-                                title_set += tag_l.get_string('organization')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
-                                if not '101.ru' in str(title_set):
-                                    if s_tag_l[1] != None:
-                                        self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S)+' - '+s_tag_l[1])
-                                        print('################3 organization: self.label_title.set_label(title_set)  => ', title_set+' - '+s_tag_l[1])
-                                        self.tag_organization = title_set
-                                    else:
-                                        self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                                        print('################4 organization: self.label_title.set_label(title_set)  => ', title_set)
-                                        self.tag_organization = title_set
-                                else:
-                                    if self.file_play == 0 and not self.timer_title:
-                                        print('9 threading.Thread(target=tr_ms_call)')
-                                        thread_title = threading.Thread(target=tr_ms_call)
-                                        thread_title.daemon = True
-                                        thread_title.start()
-                    except UnicodeEncodeError:
-                        if tag_l.get_string('organization')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text() and s_tag_l[1] == None:
-                            pass
-                        else:
-                            title_set = tag_l.get_string('organization')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore')
-                            if not '101.ru' in str(title_set):
-                                if s_tag_l[1] != None:
-                                    print('################5 organization UnicodeEncodeError: self.label_title.set_label(title_set) ==> ', title_set+' - '+s_tag_l[1])
-                                    self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S)+' - '+s_tag_l[1])
-                                else:
-                                    print('################6 organization UnicodeEncodeError: self.label_title.set_label(title_set) ==> ', title_set)
-                                    self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                            else:
-                                if self.file_play == 0 and not self.timer_title:
-                                    print('10 threading.Thread(target=tr_ms_call)')
-                                    thread_title = threading.Thread(target=tr_ms_call)
-                                    thread_title.daemon = True
-                                    thread_title.start()
+            s_tag_l = []
+            for h in self.get_info_tag:
+                if tag_l.get_string(h)[0] == True:
+                    print('TAG ==> ', tag_l.get_string(h))
+                    if 'organization' in str(tag_l.get_string(h)):
+                        self.tag_organization = tag_l.get_string(h)[1]
+                    if '101.ru' in str(tag_l.get_string(h)):
+                        s_tag_l.append(re.sub(r'(101\.ru\:\s?)(.+?)$', r'\2 ', str(tag_l.get_string(h)[1]), re.M))
+                    else:
+                        s_tag_l.append(tag_l.get_string(h)[1])
+                else:
+                    pass
+
+            print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', 's_tag_l ==> ', s_tag_l)
+
+            if s_tag_l != '':
+                try:
+                    self.label_title.set_label(re.sub(r' \- 0\:00', r'', self.lang_ident_str(' - '.join(s_tag_l)), re.M))
+                    return
+                except TypeError:
+                    return
+
+            #if self.file_play == 0 and not self.timer_title:
+                #print('8 threading.Thread(target=tr_ms_call)')
+                #thread_title = threading.Thread(target=tr_ms_call)
+                #thread_title.daemon = True
+                #thread_title.start()
 
     # Обработка сообщений конца потока
     def message_eos(self, bus, message):
