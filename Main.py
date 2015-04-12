@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.6'
+SCRIP_VERSION = '0.0.0.8'
 
 class RadioWin(Gtk.Window):
 
@@ -129,6 +129,7 @@ class RadioWin(Gtk.Window):
         # Инфо ТАГ
         self.get_info_tag = ['header', 'title', 'artist', 'album', 'speed', 'genre', 'start-time', 'end-time']
         self.test_tag_list = []
+        self.tag_organization = ''
 
         ## Предустановки эквалайзера
         # Установки частот
@@ -313,6 +314,11 @@ class RadioWin(Gtk.Window):
         self.main_menu.append(self.main_menu_items_play_m)
         self.main_menu_items_play_m.connect("activate", self.on_dialog_choice)
         self.main_menu_items_play_m.show()
+        # Записать интернет адрес станции в мой плейлист
+        self.main_menu_items_save_mpls = Gtk.MenuItem.new_with_label("Записать адрес")
+        self.main_menu.append(self.main_menu_items_save_mpls)
+        self.main_menu_items_save_mpls.connect("activate", self.save_adres_in_pls)
+        self.main_menu_items_save_mpls.show()
         # Поиск персональных станций
         self.main_menu_items_play_person = Gtk.MenuItem.new_with_label("Поиск персональных станций")
         self.main_menu.append(self.main_menu_items_play_person)
@@ -640,11 +646,56 @@ class RadioWin(Gtk.Window):
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
+        self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+
+        self.my_pls_liststore = Gtk.ListStore(str, bool)
+        for x in sorted(self.my_pls_config.sections()):
+            self.my_pls_liststore.append([x, False])
+
+        self.my_pls_treeview = Gtk.TreeView(model=self.my_pls_liststore)
+        self.my_pls_treeview.set_tooltip_column(0)
+        self.my_pls_treeview.set_enable_search(True)
+        self.my_pls_treeview.set_show_expanders(False)
+
+        self.my_pls_renderer_text = Gtk.CellRendererText()
+        self.my_pls_column_text = Gtk.TreeViewColumn("Станция", self.my_pls_renderer_text, text=0)
+        self.my_pls_column_text.set_alignment(0.5)
+        self.my_pls_column_text.set_max_width(270)
+        self.my_pls_column_text.set_min_width(50)
+        self.my_pls_column_text.set_fixed_width(270)
+        self.my_pls_column_text.set_resizable(False)
+        self.my_pls_column_text.set_expand(False)
+
+        self.my_pls_treeview.append_column(self.my_pls_column_text)
+
+        self.my_pls_renderer_radio = Gtk.CellRendererToggle()
+        self.my_pls_renderer_radio.set_radio(True)
+        self.my_pls_renderer_radio.connect("toggled", self.my_pls_on_cell_radio_toggled)
+
+        self.my_pls_column_radio = Gtk.TreeViewColumn("Выбор", self.my_pls_renderer_radio, active=1)
+        self.my_pls_column_radio.set_alignment(0.5)
+        self.my_pls_column_radio.set_resizable(False)
+        self.my_pls_column_radio.set_expand(False)
+        self.my_pls_treeview.append_column(self.my_pls_column_radio)
+
+        self.my_pls_scrolled_window = Gtk.ScrolledWindow()
+        self.my_pls_scrolled_window.add(self.my_pls_treeview)
+        self.my_pls_scrolled_window.set_min_content_height(300)
+        self.my_pls_scrolled_window.set_min_content_width(300)
+        self.my_pls_scrolled_window.set_size_request(300, 300)
+
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         # Создание табов для порталов
         self.main_note_for_cont = Gtk.Notebook()
         self.main_note_for_cont.set_border_width(5)
         self.main_note_for_cont.set_scrollable(True)
         self.main_note_for_cont.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.0, 1.0, 1.0))
+        self.main_note_for_cont.set_property('expand', True)
         self.main_note_for_cont.set_property('enable-popup', True)
         self.main_note_for_cont.set_property('show-border', True)
 
@@ -653,6 +704,7 @@ class RadioWin(Gtk.Window):
         self.main_note_for_cont.append_page(self.di_scrolled_window, Gtk.Label('Radio Di-FM'))
         self.main_note_for_cont.append_page(self.grid_for_IRC, Gtk.Label('Internet Radio'))
         self.main_note_for_cont.append_page(self.record_scrolled_window, Gtk.Label('Radio Record'))
+        self.main_note_for_cont.append_page(self.my_pls_scrolled_window, Gtk.Label('My Play List'))
 
         # Создание кнопки громкости
         self.scal_sl = Gtk.VolumeButton()
@@ -802,6 +854,25 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
+    # Распознать кодировку
+    def lang_ident_str(self, get_text):
+
+        lang_ident = ''
+        b = []
+
+        for x in get_text:
+            b.append(ord(x))
+
+        if max(b) > 256:
+            lang_ident = 'Ru'
+            return get_text.encode('cp1251', errors='ignore').decode('utf_8', errors='ignore')
+        elif max(b) < 129 and min(b) < 129:
+            lang_ident = 'En'
+            return get_text.encode('utf_8', errors='ignore').decode('utf_8', errors='ignore')
+        elif max(b) < 256 and min(b) < 256:
+            lang_ident = 'EnRu'
+            return get_text.encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
+
     ## Pop-up menu
     #def button_press(self,widget,event):
         #if event.button == 3:
@@ -830,6 +901,39 @@ class RadioWin(Gtk.Window):
         about.set_logo(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
         about.run()
         about.destroy()
+
+    # Реакция на выбор в окне MyPLS
+    def save_adres_in_pls(self, *args):
+
+        self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
+        self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+        self.my_pls_config.add_section(self.tag_organization)
+        self.my_pls_config.set(self.tag_organization, 'addrstation', self.real_adress)
+        with open(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini', 'w') as configfile:
+            self.my_pls_config.write(configfile)
+
+        self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
+        self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+
+        self.my_pls_liststore.clear()
+
+        for x in sorted(self.my_pls_config.sections()):
+            self.my_pls_liststore.append([x, False])
+
+    # Реакция на выбор в окне MyPLS
+    def my_pls_on_cell_radio_toggled(self, widget, path):
+        selected_path = Gtk.TreePath(path)
+        c = self.my_pls_liststore.get_iter(path)
+        for key in self.my_pls_config.sections():
+                if key == self.my_pls_liststore.get_value(c, 0):
+                    self.id_chan = ['My', self.my_pls_config[key]['addrstation']]
+                    self.real_adress = self.my_pls_config[key]['addrstation']
+                    print('----------------------------------------')
+                    print(self.my_pls_liststore.get_value(c, 0))
+                    print(self.my_pls_config[key]['addrstation'])
+                    print('----------------------------------------')
+        for row in self.my_pls_liststore:
+            row[1] = (row.path == selected_path)
 
     # Реакция на выбор в окне RadioRecord
     def record_on_cell_radio_toggled(self, widget, path):
@@ -1129,11 +1233,28 @@ class RadioWin(Gtk.Window):
     # Модальное окно с прогрессбаром в отдельном потоке
     def on_refresh_list(self, widget):
 
+        self.liststore_101.clear()
+
         def update_progess(fr):
+
             progress.set_fraction(float(fr/100))
             progress.set_text(str(int(fr))+' %')
+
             if progress.get_fraction() == 1.0:
+
+                with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig') as file_w:
+                    read_adr = file_w.readlines()
+
+                self.read_list_adr = []
+
+                for x in read_adr:
+                    self.read_list_adr.append(re.findall(r'(.+?)\s+=\s(.+?)\n', x, re.S))
+
+                for x in self.read_list_adr:
+                    self.liststore_101.append([str(x[0][0]), False])
+
                 win.destroy()
+
             return False
 
         def example_target():
@@ -1205,8 +1326,9 @@ class RadioWin(Gtk.Window):
         """ ***** location ==> 23:23:16 <class 'tuple'> 2 ('http://st16.fmtuner.ru', 'D-FM') """
         if location == 0:
             self.label_title.set_text('Канал не передает звукового потока!')
-            raise IOError("Источник %s не найден" % location)
+            raise IOError(" 1 Источник %s не найден" % location)
             return 0
+        print('len(location)', len(location), 'location = ', location)
         if len(location) != 0:
             print('***** location ==> '+str(datetime.datetime.now().strftime('%H:%M:%S')), type(location), len(location), location)
 
@@ -1217,7 +1339,7 @@ class RadioWin(Gtk.Window):
                 if location[0] == 0:
                     self.label_title.set_text('Канал не передает звукового потока!')
                     return 0
-                    print('Источник %s не найден' % location)
+                    print('2 Источник %s не найден' % location)
                     raise IOError("Источник %s не найден" % location)
                     self.My_ERROR_Mess = 0
 
@@ -1261,7 +1383,7 @@ class RadioWin(Gtk.Window):
             return source
         else:
             self.label_title.set_text('Канал не передает звукового потока!')
-            raise IOError("Источник %s не найден" % location)
+            raise IOError(" 3 Источник %s не найден" % location)
             return 0
 
     # Создание объекта Pipeline
@@ -1546,13 +1668,10 @@ class RadioWin(Gtk.Window):
             s_tag_l = []
             for x in self.get_info_tag:
                 try:
-                    s_tag_l.append(re.sub(r'\/', r'', str(tag_l.get_string(str(x))[1].encode('utf-8-sig', errors='ignore').decode('utf_8_sig', errors='ignore')), re.M))
+                    s_tag_l.append(re.sub(r'\/', r'', self.lang_ident_str(tag_l.get_string(str(x))[1]), re.M))
                 except:
                     s_tag_l.append(None)
-            if self.test_tag_list == s_tag_l:
-                return
-            else:
-                self.test_tag_list = s_tag_l
+            self.test_tag_list = s_tag_l
             print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', 's_tag_l ==> ', s_tag_l)
             if s_tag_l[1] != None and s_tag_l[2] != None:
                 self.label_title.set_label(s_tag_l[2]+' - '+s_tag_l[1])
@@ -1571,7 +1690,8 @@ class RadioWin(Gtk.Window):
                                 title_set = ''
                                 title_set += re.sub(r'(\w+?),\s+(\w+?)\s', r'\2 \1 ', re.sub(r' - 0:00$', r'', tag_l.get_string('title')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore'), re.S))
                             self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
-                            print('################ self.label_title.set_label(title_set) ==> ', title_set)
+                            print('################ self.label_title.set_label(title_set) ==> ', self.lang_ident_str(title_set))
+                            #self.tag_organization = self.lang_ident_str(title_set)
                     except UnicodeDecodeError:
                         try:
                             if tag_l.get_string('title')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore') in self.label_title.get_text():
@@ -1581,6 +1701,7 @@ class RadioWin(Gtk.Window):
                                 title_set += tag_l.get_string('title')[1].encode('utf-8-sig', errors='ignore').decode('utf-8-sig', errors='ignore')
                                 self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
                                 print('################ UnicodeEncodeError artist: self.label_title.set_label(title_set) ==> ', title_set)
+                                #self.tag_organization = self.lang_ident_str(title_set)
                         except:
                             if self.file_play == 0 and not self.timer_title:
                                 print('1 threading.Thread(target=tr_ms_call)')
@@ -1686,14 +1807,16 @@ class RadioWin(Gtk.Window):
                         else:
                             try:
                                 title_set = ''
-                                title_set =  tag_l.get_string('organization')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
+                                title_set +=  tag_l.get_string('organization')[1].encode('latin-1', errors='ignore').decode('cp1251', errors='ignore')
                                 if not '101.ru' in str(title_set):
                                     if s_tag_l[1] != None:
                                         self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S)+' - '+str(s_tag_l[1]))
                                         print('################1 organization: self.label_title.set_label(title_set) ==> ', title_set+' - '+str(s_tag_l[1]))
+                                        self.tag_organization = title_set
                                     else:
                                         self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
                                         print('################2 organization: self.label_title.set_label(title_set) ==> ', title_set)
+                                        self.tag_organization = title_set
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
                                         print('8 threading.Thread(target=tr_ms_call)')
@@ -1707,9 +1830,11 @@ class RadioWin(Gtk.Window):
                                     if s_tag_l[1] != None:
                                         self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S)+' - '+s_tag_l[1])
                                         print('################3 organization: self.label_title.set_label(title_set)  => ', title_set+' - '+s_tag_l[1])
+                                        self.tag_organization = title_set
                                     else:
                                         self.label_title.set_label(re.sub(r'\s?(\w+)\s+(The)\s+', r' \2 \1 ', title_set, re.S))
                                         print('################4 organization: self.label_title.set_label(title_set)  => ', title_set)
+                                        self.tag_organization = title_set
                                 else:
                                     if self.file_play == 0 and not self.timer_title:
                                         print('9 threading.Thread(target=tr_ms_call)')
@@ -1837,7 +1962,10 @@ class RadioWin(Gtk.Window):
             self.file_play = 0
             self.radio_play = 1
             print('Включение радио 1 '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            self.uri = f_name
+            if f_name:
+                self.uri = f_name
+            else:
+                self.uri = self.id_chan[1]
             if not self.pipeline:
                 for x in range(3):
                     self.button_array[x].hide()
@@ -1984,7 +2112,7 @@ class RadioWin(Gtk.Window):
 
     # Кнопка стоп
     def on_click_bt5(self, *b5):
-        print('Нажата кнопка Stop', b5)
+        print('Нажата кнопка Stop')
         self.tooltip_now_text = ''
         self.id_chan = [0,0]
         self.real_adress = ''
