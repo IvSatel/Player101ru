@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.9'
+SCRIP_VERSION = '0.0.0.10'
 
 class RadioWin(Gtk.Window):
 
@@ -208,20 +208,20 @@ class RadioWin(Gtk.Window):
 
         self.d_fm_dict = dict()
 
-        for key, val in dinamit_res.items():
-            with dinamit_opener.open(val) as dinamit_http_source_2:
-                dinamit_http_read = dinamit_http_source_2.read().decode('utf-8-sig', errors='ignor')
-                self.d_fm_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
-        #'''
-
-        ## Словарь Ди-ФМ
-        #self.d_fm_dict = {'DFM Динамит': 'http://st16.fmtuner.ru',
-        #'ДИСКАЧ 90-х': 'http://st07.fmtuner.ru',
-        #'DFM Спокойной ночи, голыши!': 'http://st05.fmtuner.ru',
-        #'DFM 101,2': 'http://dfm.fmtuner.ru',
-        #'DFM  Deep': 'http://st24.fmtuner.ru',
-        #'DFM Club': 'http://st01.fmtuner.ru',
-        #'DFM Russian Dance': 'http://st03.fmtuner.ru'}
+        try:
+            for key, val in dinamit_res.items():
+                with dinamit_opener.open(val) as dinamit_http_source_2:
+                    dinamit_http_read = dinamit_http_source_2.read().decode('utf-8-sig', errors='ignor')
+                    self.d_fm_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
+        except:
+            ## Словарь Ди-ФМ
+            self.d_fm_dict = {'DFM Динамит': 'http://st16.fmtuner.ru',
+            'ДИСКАЧ 90-х': 'http://st07.fmtuner.ru',
+            'DFM Спокойной ночи, голыши!': 'http://st05.fmtuner.ru',
+            'DFM 101,2': 'http://dfm.fmtuner.ru',
+            'DFM  Deep': 'http://st24.fmtuner.ru',
+            'DFM Club': 'http://st01.fmtuner.ru',
+            'DFM Russian Dance': 'http://st03.fmtuner.ru'}
 
         self.di_grid = Gtk.Grid()
 
@@ -347,6 +347,18 @@ class RadioWin(Gtk.Window):
         self.main_menu.append(self.main_menu_items_play_best_st)
         self.main_menu_items_play_best_st.connect("activate", self.on_play_best_st, 1)
         self.main_menu_items_play_best_st.show()
+
+        self.vol_menu = Gtk.Menu()
+        # Громкость
+        self.main_menu_items_vol = Gtk.MenuItem.new_with_label("Громкость")
+        self.main_menu_items_vol.set_submenu(self.vol_menu)
+        self.main_menu.append(self.main_menu_items_vol)
+        self.main_menu_items_vol.show()
+        for x in range(0, 100, 5):
+            self.vol_menu.append(Gtk.MenuItem.new_with_label(str(x)))
+        for x in self.vol_menu:
+            x.connect("activate", self.on_valu_ch, x.get_label())
+            x.show()
 
         # Пауза
         self.main_menu_items_pause = Gtk.MenuItem.new_with_label("Пауза")
@@ -582,32 +594,31 @@ class RadioWin(Gtk.Window):
         record_opener = urllib.request.build_opener()
         record_opener.addheaders = [('Host', 'www.radiorecord.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
-        with record_opener.open('http://www.radiorecord.ru/player/') as http_source:
-            http_read = http_source.read().decode('utf-8-sig', errors='ignore')
+        try:
+            with record_opener.open('http://www.radiorecord.ru/player/') as http_source:
+                http_read = http_source.read().decode('utf-8-sig', errors='ignore')
+            record_res = re.findall(r'<div class="station".+?class="station-name">(.+?)</div><div class="station-track">.+?itemprop="url">(.+?)</div></div>', http_read, re.M)
 
-        record_res = re.findall(r'<div class="station".+?class="station-name">(.+?)</div><div class="station-track">.+?itemprop="url">(.+?)</div></div>', http_read, re.M)
-
-        self.record_dict = {x[0]:x[1] for x in record_res}
-        #'''
-
-        #self.record_dict = {"Pump'n'Klubb": 'http://air.radiorecord.ru:8102/pump_320',
-        #'Rock Radio': 'http://air.radiorecord.ru:8102/rock_320',
-        #'Супердискотека 90-х': 'http://air.radiorecord.ru:8102/sd90_320',
-        #'Radio Record': 'http://air.radiorecord.ru:8101/rr_320',
-        #'Record Chill-Out': 'http://air.radiorecord.ru:8102/chil_320',
-        #'Record Dubstep': 'http://air.radiorecord.ru:8102/dub_320',
-        #'Pirate Station': 'http://air.radiorecord.ru:8102/ps_320',
-        #'Vip Mix': 'http://air.radiorecord.ru:8102/vip_320',
-        #'Record Club': 'http://air.radiorecord.ru:8102/club_320',
-        #'Record Breaks': 'http://air.radiorecord.ru:8102/brks_320',
-        #'Russian Mix': 'http://air.radiorecord.ru:8102/rus_320',
-        #'Record Trap': 'http://air.radiorecord.ru:8102/trap_320',
-        #'Record Hardstyle': 'http://air.radiorecord.ru:8102/teo_320',
-        #'Record Deep': 'http://air.radiorecord.ru:8102/deep_320',
-        #'Медляк FM': 'http://air.radiorecord.ru:8102/mdl_320',
-        #'Record Dancecore': 'http://air.radiorecord.ru:8102/dc_320',
-        #'Trancemission': 'http://air.radiorecord.ru:8102/tm_320',
-        #'Гоп FM': 'http://air.radiorecord.ru:8102/gop_320'}
+            self.record_dict = {x[0]:x[1] for x in record_res}
+        except:
+            self.record_dict = {"Pump'n'Klubb": 'http://air.radiorecord.ru:8102/pump_320',
+            'Rock Radio': 'http://air.radiorecord.ru:8102/rock_320',
+            'Супердискотека 90-х': 'http://air.radiorecord.ru:8102/sd90_320',
+            'Radio Record': 'http://air.radiorecord.ru:8101/rr_320',
+            'Record Chill-Out': 'http://air.radiorecord.ru:8102/chil_320',
+            'Record Dubstep': 'http://air.radiorecord.ru:8102/dub_320',
+            'Pirate Station': 'http://air.radiorecord.ru:8102/ps_320',
+            'Vip Mix': 'http://air.radiorecord.ru:8102/vip_320',
+            'Record Club': 'http://air.radiorecord.ru:8102/club_320',
+            'Record Breaks': 'http://air.radiorecord.ru:8102/brks_320',
+            'Russian Mix': 'http://air.radiorecord.ru:8102/rus_320',
+            'Record Trap': 'http://air.radiorecord.ru:8102/trap_320',
+            'Record Hardstyle': 'http://air.radiorecord.ru:8102/teo_320',
+            'Record Deep': 'http://air.radiorecord.ru:8102/deep_320',
+            'Медляк FM': 'http://air.radiorecord.ru:8102/mdl_320',
+            'Record Dancecore': 'http://air.radiorecord.ru:8102/dc_320',
+            'Trancemission': 'http://air.radiorecord.ru:8102/tm_320',
+            'Гоп FM': 'http://air.radiorecord.ru:8102/gop_320'}
 
         self.record_liststore = Gtk.ListStore(str, bool, bool)
         for x in sorted(self.record_dict):
@@ -872,7 +883,10 @@ class RadioWin(Gtk.Window):
             if max(b) > 2000:
                 print('2 MAX', max(b), min(b))
                 lang_ident = 'Ru'
-                return get_text.encode('cp1251', errors='ignore').decode('utf-8-sig', errors='ignore')
+                try:
+                    return get_text.encode('cp1251').decode('utf-8-sig')
+                except:
+                    return get_text.encode('cp1251').decode('cp1251')
             elif max(b) < 129 and min(b) < 129:
                 print('3 MAX', max(b), min(b))
                 lang_ident = 'En'
@@ -1545,6 +1559,11 @@ class RadioWin(Gtk.Window):
 
     # Получение названия
     def get_title_from_url(self, adres):
+        try:
+            print('adres[0] = ', int(adres[0]))
+        except ValueError:
+            GObject.source_remove(self.timer_title)
+            return False
         id_chan_req  = adres[0]
         title_opener = urllib.request.build_opener()
         title_opener.addheaders = [
@@ -1554,7 +1573,7 @@ class RadioWin(Gtk.Window):
             # Запрос
             with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
                 razdel_title_http = source_title_http.read().decode('utf-8-sig', errors='ignore')
-            find_url_stream = re.findall(r'</i>(.+?)</a></h4>', razdel_title_http, re.M)
+            find_url_stream = re.findall(r'class\="icon.+?>(\w.+?)<', razdel_title_http, re.M)
         except HTTPError as e:
             print('The server couldn\'t fulfill the request.')
             print('Error code: ', e.code)
@@ -1563,9 +1582,14 @@ class RadioWin(Gtk.Window):
             print('Reason: ', e.reason)
         try:
             print('*****    get_title_from_url(self, adres) ==> ', find_url_stream[0], '$<==#==>$', self.label_title.get_text())
-            if str(self.label_title.get_text()) == '' and str(self.label_title.get_text()) != str(find_url_stream[0]) and not '101.ru:' in str(find_url_stream[0]):
-                print('Устанавливается значение title из get_title_from_url')
-                self.label_title.set_label(find_url_stream[0])
+            #if str(self.label_title.get_text()) == '' and str(self.label_title.get_text()) != str(find_url_stream[0]) and not '101.ru:' in str(find_url_stream[0]):
+
+            print('Устанавливается значение title из get_title_from_url')
+            print('self.label_title.get_text()', self.label_title.get_text())
+            print('find_url_stream[0]', find_url_stream[0])
+            if not str(find_url_stream[0]) in str(self.label_title.get_text()):
+                a = self.label_title.get_text()
+                self.label_title.set_label(str(a)+' - '+str(find_url_stream[0]))
                 GObject.source_remove(self.timer_title)
         except IndexError:
             if str(self.label_title.get_text()) == '':
@@ -1698,15 +1722,15 @@ class RadioWin(Gtk.Window):
             if s_tag_l != '':
                 try:
                     self.label_title.set_label(re.sub(r' \- 0\:00', r'', self.lang_ident_str(' - '.join(s_tag_l)), re.M))
-                    return
+                    #return
                 except TypeError:
                     return
 
-            #if self.file_play == 0 and not self.timer_title:
-                #print('8 threading.Thread(target=tr_ms_call)')
-                #thread_title = threading.Thread(target=tr_ms_call)
-                #thread_title.daemon = True
-                #thread_title.start()
+            if self.file_play == 0 and not self.timer_title:
+                print('8 threading.Thread(target=tr_ms_call)')
+                thread_title = threading.Thread(target=tr_ms_call)
+                thread_title.daemon = True
+                thread_title.start()
 
     # Обработка сообщений конца потока
     def message_eos(self, bus, message):
@@ -2019,9 +2043,16 @@ class RadioWin(Gtk.Window):
     # Функция установки громкости
     def on_valu_ch(self, scale, value):
         if self.pipeline:
-            self.real_vol_save = round(value, 2)
-            get_param_volume = round(value, 2)
-            self.volume.set_property('volume', get_param_volume)
+            if "<class 'str'>" == str(type(value)):
+                value = float(value)/100
+                self.real_vol_save = round(value, 2)
+                get_param_volume = round(value, 2)
+                self.scal_sl.set_value(value)
+                self.volume.set_property('volume', get_param_volume)
+            else:
+                self.real_vol_save = round(value, 2)
+                get_param_volume = round(value, 2)
+                self.volume.set_property('volume', get_param_volume)
 
     # Диалог редактирования пользовательских пресетов эквалайзера
     def edit_eq(self, widget):
