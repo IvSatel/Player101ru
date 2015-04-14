@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.11'
+SCRIP_VERSION = '0.0.0.12'
 
 class RadioWin(Gtk.Window):
 
@@ -1589,7 +1589,7 @@ class RadioWin(Gtk.Window):
             print('Устанавливается значение title из get_title_from_url')
             print('self.label_title.get_text()', self.label_title.get_text())
             print('find_url_stream[0]', find_url_stream[0])
-            if not str(find_url_stream[0]) in str(self.label_title.get_text()):
+            if not self.label_title.get_text().find(find_url_stream[0]):
                 a = self.label_title.get_text()
                 self.label_title.set_label(str(a)+' - '+str(find_url_stream[0]))
                 if self.timer_title:
