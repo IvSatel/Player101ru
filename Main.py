@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.12'
+SCRIP_VERSION = '0.0.0.14'
 
 class RadioWin(Gtk.Window):
 
@@ -1388,8 +1388,6 @@ class RadioWin(Gtk.Window):
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
                 source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
                 source.set_property('automatic-redirect', True)
-                source.set_property('keep-alive', True)
-                source.set_property('is-live', True)
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник HTTP "+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -1434,7 +1432,6 @@ class RadioWin(Gtk.Window):
         equalizer = Gst.ElementFactory.make('equalizer-nbands', 'equalizer-nbands')
         self.volume = Gst.ElementFactory.make('volume', 'volume')
         level = Gst.ElementFactory.make('level', 'level')
-        #queue = Gst.ElementFactory.make('multiqueue', 'myqueue')
         queue = Gst.ElementFactory.make('queue2', 'myqueue')
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
 
@@ -1443,6 +1440,7 @@ class RadioWin(Gtk.Window):
         audioconvert.set_property('dithering', 'High frequency triangular dithering')
         audioconvert.set_property('noise-shaping', 'High 8-pole noise shaping')
         queue.set_property('use-buffering', True)
+        queue.set_property('max-size-bytes', 5242880)
 
         print('type(self.eq_set_preset) ==> ', type(self.eq_set_preset), ' ', str(datetime.datetime.now().strftime('%H:%M:%S')))
 
@@ -1780,6 +1778,9 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             if message.parse_buffering() > 99:
                 print('Buffering is done = ', message.parse_buffering())
+                self.pipeline.set_state(Gst.State.PLAYING)
+            else:
+                self.pipeline.set_state(Gst.State.PAUSED)
 
         ###################################################
         ###################################################
