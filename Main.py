@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.10'
+SCRIP_VERSION = '0.0.0.11'
 
 class RadioWin(Gtk.Window):
 
@@ -357,7 +357,7 @@ class RadioWin(Gtk.Window):
         for x in range(0, 100, 5):
             self.vol_menu.append(Gtk.MenuItem.new_with_label(str(x)))
         for x in self.vol_menu:
-            x.connect("activate", self.on_valu_ch, x.get_label())
+            x.connect("activate", self.on_valu_ch, float(x.get_label())/100)
             x.show()
 
         # Пауза
@@ -723,7 +723,7 @@ class RadioWin(Gtk.Window):
         self.scal_sl.set_adjustment(Gtk.Adjustment.new(0.50, 0.00, 1.01, 0.01, 0.02, 0.01))
         self.scal_sl.set_relief(2)
         self.scal_sl.set_border_width(10)
-        self.scal_sl.connect("value-changed", self.on_valu_ch)
+        self.scal_sl.connect("value-changed", self.on_valu_ch, self.scal_sl.get_value()/100)
 
         ## Создание левого и правого "Эквалайзеров"
         self.level_bar_l = Gtk.ProgressBar.new()
@@ -1554,7 +1554,8 @@ class RadioWin(Gtk.Window):
                     self.label_ltime.set_label('00:00:00:00')
             return True
         else:
-            GObject.source_remove(self.timer_time)
+            if self.timer_time:
+                GObject.source_remove(self.timer_time)
             return False
 
     # Получение названия
@@ -1562,7 +1563,8 @@ class RadioWin(Gtk.Window):
         try:
             print('adres[0] = ', int(adres[0]))
         except ValueError:
-            GObject.source_remove(self.timer_title)
+            if self.timer_title:
+                GObject.source_remove(self.timer_title)
             return False
         id_chan_req  = adres[0]
         title_opener = urllib.request.build_opener()
@@ -1590,11 +1592,13 @@ class RadioWin(Gtk.Window):
             if not str(find_url_stream[0]) in str(self.label_title.get_text()):
                 a = self.label_title.get_text()
                 self.label_title.set_label(str(a)+' - '+str(find_url_stream[0]))
-                GObject.source_remove(self.timer_title)
+                if self.timer_title:
+                    GObject.source_remove(self.timer_title)
         except IndexError:
             if str(self.label_title.get_text()) == '':
                 self.label_title.set_label('')
-                GObject.source_remove(self.timer_title)
+                if self.timer_title:
+                    GObject.source_remove(self.timer_title)
 
     # Установка нового места начала востпроизведения
     def new_seek_pos_set(self, bas, pos):
@@ -1765,7 +1769,7 @@ class RadioWin(Gtk.Window):
                     print('************** self.on_click_bt5()')
                     self.on_click_bt5()
             elif self.radio_play == 1:
-                print('Gst.MessageType.EOS self.My_ERROR_Mess = '+str(datetime.datetime.now().strftime('%H:%M:%S')), self.My_ERROR_Mess, 'total_length = ', total_length)
+                print('Gst.MessageType.EOS self.My_ERROR_Mess = '+str(datetime.datetime.now().strftime('%H:%M:%S')), self.My_ERROR_Mess)
                 self.pipeline.set_state(Gst.State.NULL)
                 self.pipeline = 0
                 self.play_stat_now()
@@ -2041,18 +2045,12 @@ class RadioWin(Gtk.Window):
                 eq_config.write(cfgfile)
 
     # Функция установки громкости
-    def on_valu_ch(self, scale, value):
-        if self.pipeline:
-            if "<class 'str'>" == str(type(value)):
-                value = float(value)/100
-                self.real_vol_save = round(value, 2)
-                get_param_volume = round(value, 2)
-                self.scal_sl.set_value(value)
-                self.volume.set_property('volume', get_param_volume)
-            else:
-                self.real_vol_save = round(value, 2)
-                get_param_volume = round(value, 2)
-                self.volume.set_property('volume', get_param_volume)
+    def on_valu_ch(self, scale, r_value, *args):
+        if self.pipeline != 0 and self.real_vol_save != round(r_value, 2):
+            self.real_vol_save = round(r_value, 2)
+            self.scal_sl.set_value(round(r_value, 2))
+            get_param_volume = round(r_value, 2)
+            self.volume.set_property('volume', get_param_volume)
 
     # Диалог редактирования пользовательских пресетов эквалайзера
     def edit_eq(self, widget):
