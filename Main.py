@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.14'
+SCRIP_VERSION = '0.0.0.15'
 
 class RadioWin(Gtk.Window):
 
@@ -315,17 +315,17 @@ class RadioWin(Gtk.Window):
         self.main_menu_items_play_m.connect("activate", self.on_dialog_choice)
         self.main_menu_items_play_m.show()
         # Записать интернет адрес станции в мой плейлист
-        self.main_menu_items_save_mpls = Gtk.MenuItem.new_with_label("Записать адрес")
+        self.main_menu_items_save_mpls = Gtk.MenuItem.new_with_label("Сохранить адрес в мой плейлист")
         self.main_menu.append(self.main_menu_items_save_mpls)
         self.main_menu_items_save_mpls.connect("activate", self.save_adres_in_pls)
         self.main_menu_items_save_mpls.show()
         # Поиск персональных станций
-        self.main_menu_items_play_person = Gtk.MenuItem.new_with_label("Поиск персональных станций")
+        self.main_menu_items_play_person = Gtk.MenuItem.new_with_label("Поиск персональных станций 101.ru")
         self.main_menu.append(self.main_menu_items_play_person)
         self.main_menu_items_play_person.connect("activate", self.search_in_personal_station)
         self.main_menu_items_play_person.show()
         # Обновить адресный лист
-        self.main_menu_items_refresh_pl = Gtk.MenuItem.new_with_label("Обновить адресный лист")
+        self.main_menu_items_refresh_pl = Gtk.MenuItem.new_with_label("Обновить адресный лист 101.ru")
         self.main_menu.append(self.main_menu_items_refresh_pl)
         self.main_menu_items_refresh_pl.connect("activate", self.on_refresh_list)
         self.main_menu_items_refresh_pl.show()
@@ -474,9 +474,9 @@ class RadioWin(Gtk.Window):
             self.w_grid = Gtk.Grid()
             self.w_label = Gtk.Label('Файл с адресами Internet Radio COM не найден!')
             self.w_label.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.0, 0.2, 0.0))
-            self.w_batton1 = Gtk.Button('Создать стандартный файл настроек')
+            self.w_batton1 = Gtk.Button('Создать стандартный файл адресов')
             self.w_batton1.connect('clicked', self.create_irc_list, 1)
-            self.w_batton2 = Gtk.Button('Создать расширенный файл настроек')
+            self.w_batton2 = Gtk.Button('Создать расширенный файл адресов')
             self.w_batton2.connect('clicked', self.create_irc_list, 2)
             self.w_grid.attach(self.w_label, 1, 1, 5, 1)
             self.w_grid.attach(self.w_batton1, 1, 2, 5, 1)
@@ -592,7 +592,8 @@ class RadioWin(Gtk.Window):
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         #'''# Радио рекорд
         record_opener = urllib.request.build_opener()
-        record_opener.addheaders = [('Host', 'www.radiorecord.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+        record_opener.addheaders = [('Host', 'www.radiorecord.ru'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
 
         try:
             with record_opener.open('http://www.radiorecord.ru/player/') as http_source:
@@ -601,7 +602,8 @@ class RadioWin(Gtk.Window):
 
             self.record_dict = {x[0]:x[1] for x in record_res}
         except:
-            self.record_dict = {"Pump'n'Klubb": 'http://air.radiorecord.ru:8102/pump_320',
+            self.record_dict = {
+            "Pump'n'Klubb": 'http://air.radiorecord.ru:8102/pump_320',
             'Rock Radio': 'http://air.radiorecord.ru:8102/rock_320',
             'Супердискотека 90-х': 'http://air.radiorecord.ru:8102/sd90_320',
             'Radio Record': 'http://air.radiorecord.ru:8101/rr_320',
@@ -880,7 +882,7 @@ class RadioWin(Gtk.Window):
                 print('1 MAX', max(b), min(b))
                 lang_ident = 'Ru'
                 return get_text.encode('cp1251', errors='ignore').decode('cp1251', errors='ignore')
-            if max(b) > 2000:
+            elif max(b) > 2000:
                 print('2 MAX', max(b), min(b))
                 lang_ident = 'Ru'
                 try:
@@ -932,7 +934,6 @@ class RadioWin(Gtk.Window):
 
     # Реакция на выбор в окне MyPLS
     def save_adres_in_pls(self, *args):
-
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
         self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
         self.my_pls_config.add_section(self.tag_organization)
@@ -1110,7 +1111,7 @@ class RadioWin(Gtk.Window):
 
             dialog.destroy()
 
-    # Реакция на выбор в таблице Internet Radio Top
+    # Реакция на выбор в таблице Internet Radio Com Top
     def on_cell_radio_toggled_RIC(self, widget, path):
         self.RIC_url = ''
         if self.file_play == 0 and self.radio_play == 0:
@@ -1128,7 +1129,7 @@ class RadioWin(Gtk.Window):
             for row in self.liststore_RIC:
                 row[1] = (row.path == selected_path)
 
-    # Реакция на выбор Internet Radio Sub
+    # Реакция на выбор Internet Radio Com Sub
     def on_cell_radio_toggled_s_RIC(self, widget, path):
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
@@ -1372,7 +1373,7 @@ class RadioWin(Gtk.Window):
                     self.My_ERROR_Mess = 0
 
             media_for_location = location[0]
-            if location[0].startswith('.flv'):
+            if location[0].endswith('.flv'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('uridecodebin', 'source')
                 source.set_property('uri', location[0])
@@ -1397,7 +1398,7 @@ class RadioWin(Gtk.Window):
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник RTMP "+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            elif not location[0].startswith('http') or not location[0].startswith('rtmp'):
+            elif not location[0].startswith('http') or not location[0].startswith('rtmp') and location[0].endswith('.flv'):
                 self.media_location = 'file://'+str(location[0])
                 source = Gst.ElementFactory.make('filesrc', 'source')
                 print('************* ==> Источник файл '+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -1419,8 +1420,7 @@ class RadioWin(Gtk.Window):
             print('Name Gst.Pad => ', pad.get_name())
             caps = pad.get_current_caps()
             print('Name Gst.Caps => ', caps.to_string())
-            #pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
-            pad.link(audioconvert.get_static_pad('sink'))
+            pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
 
         ## Создаем нужные элементы для плеера
         source = self.create_source(args)
@@ -1582,8 +1582,6 @@ class RadioWin(Gtk.Window):
             print('Reason: ', e.reason)
         try:
             print('*****    get_title_from_url(self, adres) ==> ', find_url_stream[0], '$<==#==>$', self.label_title.get_text())
-            #if str(self.label_title.get_text()) == '' and str(self.label_title.get_text()) != str(find_url_stream[0]) and not '101.ru:' in str(find_url_stream[0]):
-
             print('Устанавливается значение title из get_title_from_url')
             print('self.label_title.get_text()', self.label_title.get_text())
             print('find_url_stream[0]', find_url_stream[0])
@@ -1685,7 +1683,6 @@ class RadioWin(Gtk.Window):
             print('Получено ERROR сообщение с ошибкой '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', type(mpe), '\n', mpe)
             if 'Redirect to: (NULL)' in str(mpe):
                 print('if Redirect to: (NULL) in str(mpe): ==> self.pipeline.set_state(Gst.State.NULL) '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-                #
                 try:
                     socket.gethostbyaddr('www.yandex.ru')
                     self.pipeline.set_state(Gst.State.NULL)
@@ -1699,10 +1696,8 @@ class RadioWin(Gtk.Window):
 
     # Обработка сообщений содержащих ТЭГИ
     def message_tag(self, bus, message):
-        #
         def tr_ms_call():
             self.timer_title = GLib.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
-        #
         if message.type == Gst.MessageType.TAG:
             tag_l = message.parse_tag()
 
@@ -1724,7 +1719,6 @@ class RadioWin(Gtk.Window):
             if s_tag_l != '':
                 try:
                     self.label_title.set_label(re.sub(r' \- 0\:00', r'', self.lang_ident_str(' - '.join(s_tag_l)), re.M))
-                    #return
                 except TypeError:
                     return
 
@@ -1776,7 +1770,7 @@ class RadioWin(Gtk.Window):
     def message_buffering(self, bus, message):
 
         if message.type == Gst.MessageType.BUFFERING:
-            if message.parse_buffering() > 99:
+            if message.parse_buffering() == 100 and '<enum GST_STATE_PAUSED of type GstState>' == str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]):
                 print('Buffering is done = ', message.parse_buffering())
                 self.pipeline.set_state(Gst.State.PLAYING)
             else:
@@ -1811,7 +1805,7 @@ class RadioWin(Gtk.Window):
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
             c = self.liststore_101.get_iter(path)
-            # Поиск значения в модели и сопоставление адреса
+            # Поиск значения в модели и сопоставление с адресом
             for x in self.read_list_adr:
                 if str(x[0][0]) == str(self.liststore_101.get_value(c, 0)):
                     self.id_chan[0] = re.findall(r'.+?(\d+)$', x[0][1])
@@ -2141,7 +2135,10 @@ class Script_Version_Compare():
     def __init__(self):
 
         version_opener = urllib.request.build_opener()
-        version_opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+        version_opener.addheaders = [(
+        'User-agent',
+        'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0'
+        )]
         with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
             self.remote_vers = fo.read().decode()
         if SCRIP_VERSION < self.remote_vers:
@@ -2345,12 +2342,7 @@ class WriteLastStation(object):
         """ <class 'tuple'> (['http://us1.internet-radio.com:15919/;', 'IRC'],) """
         print('type(args) ==> ', type(args), args)
         print('def write_best_station(self, *args): ==> ', ''.join(args[0][0]))
-        """
-        a[0][0][1]
-        a[0][1]
-        b[0][1]
-        c[0][1]
-        """
+
         take_param_adr = 0
 
         def find_key(x):
