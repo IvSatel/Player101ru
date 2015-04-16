@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.15'
+SCRIP_VERSION = '0.0.0.16'
 
 class RadioWin(Gtk.Window):
 
@@ -1420,7 +1420,8 @@ class RadioWin(Gtk.Window):
             print('Name Gst.Pad => ', pad.get_name())
             caps = pad.get_current_caps()
             print('Name Gst.Caps => ', caps.to_string())
-            pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
+            #pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
+            pad.link(audioconvert.get_static_pad('sink'))
 
         ## Создаем нужные элементы для плеера
         source = self.create_source(args)
@@ -1436,7 +1437,6 @@ class RadioWin(Gtk.Window):
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
 
         decodebin.connect('pad-added', on_pad_added)
-        decodebin.set_property('use-buffering', True)
         audioconvert.set_property('dithering', 'High frequency triangular dithering')
         audioconvert.set_property('noise-shaping', 'High 8-pole noise shaping')
         queue.set_property('use-buffering', True)
@@ -1563,7 +1563,7 @@ class RadioWin(Gtk.Window):
         except ValueError:
             if self.timer_title:
                 GObject.source_remove(self.timer_title)
-            return False
+                return False
         id_chan_req  = adres[0]
         title_opener = urllib.request.build_opener()
         title_opener.addheaders = [
@@ -1696,8 +1696,7 @@ class RadioWin(Gtk.Window):
 
     # Обработка сообщений содержащих ТЭГИ
     def message_tag(self, bus, message):
-        def tr_ms_call():
-            self.timer_title = GLib.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+
         if message.type == Gst.MessageType.TAG:
             tag_l = message.parse_tag()
 
@@ -1716,17 +1715,15 @@ class RadioWin(Gtk.Window):
 
             print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', 's_tag_l ==> ', s_tag_l)
 
-            if s_tag_l != '':
-                try:
-                    self.label_title.set_label(re.sub(r' \- 0\:00', r'', self.lang_ident_str(' - '.join(s_tag_l)), re.M))
-                except TypeError:
-                    return
+            try:
+                print('Label set title ~~~~~~~~~~~~~~~~~~~~~')
+                self.label_title.set_label(re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M))
+            except:
+                pass
 
-            if self.file_play == 0 and not self.timer_title:
-                print('8 threading.Thread(target=tr_ms_call)')
-                thread_title = threading.Thread(target=tr_ms_call)
-                thread_title.daemon = True
-                thread_title.start()
+            if self.file_play == 0 and not self.timer_title and self.id_chan[0][0].isdigit():
+                print('GLib.timeout_add', self.id_chan[0])
+                self.timer_title = GLib.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
     # Обработка сообщений конца потока
     def message_eos(self, bus, message):
@@ -1770,11 +1767,8 @@ class RadioWin(Gtk.Window):
     def message_buffering(self, bus, message):
 
         if message.type == Gst.MessageType.BUFFERING:
-            if message.parse_buffering() == 100 and '<enum GST_STATE_PAUSED of type GstState>' == str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]):
+            if message.parse_buffering() == 100:
                 print('Buffering is done = ', message.parse_buffering())
-                self.pipeline.set_state(Gst.State.PLAYING)
-            else:
-                self.pipeline.set_state(Gst.State.PAUSED)
 
         ###################################################
         ###################################################
