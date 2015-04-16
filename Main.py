@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.16'
+SCRIP_VERSION = '0.0.0.17'
 
 class RadioWin(Gtk.Window):
 
@@ -304,6 +304,18 @@ class RadioWin(Gtk.Window):
 
         # Создание меню в трее
         self.main_menu = Gtk.Menu()
+
+        # HIDE
+        self.main_menu_items_hide = Gtk.MenuItem.new_with_label("Скрыть окно")
+        self.main_menu.append(self.main_menu_items_hide)
+        self.main_menu_items_hide.connect("activate", self.on_hide_wed)
+        self.main_menu_items_hide.show()
+        # SHOW
+        self.main_menu_items_show = Gtk.MenuItem.new_with_label("Отобразить окно")
+        self.main_menu.append(self.main_menu_items_show)
+        self.main_menu_items_show.connect("activate", self.on_show_wed)
+        self.main_menu_items_show.show()
+
         # Проиграть
         self.main_menu_items_play = Gtk.MenuItem.new_with_label("Воспроизвести")
         self.main_menu.append(self.main_menu_items_play)
@@ -867,6 +879,14 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
+    # Отобразить окно
+    def on_show_wed(self, *args):
+        self.show_all()
+
+    # Скрыть окно
+    def on_hide_wed(self, *args):
+        self.hide()
+
     # Распознать кодировку
     def lang_ident_str(self, get_text):
 
@@ -1420,8 +1440,8 @@ class RadioWin(Gtk.Window):
             print('Name Gst.Pad => ', pad.get_name())
             caps = pad.get_current_caps()
             print('Name Gst.Caps => ', caps.to_string())
-            #pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
-            pad.link(audioconvert.get_static_pad('sink'))
+            pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
+            #pad.link(audioconvert.get_static_pad('sink'))
 
         ## Создаем нужные элементы для плеера
         source = self.create_source(args)
