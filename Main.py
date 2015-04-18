@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.17'
+SCRIP_VERSION = '0.0.0.18'
 
 class RadioWin(Gtk.Window):
 
@@ -127,7 +127,17 @@ class RadioWin(Gtk.Window):
         self.media_location = ''
         self.tooltip_now_text = ''
         # Инфо ТАГ
-        self.get_info_tag = ['organization', 'header', 'title', 'artist', 'album', 'speed', 'genre', 'start-time', 'end-time']
+        self.get_info_tag = [
+        'organization',
+        'header',
+        'title',
+        'artist',
+        'album',
+        'speed',
+        'genre',
+        'start-time',
+        'end-time'
+        ]
         self.test_tag_list = []
         self.tag_organization = ''
 
@@ -199,7 +209,10 @@ class RadioWin(Gtk.Window):
 
         #'''# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         dinamit_opener = urllib.request.build_opener()
-        dinamit_opener.addheaders = [('Host', 'www.dfm.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+        dinamit_opener.addheaders = [
+        ('Host', 'www.dfm.ru'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+        ]
 
         with dinamit_opener.open('http://www.dfm.ru/listen/dfmonline/') as dinamit_http_source:
             dinamit_http_read_1 = dinamit_http_source.read().decode('utf-8-sig', errors='ignore')
@@ -231,7 +244,6 @@ class RadioWin(Gtk.Window):
             self.di_liststore.append([x, False])
 
         self.di_treeview = Gtk.TreeView(model=self.di_liststore)
-        # self.di_treeview.connect("button-press-event", self.button_press)
         self.di_treeview.set_enable_search(True)
         self.di_treeview.set_show_expanders(False)
 
@@ -316,21 +328,63 @@ class RadioWin(Gtk.Window):
         self.main_menu_items_show.connect("activate", self.on_show_wed)
         self.main_menu_items_show.show()
 
+        # Gtk.SeparatorMenuItem1
+        self.main_menu_separator_items_1 = Gtk.SeparatorMenuItem.new()
+        self.main_menu.append(self.main_menu_separator_items_1)
+        self.main_menu_separator_items_1.show()
+
         # Проиграть
         self.main_menu_items_play = Gtk.MenuItem.new_with_label("Воспроизвести")
         self.main_menu.append(self.main_menu_items_play)
         self.main_menu_items_play.connect("activate", self.on_click_bt1)
         self.main_menu_items_play.show()
+        # Воспроизвести лучшую станцию
+        self.main_menu_items_play_best_st = Gtk.MenuItem.new_with_label("Воспроизвести лучшую станцию")
+        self.main_menu.append(self.main_menu_items_play_best_st)
+        self.main_menu_items_play_best_st.connect("activate", self.on_play_best_st, 1)
+        self.main_menu_items_play_best_st.show()
+        # Воспроизвести последнюю станцию
+        self.main_menu_items_play_last_st = Gtk.MenuItem.new_with_label("Воспроизвести последнюю станцию")
+        self.main_menu.append(self.main_menu_items_play_last_st)
+        self.main_menu_items_play_last_st.connect("activate", self.on_play_last_st, 1)
+        self.main_menu_items_play_last_st.show()
         # Проиграть интернет адрес станции
-        self.main_menu_items_play_m = Gtk.MenuItem.new_with_label("Воспроизвести адрес")
+        self.main_menu_items_play_m = Gtk.MenuItem.new_with_label("Воспроизвести пользовательский URL адрес")
         self.main_menu.append(self.main_menu_items_play_m)
         self.main_menu_items_play_m.connect("activate", self.on_dialog_choice)
         self.main_menu_items_play_m.show()
+        # Пауза
+        self.main_menu_items_pause = Gtk.MenuItem.new_with_label("Пауза")
+        self.main_menu.append(self.main_menu_items_pause)
+        self.main_menu_items_pause.connect("activate", self.on_click_bt4)
+        self.main_menu_items_pause.show()
+        # Стоп
+        self.main_menu_items_stop = Gtk.MenuItem.new_with_label("Стоп")
+        self.main_menu.append(self.main_menu_items_stop)
+        self.main_menu_items_stop.connect("activate", self.on_click_bt5, self.main_menu_items_stop)
+        self.main_menu_items_stop.show()
+
+        # Gtk.SeparatorMenuItem2
+        self.main_menu_separator_items_2 = Gtk.SeparatorMenuItem.new()
+        self.main_menu.append(self.main_menu_separator_items_2)
+        self.main_menu_separator_items_2.show()
+
         # Записать интернет адрес станции в мой плейлист
         self.main_menu_items_save_mpls = Gtk.MenuItem.new_with_label("Сохранить адрес в мой плейлист")
         self.main_menu.append(self.main_menu_items_save_mpls)
         self.main_menu_items_save_mpls.connect("activate", self.save_adres_in_pls)
         self.main_menu_items_save_mpls.show()
+        # Сохранить лучшую станцию
+        self.main_menu_items_write_best_st = Gtk.MenuItem.new_with_label("Сохранить лучшую станцию")
+        self.main_menu.append(self.main_menu_items_write_best_st)
+        self.main_menu_items_write_best_st.connect("activate", self.on_write_best_st, 0)
+        self.main_menu_items_write_best_st.show()
+
+        # Gtk.SeparatorMenuItem3
+        self.main_menu_separator_items_3 = Gtk.SeparatorMenuItem.new()
+        self.main_menu.append(self.main_menu_separator_items_3)
+        self.main_menu_separator_items_3.show()
+
         # Поиск персональных станций
         self.main_menu_items_play_person = Gtk.MenuItem.new_with_label("Поиск персональных станций 101.ru")
         self.main_menu.append(self.main_menu_items_play_person)
@@ -342,23 +396,10 @@ class RadioWin(Gtk.Window):
         self.main_menu_items_refresh_pl.connect("activate", self.on_refresh_list)
         self.main_menu_items_refresh_pl.show()
 
-        # Сохранить лучшую станцию
-        self.main_menu_items_write_best_st = Gtk.MenuItem.new_with_label("Сохранить лучшую станцию")
-        self.main_menu.append(self.main_menu_items_write_best_st)
-        self.main_menu_items_write_best_st.connect("activate", self.on_write_best_st, 0)
-        self.main_menu_items_write_best_st.show()
-
-        # Воспроизвести последнюю станцию
-        self.main_menu_items_play_last_st = Gtk.MenuItem.new_with_label("Воспроизвести последнюю станцию")
-        self.main_menu.append(self.main_menu_items_play_last_st)
-        self.main_menu_items_play_last_st.connect("activate", self.on_play_last_st, 1)
-        self.main_menu_items_play_last_st.show()
-
-        # Воспроизвести лучшую станцию
-        self.main_menu_items_play_best_st = Gtk.MenuItem.new_with_label("Воспроизвести лучшую станцию")
-        self.main_menu.append(self.main_menu_items_play_best_st)
-        self.main_menu_items_play_best_st.connect("activate", self.on_play_best_st, 1)
-        self.main_menu_items_play_best_st.show()
+        # Gtk.SeparatorMenuItem4
+        self.main_menu_separator_items_4 = Gtk.SeparatorMenuItem.new()
+        self.main_menu.append(self.main_menu_separator_items_4)
+        self.main_menu_separator_items_4.show()
 
         self.vol_menu = Gtk.Menu()
         # Громкость
@@ -371,17 +412,6 @@ class RadioWin(Gtk.Window):
         for x in self.vol_menu:
             x.connect("activate", self.on_valu_ch, float(x.get_label())/100)
             x.show()
-
-        # Пауза
-        self.main_menu_items_pause = Gtk.MenuItem.new_with_label("Пауза")
-        self.main_menu.append(self.main_menu_items_pause)
-        self.main_menu_items_pause.connect("activate", self.on_click_bt4)
-        self.main_menu_items_pause.show()
-        # Стоп
-        self.main_menu_items_stop = Gtk.MenuItem.new_with_label("Стоп")
-        self.main_menu.append(self.main_menu_items_stop)
-        self.main_menu_items_stop.connect("activate", self.on_click_bt5, self.main_menu_items_stop)
-        self.main_menu_items_stop.show()
 
         self.eq_menu = Gtk.Menu()
         # Подменю Эквалайзера
@@ -400,6 +430,12 @@ class RadioWin(Gtk.Window):
             x.show()
         self.main_menu.append(self.main_menu_items_eq)
         self.main_menu_items_eq.show()
+
+        # Gtk.SeparatorMenuItem5
+        self.main_menu_separator_items_5 = Gtk.SeparatorMenuItem.new()
+        self.main_menu.append(self.main_menu_separator_items_5)
+        self.main_menu_separator_items_5.show()
+
         # Выход
         self.main_menu_items_quit = Gtk.MenuItem.new_with_label("Выход")
         self.main_menu.append(self.main_menu_items_quit)
@@ -434,8 +470,7 @@ class RadioWin(Gtk.Window):
         self.set_resizable(False)# Не менять размер
         self.set_border_width(10)# Ширина границ края основной формы
         self.set_position(Gtk.WindowPosition.CENTER)# Установки позиции окна на экране по центру
-        self.set_keep_above(True)# Быть поверх всех окон
-        self.set_property('type-hint', Gdk.WindowTypeHint.NORMAL)
+        self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
 
         # Создание List с именами всех станций 101 RU
         self.liststore_101 = Gtk.ListStore(str, bool)
@@ -444,6 +479,7 @@ class RadioWin(Gtk.Window):
 
         # Создание TreeView 101
         self.treeview_101 = Gtk.TreeView(model=self.liststore_101)
+        self.treeview_101.connect("button-press-event", self.button_press)
 
         # Создание столбца "Станция"
         renderer_text = Gtk.CellRendererText()
@@ -604,8 +640,10 @@ class RadioWin(Gtk.Window):
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         #'''# Радио рекорд
         record_opener = urllib.request.build_opener()
-        record_opener.addheaders = [('Host', 'www.radiorecord.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+        record_opener.addheaders = [
+        ('Host', 'www.radiorecord.ru'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+        ]
 
         try:
             with record_opener.open('http://www.radiorecord.ru/player/') as http_source:
@@ -881,7 +919,16 @@ class RadioWin(Gtk.Window):
 
     # Отобразить окно
     def on_show_wed(self, *args):
-        self.show_all()
+        if self.get_property('is-active'):
+            pass
+        else:
+            self.hide()
+            self.show_all()
+            self.seek_line.hide()
+            self.set_state(Gtk.StateType.ACTIVE)
+            self.set_state(Gtk.StateType.ACTIVE)
+            self.set_state(Gtk.StateType.FOCUSED)
+            self.set_state(Gtk.StateType.FOCUSED)
 
     # Скрыть окно
     def on_hide_wed(self, *args):
@@ -924,13 +971,14 @@ class RadioWin(Gtk.Window):
             return False
 
     ## Pop-up menu
-    #def button_press(self,widget,event):
-        #if event.button == 3:
-            #self.menu = Gtk.Menu()
-            #self.menu_copy = Gtk.MenuItem("Popup Menu")
-            #self.menu.append(self.menu_copy)
-            #self.menu.show_all()
-            #self.menu.popup(None, None, None, None, event.button, event.get_time())
+    def button_press(self,widget,event):
+        if event.button == 3:
+            self.menu_pop_show = Gtk.Menu()
+            self.menu_copy = Gtk.MenuItem("Обновить")
+            self.menu_copy.connect('activate', self.on_refresh_list)
+            self.menu_pop_show.append(self.menu_copy)
+            self.menu_pop_show.show_all()
+            self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
 
     # Диалог вывода сообщения об отсутствии соединения с интернет
     def check_internet_connection(self, *args):
@@ -2904,6 +2952,7 @@ Radio_for_101 = RadioWin()
 Radio_for_101.connect("delete-event", Gtk.main_quit)
 Radio_for_101.show_all()
 Radio_for_101.seek_line.hide()
+#Radio_for_101.set_keep_above(False)# Не быть поверх всех окон
 
 GObject.threads_init()
 Gtk.main()
