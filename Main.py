@@ -39,7 +39,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.18'
+SCRIP_VERSION = '0.0.0.20'
 
 class RadioWin(Gtk.Window):
 
@@ -320,7 +320,7 @@ class RadioWin(Gtk.Window):
         # HIDE
         self.main_menu_items_hide = Gtk.MenuItem.new_with_label("Скрыть окно")
         self.main_menu.append(self.main_menu_items_hide)
-        self.main_menu_items_hide.connect("activate", self.on_hide_wed)
+        self.main_menu_items_hide.connect("activate", self.on_show_wed)
         self.main_menu_items_hide.show()
         # SHOW
         self.main_menu_items_show = Gtk.MenuItem.new_with_label("Отобразить окно")
@@ -471,6 +471,7 @@ class RadioWin(Gtk.Window):
         self.set_border_width(10)# Ширина границ края основной формы
         self.set_position(Gtk.WindowPosition.CENTER)# Установки позиции окна на экране по центру
         self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
+        self.connect('key_press_event', self.on_key_press_event)
 
         # Создание List с именами всех станций 101 RU
         self.liststore_101 = Gtk.ListStore(str, bool)
@@ -917,22 +918,23 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
+    # Cкрыть окно по нажатию Escape
+    def on_key_press_event(self, widget, event):
+        keyname = Gdk.keyval_name(event.keyval)
+        if 'Escape' == keyname:
+            self.hide()
+            #print("Key %s (%d) was pressed" % (keyname, event.keyval))
+
     # Отобразить окно
     def on_show_wed(self, *args):
-        if self.get_property('is-active'):
-            pass
+        if self.is_active():
+            self.hide()
+            print(self.get_events())
         else:
             self.hide()
             self.show_all()
-            self.seek_line.hide()
-            self.set_state(Gtk.StateType.ACTIVE)
-            self.set_state(Gtk.StateType.ACTIVE)
-            self.set_state(Gtk.StateType.FOCUSED)
-            self.set_state(Gtk.StateType.FOCUSED)
-
-    # Скрыть окно
-    def on_hide_wed(self, *args):
-        self.hide()
+            if self.file_play == 0:
+                self.seek_line.hide()
 
     # Распознать кодировку
     def lang_ident_str(self, get_text):
@@ -1231,19 +1233,24 @@ class RadioWin(Gtk.Window):
         print('\n')
         print('1 last_adr = self.wr_station_name_adr.read_last_station()', last_adr)
         print('\n')
-        if '101.ru' in str(last_adr[0]) and not 'pradio22' in str(last_adr[0]):
+
+        if '101.ru'.find(last_adr[0]) and not 'pradio22' in str(last_adr[0]):
             self.id_chan[0] = re.sub(r'(.+?\=)(\d+)$', r'\2', str(last_adr[0]), re.S)
-            res = self.HURL.hack_url_adres(last_adr[0])
+            res = last_adr[0]
             print('res ^^^^^^^^^^^^ ==>>>> ', type(res), res)
             if res != 0:
                 self.play_stat_now(res)
+                return True
             else:
                 pass
-        elif 'pradio22' in str(last_adr[0]):
+
+        if 'pradio22'.find(last_adr[0]):
             self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(last_adr[0]), re.S)
             print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr[0]), last_adr[0])
             self.play_stat_now(last_adr[0])
-        elif not 'pradio22' in str(last_adr[0]) and not '101.ru' in str(last_adr[0]) or 'http' in str(last_adr[0]) or 'rtmp' in str(last_adr[0]):
+            return True
+
+        if not 'pradio22' in str(last_adr[0]) and not '101.ru' in str(last_adr[0]) or 'http' in str(last_adr[0]) or 'rtmp' in str(last_adr[0]):
             if 'PS' in str(last_adr[1]):
                 self.id_chan[0] = 'PS'
             elif 'Radio-Record' in str(last_adr[1]):
@@ -1256,6 +1263,7 @@ class RadioWin(Gtk.Window):
                 self.id_chan[0] = 'DI'
                 print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr), last_adr)
             self.play_stat_now(last_adr)
+            return True
 
     # Воспроизвести лучшую станцию
     def on_play_best_st(self, *args):
@@ -1886,7 +1894,7 @@ class RadioWin(Gtk.Window):
 
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
-        if str(type(self.id_chan[0])) == "<class 'int'>" or self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
+        if not '101.ru' in str(f_name) or str(type(self.id_chan[0])) == "<class 'int'>" or self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
             print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ", f_name, 'self.real_adress ==> 1 ', self.real_adress)
             thread_1 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
             thread_1.daemon = True
@@ -1925,11 +1933,14 @@ class RadioWin(Gtk.Window):
             else:
                 self.My_ERROR_Mess = False
                 return True
-        elif f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name):
+        elif str(type(self.id_chan[0])) == "<class 'str'>" or (f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name)):
             self.file_play = 0
             self.radio_play = 1
             print('Включение радио 2 '+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            self.uri = self.HURL.hack_url_adres(re.sub(r'&amp;', r'&', self.real_adress))
+            if self.real_adress:
+                self.uri = self.HURL.hack_url_adres(re.sub(r'&amp;', r'&', self.real_adress))
+            else:
+                self.uri = self.HURL.hack_url_adres(re.sub(r'&amp;', r'&', f_name))
             if not self.pipeline and self.uri != 0:
                 for x in range(3):
                     self.button_array[x].hide()
@@ -2952,7 +2963,6 @@ Radio_for_101 = RadioWin()
 Radio_for_101.connect("delete-event", Gtk.main_quit)
 Radio_for_101.show_all()
 Radio_for_101.seek_line.hide()
-#Radio_for_101.set_keep_above(False)# Не быть поверх всех окон
 
 GObject.threads_init()
 Gtk.main()
