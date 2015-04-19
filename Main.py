@@ -3015,6 +3015,7 @@ if SCRIP_VERSION < remote_vers:
         old_script.write(update_source)
 
     subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
+    sys.exit()
 
 else:
     Radio_for_101 = RadioWin()
