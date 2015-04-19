@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import configparser
+import subprocess
 import threading
 import datetime
 import socket
@@ -52,9 +53,6 @@ class RadioWin(Gtk.Window):
         except socket.gaierror:
             self.check_internet_connection()
             sys.exit(0)
-
-        # Проверка версии
-        Script_Version_Compare()
 
         self.eq_set_preset = []# Список действующей настройки эквалайзера
 
@@ -2207,6 +2205,7 @@ class Script_Version_Compare():
 
     def __init__(self):
 
+        #
         version_opener = urllib.request.build_opener()
         version_opener.addheaders = [(
         'User-agent',
@@ -2215,10 +2214,41 @@ class Script_Version_Compare():
         with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
             self.remote_vers = fo.read().decode()
         if SCRIP_VERSION < self.remote_vers:
-            dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK)
-            dialog.set_markup("<a href=\"https://github.com/IvSatel/Player101ru\">\n<b>Открыть страницу скрипта</b>\n</a>")
-            dialog.run()
-            dialog.destroy()
+            update_opener = urllib.request.build_opener()
+            update_opener.addheaders = [
+            ('Host', 'github.com'),
+            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+            ]
+
+            with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
+                update_source = update_http.read().decode('utf-8-sig', errors='ignore')
+
+            with open(os.path.abspath(__file__), 'w') as old_script:
+                old_script.write(update_source)
+
+            sb_p = subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
+            #sb_p.wait()
+        else:
+            sb_p = subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
+            Radio_for_101 = RadioWin()
+            Radio_for_101.connect("delete-event", Gtk.main_quit)
+            Radio_for_101.show_all()
+            Radio_for_101.seek_line.hide()
+
+        #
+
+        #version_opener = urllib.request.build_opener()
+        #version_opener.addheaders = [(
+        #'User-agent',
+        #'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0'
+        #)]
+        #with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
+            #self.remote_vers = fo.read().decode()
+        #if SCRIP_VERSION < self.remote_vers:
+            #dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK)
+            #dialog.set_markup("<a href=\"https://github.com/IvSatel/Player101ru\">\n<b>Открыть страницу скрипта</b>\n</a>")
+            #dialog.run()
+            #dialog.destroy()
 
 # Класс получения источника потока 101.RU
 class HackURL(object):
@@ -2959,10 +2989,37 @@ class EQWindow(Gtk.Dialog):
                 self.label_l[x].set_label(self.scale_n.get(round(value[2])))
                 self.mdict[x] = self.scale_n.get(round(value[2]))
 
-Radio_for_101 = RadioWin()
-Radio_for_101.connect("delete-event", Gtk.main_quit)
-Radio_for_101.show_all()
-Radio_for_101.seek_line.hide()
+def exit_in_player(obj, event):
+    Gtk.main_quit()
 
-GObject.threads_init()
-Gtk.main()
+# Проверка версии
+version_opener = urllib.request.build_opener()
+version_opener.addheaders = [(
+'User-agent',
+'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0'
+)]
+remote_vers = ''
+with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
+    remote_vers = fo.read().decode()
+if SCRIP_VERSION < remote_vers:
+    update_opener = urllib.request.build_opener()
+    update_opener.addheaders = [
+    ('Host', 'github.com'),
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+    ]
+
+    with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
+        update_source = update_http.read().decode('utf-8-sig', errors='ignore')
+
+    with open(os.path.abspath(__file__), 'w') as old_script:
+        old_script.write(update_source)
+
+    subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
+
+else:
+    Radio_for_101 = RadioWin()
+    Radio_for_101.connect("delete-event", exit_in_player)
+    Radio_for_101.show_all()
+    Radio_for_101.seek_line.hide()
+    GObject.threads_init()
+    Gtk.main()
