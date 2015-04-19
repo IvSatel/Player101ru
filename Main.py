@@ -40,7 +40,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.20'
+SCRIP_VERSION = '0.0.0.21'
 
 class RadioWin(Gtk.Window):
 
