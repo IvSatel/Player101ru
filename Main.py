@@ -40,7 +40,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.21'
+SCRIP_VERSION = '0.0.0.22'
 
 class RadioWin(Gtk.Window):
 
@@ -921,13 +921,11 @@ class RadioWin(Gtk.Window):
         keyname = Gdk.keyval_name(event.keyval)
         if 'Escape' == keyname:
             self.hide()
-            #print("Key %s (%d) was pressed" % (keyname, event.keyval))
 
     # Отобразить окно
     def on_show_wed(self, *args):
         if self.is_active():
             self.hide()
-            print(self.get_events())
         else:
             self.hide()
             self.show_all()
@@ -1004,6 +1002,7 @@ class RadioWin(Gtk.Window):
     def save_adres_in_pls(self, *args):
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
         self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+        print('Запись адреса в мой плейлист ==> ', self.tag_organization, self.real_adress)
         self.my_pls_config.add_section(self.tag_organization)
         self.my_pls_config.set(self.tag_organization, 'addrstation', self.real_adress)
         with open(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini', 'w') as configfile:
@@ -1462,7 +1461,6 @@ class RadioWin(Gtk.Window):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
                 source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
-                source.set_property('automatic-redirect', True)
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник HTTP "+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -1584,10 +1582,12 @@ class RadioWin(Gtk.Window):
         if equalizer.link(audiosink):
             print('6 equalizer.link(audiosink) ==> OK LINKED')
 
-        if self.run_radio_window != 1:
+        if self.run_radio_window == 0 and self.real_vol_save == 0:
+            print('1 self.run_radio_window & self.real_vol_save', self.run_radio_window, self.real_vol_save)
             self.scal_sl.set_value(0.50)
             self.volume.set_property('volume', 0.50)
-        if self.real_vol_save != 0:
+        else:
+            print('2 self.run_radio_window & self.real_vol_save', self.run_radio_window, self.real_vol_save)
             self.scal_sl.set_value(self.real_vol_save)
             self.volume.set_property('volume', self.real_vol_save)
 
@@ -1602,6 +1602,8 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::duration', self.message_duration)
 
         self.pipeline.set_state(Gst.State.PLAYING)
+
+        self.run_radio_window = 1
 
     # Конвертация полученых наносекунд в часы минуты секунды милисекунды
     def convert_time(self, t):
@@ -1778,7 +1780,8 @@ class RadioWin(Gtk.Window):
             for h in self.get_info_tag:
                 if tag_l.get_string(h)[0] == True:
                     print('TAG ==> ', tag_l.get_string(h))
-                    if 'organization' in str(tag_l.get_string(h)):
+                    if h == 'organization':
+                        print('self.tag_organization = tag_l.get_string(h)[1] ==> ', tag_l.get_string(h)[1])
                         self.tag_organization = tag_l.get_string(h)[1]
                     if '101.ru' in str(tag_l.get_string(h)):
                         s_tag_l.append(re.sub(r'(101\.ru\:\s?)(.+?)$', r'\2 ', str(tag_l.get_string(h)[1]), re.M))
@@ -1790,7 +1793,6 @@ class RadioWin(Gtk.Window):
             print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', 's_tag_l ==> ', s_tag_l)
 
             try:
-                print('Label set title ~~~~~~~~~~~~~~~~~~~~~')
                 self.label_title.set_label(re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M))
             except:
                 pass
@@ -1892,7 +1894,7 @@ class RadioWin(Gtk.Window):
 
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
-        if not '101.ru' in str(f_name) or str(type(self.id_chan[0])) == "<class 'int'>" or self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
+        if self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
             print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ", f_name, 'self.real_adress ==> 1 ', self.real_adress)
             thread_1 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
             thread_1.daemon = True
@@ -1931,7 +1933,7 @@ class RadioWin(Gtk.Window):
             else:
                 self.My_ERROR_Mess = False
                 return True
-        elif str(type(self.id_chan[0])) == "<class 'str'>" or (f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name)):
+        elif str(type(self.id_chan[0])) == "<class 'list'>" or (f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name)):
             self.file_play = 0
             self.radio_play = 1
             print('Включение радио 2 '+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -2058,7 +2060,7 @@ class RadioWin(Gtk.Window):
         self.tooltip_now_text = ''
         self.id_chan = [0,0]
         self.real_adress = ''
-        self.run_radio_window = 1
+        self.tag_organization = ''
         self.radio_play = 0
         self.radio_rtmp_play = 0
         self.file_play = 0
@@ -2112,6 +2114,7 @@ class RadioWin(Gtk.Window):
 
     # Функция установки громкости
     def on_valu_ch(self, scale, r_value, *args):
+        print('3 self.run_radio_window & self.real_vol_save', self.run_radio_window, self.real_vol_save)
         if self.pipeline != 0 and self.real_vol_save != round(r_value, 2):
             self.real_vol_save = round(r_value, 2)
             self.scal_sl.set_value(round(r_value, 2))
