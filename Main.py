@@ -3021,5 +3021,6 @@ else:
     Radio_for_101.connect("delete-event", exit_in_player)
     Radio_for_101.show_all()
     Radio_for_101.seek_line.hide()
-    GObject.threads_init()
-    Gtk.main()
+
+GObject.threads_init()
+Gtk.main()
