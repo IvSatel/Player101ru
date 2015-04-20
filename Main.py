@@ -15,6 +15,7 @@ import os
 import gi
 import urllib.parse
 import urllib.request
+from decimal import Decimal
 from urllib.error import URLError, HTTPError
 from collections import OrderedDict
 
@@ -40,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.22'
+SCRIP_VERSION = '0.0.0.23'
 
 class RadioWin(Gtk.Window):
 
@@ -406,9 +407,9 @@ class RadioWin(Gtk.Window):
         self.main_menu.append(self.main_menu_items_vol)
         self.main_menu_items_vol.show()
         for x in range(0, 100, 5):
-            self.vol_menu.append(Gtk.MenuItem.new_with_label(str(x)))
+            self.vol_menu.append(Gtk.CheckMenuItem.new_with_label(str(x)))
         for x in self.vol_menu:
-            x.connect("activate", self.on_valu_ch, float(x.get_label())/100)
+            x.connect("activate", self.on_togled_menu_it, 'B')
             x.show()
 
         self.eq_menu = Gtk.Menu()
@@ -771,10 +772,10 @@ class RadioWin(Gtk.Window):
         # Создание кнопки громкости
         self.scal_sl = Gtk.VolumeButton()
         self.scal_sl.set_hexpand_set(True)
-        self.scal_sl.set_adjustment(Gtk.Adjustment.new(0.50, 0.00, 1.01, 0.01, 0.02, 0.01))
+        self.scal_sl.set_adjustment(Gtk.Adjustment.new(0.50, 0.00, 1.00, 0.01, 0.02, 0.01))
         self.scal_sl.set_relief(2)
         self.scal_sl.set_border_width(10)
-        self.scal_sl.connect("value-changed", self.on_valu_ch, self.scal_sl.get_value()/100)
+        self.scal_sl.connect("value-changed", self.on_valu_ch)
 
         ## Создание левого и правого "Эквалайзеров"
         self.level_bar_l = Gtk.ProgressBar.new()
@@ -916,14 +917,30 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
+    # Установка галочки на меню громкости
+    def on_togled_menu_it(self, check_menu_item, args):
+
+        if self.pipeline and args == 'B':
+            c = 0
+            for x in self.vol_menu:
+                if x.get_active():
+                    c += 1
+            if c > 1:
+                for x in self.vol_menu:
+                    if x.get_active() and x != check_menu_item:
+                        x.set_active(False)
+            self.on_valu_ch(check_menu_item, int(check_menu_item.get_label())/100, 'A')
+
     # Cкрыть окно по нажатию Escape
     def on_key_press_event(self, widget, event):
+
         keyname = Gdk.keyval_name(event.keyval)
         if 'Escape' == keyname:
             self.hide()
 
     # Отобразить окно
     def on_show_wed(self, *args):
+
         if self.is_active():
             self.hide()
         else:
@@ -970,6 +987,7 @@ class RadioWin(Gtk.Window):
 
     ## Pop-up menu
     def button_press(self,widget,event):
+
         if event.button == 3:
             self.menu_pop_show = Gtk.Menu()
             self.menu_copy = Gtk.MenuItem("Обновить")
@@ -980,6 +998,7 @@ class RadioWin(Gtk.Window):
 
     # Диалог вывода сообщения об отсутствии соединения с интернет
     def check_internet_connection(self, *args):
+
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR,
             Gtk.ButtonsType.OK, "Ошибка!")
         dialog.format_secondary_text(
@@ -989,6 +1008,7 @@ class RadioWin(Gtk.Window):
 
     # Диалог о программе
     def dialog_about(self, widget):
+
         about = Gtk.AboutDialog('О Программе', self, Gtk.DialogFlags.MODAL)
         about.set_program_name("Radio")
         about.set_version(SCRIP_VERSION)
@@ -1000,6 +1020,7 @@ class RadioWin(Gtk.Window):
 
     # Реакция на выбор в окне MyPLS
     def save_adres_in_pls(self, *args):
+
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
         self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
         print('Запись адреса в мой плейлист ==> ', self.tag_organization, self.real_adress)
@@ -1018,6 +1039,7 @@ class RadioWin(Gtk.Window):
 
     # Реакция на выбор в окне MyPLS
     def my_pls_on_cell_radio_toggled(self, widget, path):
+
         selected_path = Gtk.TreePath(path)
         c = self.my_pls_liststore.get_iter(path)
         for key in self.my_pls_config.sections():
@@ -1033,6 +1055,7 @@ class RadioWin(Gtk.Window):
 
     # Реакция на выбор в окне RadioRecord
     def record_on_cell_radio_toggled(self, widget, path):
+
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
             c = self.record_liststore.get_iter(path)
@@ -1049,7 +1072,9 @@ class RadioWin(Gtk.Window):
 
     # Создание тултипа для медиа информации о потоке
     def media_tool_hint(self, widget, x, y, keyboard_mode, tooltip):
+
         def local_convert_time(t):
+
             if t != 18446744073709551615:
                 dt = datetime.datetime.utcfromtimestamp(t/1e9)
                 mytime = dt.strftime('%H:%M:%S:%f')[:-4].split('::')
@@ -1180,6 +1205,7 @@ class RadioWin(Gtk.Window):
 
     # Реакция на выбор в таблице Internet Radio Com Top
     def on_cell_radio_toggled_RIC(self, widget, path):
+
         self.RIC_url = ''
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
@@ -1198,6 +1224,7 @@ class RadioWin(Gtk.Window):
 
     # Реакция на выбор Internet Radio Com Sub
     def on_cell_radio_toggled_s_RIC(self, widget, path):
+
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
             source_cell = self.liststore_sub.get_iter(path)
@@ -1212,6 +1239,7 @@ class RadioWin(Gtk.Window):
 
     # Реакция на выбор DIFM
     def di_on_cell_radio_toggled(self, widget, path):
+
         selected_path = Gtk.TreePath(path)
         source_cell = self.di_liststore.get_iter(path)
         for key, val in self.d_fm_dict.items():
@@ -1226,6 +1254,7 @@ class RadioWin(Gtk.Window):
 
     # Воспроизвести последнюю станцию
     def on_play_last_st(self, *args):
+
         last_adr = self.wr_station_name_adr.read_last_station()
         print('\n')
         print('1 last_adr = self.wr_station_name_adr.read_last_station()', last_adr)
@@ -1264,6 +1293,7 @@ class RadioWin(Gtk.Window):
 
     # Воспроизвести лучшую станцию
     def on_play_best_st(self, *args):
+
         best_adr = self.wr_station_name_adr.read_best_station()
         print('best_adr = self.wr_station_name_adr.read_best_station() => ', best_adr)
         if '101.ru' in str(best_adr) and not 'pradio22' in str(best_adr):
@@ -1295,6 +1325,7 @@ class RadioWin(Gtk.Window):
 
     # Сохранить лучшую станцию
     def on_write_best_st(self, *args):
+
         print(type(args), args)
         if args[1] == 0 and self.real_adress != '':
             print('111 **************************** self.real_adress, self.id_chan ', self.real_adress, self.id_chan)
@@ -1414,6 +1445,7 @@ class RadioWin(Gtk.Window):
 
     # Создание меню в трее
     def create_main_menu(self, icon, button, time):
+
         print('Создание StatusIcon '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
         def pos(menu, icon):
@@ -1424,6 +1456,7 @@ class RadioWin(Gtk.Window):
 
     # Определение источник "файл или http" и создание элемента source
     def create_source(self, location):
+
         """ ***** location ==> 23:22:05 <class 'str'> 22 http://st16.fmtuner.ru """
         """ ***** location ==> 23:23:16 <class 'tuple'> 2 ('http://st16.fmtuner.ru', 'D-FM') """
         if location == 0:
@@ -1487,6 +1520,7 @@ class RadioWin(Gtk.Window):
 
     # Создание объекта Pipeline
     def create_pipeline(self, args):
+
         ## decodebin имеет динамические pad'ы, которые так же динамически необходимо линковать
         def on_pad_added(decodebin, pad):
             print('Name Gst.Pad => ', pad.get_name())
@@ -1607,6 +1641,7 @@ class RadioWin(Gtk.Window):
 
     # Конвертация полученых наносекунд в часы минуты секунды милисекунды
     def convert_time(self, t):
+
         end_res = ''
         dt = datetime.datetime.utcfromtimestamp(t/1e9)
         mytime = dt.strftime('%H:%M:%S:%f')[:-4].split('::')
@@ -1616,6 +1651,7 @@ class RadioWin(Gtk.Window):
 
     # Установка времени/продолжительности звучания
     def set_time_from_stream(self, *user_date):
+
         if (self.radio_play or self.file_play or self.radio_rtmp_play) and self.pipeline != 0:
             play_position = self.pipeline.query_position(Gst.Format.TIME)[1]
             total_length = self.pipeline.query_duration(Gst.Format.TIME)[1]
@@ -1634,6 +1670,7 @@ class RadioWin(Gtk.Window):
 
     # Получение названия
     def get_title_from_url(self, adres):
+
         try:
             print('adres[0] = ', int(adres[0]))
         except ValueError:
@@ -1674,6 +1711,7 @@ class RadioWin(Gtk.Window):
 
     # Установка нового места начала востпроизведения
     def new_seek_pos_set(self, bas, pos):
+
         if self.pipeline:
             a = self.seek_line.get_value()
             self.pipeline.set_state(Gst.State.PAUSED)
@@ -1684,6 +1722,7 @@ class RadioWin(Gtk.Window):
 
     # Продвижение ползунка по мере звучания файла
     def update_seek_line(self, *user_date):
+
         try:
             try:
                 play_position = self.pipeline.query_position(Gst.Format.TIME)[1]
@@ -1700,6 +1739,7 @@ class RadioWin(Gtk.Window):
 
     # Обработка сообщений элементов
     def message_element(self, bus, message):
+
         if message.type == Gst.MessageType.ELEMENT:
             s = Gst.Message.get_structure(message)
             if str(Gst.Structure.get_name(s)) == 'level':
@@ -1744,6 +1784,7 @@ class RadioWin(Gtk.Window):
 
     # Обработка сообщений продолжительности
     def message_duration(self, bus, message):
+
         if message.type == Gst.MessageType.DURATION_CHANGED:
             print('message.type == Gst.MessageType.DURATION_CHANGED')
             s = Gst.Message.get_structure(message)
@@ -1753,6 +1794,7 @@ class RadioWin(Gtk.Window):
 
     # Обработка сообщений ошибок
     def message_error(self, bus, message):
+
         if message.type == Gst.MessageType.ERROR:
             self.My_ERROR_Mess = True
             mpe = message.parse_error()
@@ -1856,6 +1898,7 @@ class RadioWin(Gtk.Window):
 
     # Действие для передачи пользовательского адреса из диалога
     def on_dialog_choice(self, widget):
+
         dialog = DialogEntryAdr(self)
         response = dialog.run()
 
@@ -1872,6 +1915,7 @@ class RadioWin(Gtk.Window):
 
     # Реакция на нажатие радиобаттон в модели 101
     def on_cell_radio_toggled(self, widget, path):
+
         if self.file_play == 0 and self.radio_play == 0:
             selected_path = Gtk.TreePath(path)
             c = self.liststore_101.get_iter(path)
@@ -1981,6 +2025,7 @@ class RadioWin(Gtk.Window):
 
     # Кнопка плей
     def on_click_bt1(self, b1):
+
         print('Нажата кнопка Play')
         if self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'RREC':
             self.main_note_for_cont.set_show_tabs(False)
@@ -1991,6 +2036,7 @@ class RadioWin(Gtk.Window):
 
     # Кнопка открыть файл
     def on_click_bt2(self, b2):
+
         print('Нажата кнопка File')
         dialog = Gtk.FileChooserDialog(title="Select a File", action=Gtk.FileChooserAction.OPEN,
         buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
@@ -2018,6 +2064,7 @@ class RadioWin(Gtk.Window):
 
     # Кнопка открыть папку
     def on_click_bt3(self, b3):
+
         print('Нажата кнопка Dir')
         filename = []
         dialog = Gtk.FileChooserDialog(title="Select a Folder", action=Gtk.FileChooserAction.SELECT_FOLDER,
@@ -2045,6 +2092,7 @@ class RadioWin(Gtk.Window):
 
     # Кнопка пауза
     def on_click_bt4(self, *b4):
+
         print('Нажата кнопка Pause')
         if self.pipeline:
             if '<enum GST_STATE_PLAYING of type GstState>' in str(self.pipeline.get_state(Gst.CLOCK_TIME_NONE)[1]):
@@ -2056,6 +2104,7 @@ class RadioWin(Gtk.Window):
 
     # Кнопка стоп
     def on_click_bt5(self, *b5):
+
         print('Нажата кнопка Stop')
         self.tooltip_now_text = ''
         self.id_chan = [0,0]
@@ -2089,6 +2138,7 @@ class RadioWin(Gtk.Window):
 
     # Обработка выбора пункта в меню Equalizer
     def change_equlaizer(self, *gain):
+
         if (self.radio_rtmp_play == 1 or self.radio_play == 1 or self.file_play == 1) and str(gain[1]) != 'Редактировать положение эквалайзера':
             print('def change_equlaizer(self, *gain):', str(gain[1]))
             eq_config = configparser.ConfigParser()
@@ -2113,16 +2163,19 @@ class RadioWin(Gtk.Window):
                 eq_config.write(cfgfile)
 
     # Функция установки громкости
-    def on_valu_ch(self, scale, r_value, *args):
-        print('3 self.run_radio_window & self.real_vol_save', self.run_radio_window, self.real_vol_save)
-        if self.pipeline != 0 and self.real_vol_save != round(r_value, 2):
-            self.real_vol_save = round(r_value, 2)
-            self.scal_sl.set_value(round(r_value, 2))
-            get_param_volume = round(r_value, 2)
-            self.volume.set_property('volume', get_param_volume)
+    def on_valu_ch(self, obj_send, value, *args):
+
+        r_value = round(Decimal.from_float(value), 2)
+
+        if self.pipeline != 0 and r_value != self.real_vol_save:
+
+            self.real_vol_save = r_value
+            self.scal_sl.set_value(r_value)
+            self.volume.set_property('volume', r_value)
 
     # Диалог редактирования пользовательских пресетов эквалайзера
     def edit_eq(self, widget):
+
         if self.radio_play == 1 or self.radio_rtmp_play == 1 or self.file_play == 1:
             dialog = EQWindow(self)
             response = dialog.run()
@@ -2147,6 +2200,7 @@ class RadioWin(Gtk.Window):
 
     # Получение названия трека персональных станций
     def get_title_song(self, idch):
+
         if self.radio_rtmp_play == 1:
             id_ch = idch
             print('id_ch ==> ', id_ch)
@@ -2208,7 +2262,6 @@ class Script_Version_Compare():
 
     def __init__(self):
 
-        #
         version_opener = urllib.request.build_opener()
         version_opener.addheaders = [(
         'User-agent',
@@ -2258,10 +2311,12 @@ class HackURL(object):
 
 
     def __init__(self):
+
         self.used_stream_adress = []
         self.check_stream_adress = 0
 
     def hack_url_adres(self, adres):
+
         print('Получение адреса потока = ', adres)
 
         if 'personal' in adres:
@@ -2380,6 +2435,7 @@ class WriteLastStation(object):
                 config.write(cfgfile)
 
     def write_last_station(self, *args):
+
         print('def write_last_station(self, *args): +++===+++\n', args)
         if 'http' in ''.join(args[0]):
             print('HTTP WRITE HTTP WRITE HTTP WRITE HTTP WRITE HTTP WRITE ', ''.join(args[0]))
@@ -2443,6 +2499,7 @@ class WriteLastStation(object):
                 config.write(configfile)
 
     def write_best_station(self, *args):
+
         """ <class 'tuple'> (['http://101.ru/?an=port_channel_mp3&channel=169', ['169']],) """
         """ <class 'tuple'> (['http://st03.fmtuner.ru', 'DI'],) """
         """ <class 'tuple'> (['http://us1.internet-radio.com:15919/;', 'IRC'],) """
@@ -2533,6 +2590,7 @@ class WriteLastStation(object):
                 config.write(configfile)
 
     def read_last_station(self, *args):
+
         config = configparser.ConfigParser()
         config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
         adr = config['LastStation']
@@ -2540,6 +2598,7 @@ class WriteLastStation(object):
         return adr.get('addrstation'), adr.get('namestation')
 
     def read_best_station(self, *args):
+
         config = configparser.ConfigParser()
         config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
         adr = config['BestStation']
@@ -2619,6 +2678,7 @@ class DialogFindPersonalStation(Gtk.Dialog):
         self.show_all()
 
     def key_icon_press(self, *args):
+
         try:
             k_val = args[1].keyval
         except AttributeError:
@@ -2628,10 +2688,12 @@ class DialogFindPersonalStation(Gtk.Dialog):
             return True
 
     def close_dial_win(self, *args):
+
         self.response(-7)
         self.destroy()
 
     def s_on_cell_radio_toggled(self, widget, path):
+
         print('self.hide()')
         self.hide()
         selected_path = Gtk.TreePath(path)
@@ -2649,6 +2711,7 @@ class DialogFindPersonalStation(Gtk.Dialog):
 
 
     def find_icon_press(self, *args):
+
         self.s_find_dict = {}
         self.s_liststore.clear()
         self.s_treeview.remove_column(self.s_column_text)
@@ -2676,6 +2739,7 @@ class DialogEntryAdr(Gtk.Dialog):
 
 
     def __init__(self, parent):
+
         Gtk.Dialog.__init__(self, "Воспроизвести пользовательский адрес", parent, Gtk.DialogFlags.MODAL,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
              Gtk.STOCK_OK, Gtk.ResponseType.OK))
@@ -2696,6 +2760,7 @@ class DialogC_A_L(Gtk.Dialog):
 
 
     def __init__(self, parent, *args):
+
         Gtk.Dialog.__init__(self, "Создания адресного листа для IRC", parent, Gtk.DialogFlags.MODAL)
 
         self.my_args = args
@@ -2793,6 +2858,7 @@ class EQWindow(Gtk.Dialog):
 
 
     def __init__(self, parent):
+
         Gtk.Dialog.__init__(self, "EQ", parent, Gtk.DialogFlags.MODAL,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
              Gtk.STOCK_OK, Gtk.ResponseType.OK))
@@ -2904,6 +2970,7 @@ class EQWindow(Gtk.Dialog):
         self.show_all()
 
     def chenge_bat_label(self, *args):
+
         if self.name_entry.get_text() != '':
             self.button_save.set_label('Сохранить настройки')
         else:
@@ -2911,6 +2978,7 @@ class EQWindow(Gtk.Dialog):
         return True
 
     def on_currency_combo_changed(self, combo):
+
         combo_config = configparser.ConfigParser()
         combo_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
         self.arr_eq = []
@@ -2931,18 +2999,19 @@ class EQWindow(Gtk.Dialog):
 
     # Все эквалайзеры на ноль
     def all_null(self, *args):
-        #
+
         c = 0
         for x in self.sc_l:
             self.label_l[c].set_label('0')
             x.set_value(float(12))
             c += 1
-        #
 
     # Запись результата настроек в файл
     def write_cfg_prs(self, *args):
+
         wr_config = configparser.ConfigParser()
         wr_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+
         if len(self.arr_eq) != 18:
             if self.name_entry.get_text() != '':
                 print('Есть текст в интри')
@@ -2975,6 +3044,7 @@ class EQWindow(Gtk.Dialog):
 
     # Реакция на нажатие кнопки "Установить / Сохранить"
     def ret_md(self, *args):
+
         if self.name_entry.get_text() != '':
             self.name_combo.append_text(self.name_entry.get_text())
         self.mdict = []
@@ -2987,6 +3057,7 @@ class EQWindow(Gtk.Dialog):
 
     # Запись результата настроек в массив self.mdict
     def write_arr_in(self, *value):
+
         for x in range(18):
             if round(self.sc_l[x].get_value()) == round(value[2]):
                 self.label_l[x].set_label(self.scale_n.get(round(value[2])))
