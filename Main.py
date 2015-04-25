@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.24'
+SCRIPT_VERSION = '0.0.0.25'
 
 
 class RadioWin(Gtk.Window):
@@ -709,7 +709,7 @@ class RadioWin(Gtk.Window):
         self.record_scrolled_window.add(self.record_treeview)
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
+        # My Play List
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
@@ -720,6 +720,7 @@ class RadioWin(Gtk.Window):
             self.my_pls_liststore.append([x, False])
 
         self.my_pls_treeview = Gtk.TreeView(model=self.my_pls_liststore)
+        self.my_pls_treeview.connect("button-release-event", self.menu_del_line)
         self.my_pls_treeview.set_tooltip_column(0)
         self.my_pls_treeview.set_enable_search(True)
         self.my_pls_treeview.set_show_expanders(False)
@@ -986,6 +987,38 @@ class RadioWin(Gtk.Window):
         except ValueError:
             return False
 
+    # Удаление строки из моего плейлиста
+    def n_next(self, *args):
+
+        self.del_my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
+        self.del_my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+
+        for x in self.del_my_pls_config.sections():
+            if x == args[1]:
+                print('Удаление записи адреса из моего плейлиста ==> ', args[1])
+                self.del_my_pls_config.remove_section(args[1])
+
+        with open(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini', 'w') as configfile:
+            self.del_my_pls_config.write(configfile)
+
+        self.my_pls_liststore.clear()
+
+        for x in sorted(self.del_my_pls_config.sections()):
+            self.my_pls_liststore.append([x, False])
+
+    # Menu delete line in my play list
+    def menu_del_line(self, widget, event):
+
+        d = self.my_pls_liststore.get_value(self.my_pls_liststore.get_iter(widget.get_cursor()[0]), 0)
+
+        if event.button == 3:
+            self.menu_pop_show = Gtk.Menu()
+            self.menu_copy = Gtk.MenuItem("Удалить")
+            self.menu_copy.connect('activate', self.n_next, d)
+            self.menu_pop_show.append(self.menu_copy)
+            self.menu_pop_show.show_all()
+            self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
+
     ## Pop-up menu
     def button_press(self,widget,event):
 
@@ -1012,7 +1045,7 @@ class RadioWin(Gtk.Window):
 
         about = Gtk.AboutDialog('О Программе', self, Gtk.DialogFlags.MODAL)
         about.set_program_name("Radio")
-        about.set_version(SCRIP_VERSION)
+        about.set_version(SCRIPT_VERSION)
         about.set_copyright("(c) IvSatel 2015")
         about.set_comments("Internet Radio Player")
         about.set_logo(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
@@ -2285,7 +2318,7 @@ class Script_Version_Compare():
         )]
         with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
             self.remote_vers = fo.read().decode()
-        if SCRIP_VERSION < self.remote_vers:
+        if SCRIPT_VERSION < self.remote_vers:
             update_opener = urllib.request.build_opener()
             update_opener.addheaders = [
             ('Host', 'github.com'),
@@ -2316,7 +2349,7 @@ class Script_Version_Compare():
         #)]
         #with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
             #self.remote_vers = fo.read().decode()
-        #if SCRIP_VERSION < self.remote_vers:
+        #if SCRIPT_VERSION < self.remote_vers:
             #dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK)
             #dialog.set_markup("<a href=\"https://github.com/IvSatel/Player101ru\">\n<b>Открыть страницу скрипта</b>\n</a>")
             #dialog.run()
@@ -3091,7 +3124,7 @@ version_opener.addheaders = [(
 remote_vers = ''
 with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
     remote_vers = fo.read().decode()
-if SCRIP_VERSION < remote_vers:
+if SCRIPT_VERSION < remote_vers:
     update_opener = urllib.request.build_opener()
     update_opener.addheaders = [
     ('Host', 'github.com'),
