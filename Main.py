@@ -41,7 +41,8 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIP_VERSION = '0.0.0.23'
+SCRIP_VERSION = '0.0.0.24'
+
 
 class RadioWin(Gtk.Window):
 
@@ -406,7 +407,7 @@ class RadioWin(Gtk.Window):
         self.main_menu_items_vol.set_submenu(self.vol_menu)
         self.main_menu.append(self.main_menu_items_vol)
         self.main_menu_items_vol.show()
-        for x in range(0, 100, 5):
+        for x in range(0, 105, 5):
             self.vol_menu.append(Gtk.CheckMenuItem.new_with_label(str(x)))
         for x in self.vol_menu:
             x.connect("activate", self.on_togled_menu_it, 'B')
@@ -1091,50 +1092,59 @@ class RadioWin(Gtk.Window):
             if len(self.tooltip_now_text) > 0:
                 pass
             else:
-                media_info = []
+                def m_i():
+                    media_info = []
 
-                discoverer = GstPbutils.Discoverer()
-                info = discoverer.discover_uri(self.media_location)# Create = GstPbutils.DiscovererInfo =
-                for ainfo in info.get_audio_streams():# Create = GstPbutils.DiscovererStreamInfo =get_language()
-                    m_caps = str(ainfo.get_caps()).split(',')
-                    if m_caps != None:
-                        media_info.append(str('caps = '+str(m_caps[0])+'\n'))
-                    m_misc = ainfo.get_misc()
-                    if m_misc != None:
-                        media_info.append(str('misc = '+str(ainfo.get_misc())+'\n'))
-                    m_next = ainfo.get_next()
-                    if m_next != None:
-                        media_info.append(str('next = '+str(ainfo.get_next())+'\n'))
-                    m_nick = ainfo.get_stream_type_nick()
-                    if m_nick != None:
-                        media_info.append(str('type = '+str(ainfo.get_stream_type_nick())+'\n'))
-                    m_toc = ainfo.get_toc()
-                    if m_toc != None:
-                        media_info.append(str('toc = '+str(ainfo.get_toc())+'\n'))
-                    m_bitrate = ainfo.get_bitrate()
-                    if m_bitrate != 0:
-                        media_info.append(str('bitrate = '+str(ainfo.get_bitrate())+'\n'))
-                    m_chanels = ainfo.get_channels()
-                    if m_chanels != None:
-                        media_info.append(str('channels = '+str(ainfo.get_channels())+'\n'))
-                    m_depth = ainfo.get_depth()
-                    if m_bitrate != 0:
-                        media_info.append(str('depth = '+str(ainfo.get_depth())+'\n'))
-                    m_lang = ainfo.get_language()
-                    if m_lang != None:
-                        media_info.append(str('language = '+str(ainfo.get_language())+'\n'))
-                    m_max_bitrate = ainfo.get_max_bitrate()
-                    if m_max_bitrate != 0:
-                        media_info.append(str('max bitrate = '+str(ainfo.get_max_bitrate())+'\n'))
-                    m_sample_rate = ainfo.get_sample_rate()
-                    if m_sample_rate != None:
-                        media_info.append(str('sample rate = '+str(ainfo.get_sample_rate())+'\n'))
-                    media_info.append(str('seekable = '+str(local_convert_time(info.get_duration()))+'\n'))
-                self.tooltip_now_text = ''
-                for x in media_info:
-                    self.tooltip_now_text += x
+                    discoverer = GstPbutils.Discoverer()
+                    info = discoverer.discover_uri(self.media_location)# Create = GstPbutils.DiscovererInfo =
+                    for ainfo in info.get_audio_streams():# Create = GstPbutils.DiscovererStreamInfo =get_language()
+                        m_caps = str(ainfo.get_caps()).split(',')
+                        if m_caps != None:
+                            media_info.append(str('caps = '+str(m_caps[0])+'\n'))
+                        m_misc = ainfo.get_misc()
+                        if m_misc != None:
+                            media_info.append(str('misc = '+str(ainfo.get_misc())+'\n'))
+                        m_next = ainfo.get_next()
+                        if m_next != None:
+                            media_info.append(str('next = '+str(ainfo.get_next())+'\n'))
+                        m_nick = ainfo.get_stream_type_nick()
+                        if m_nick != None:
+                            media_info.append(str('type = '+str(ainfo.get_stream_type_nick())+'\n'))
+                        m_toc = ainfo.get_toc()
+                        if m_toc != None:
+                            media_info.append(str('toc = '+str(ainfo.get_toc())+'\n'))
+                        m_bitrate = ainfo.get_bitrate()
+                        if m_bitrate != 0:
+                            media_info.append(str('bitrate = '+str(ainfo.get_bitrate())+'\n'))
+                        m_chanels = ainfo.get_channels()
+                        if m_chanels != None:
+                            media_info.append(str('channels = '+str(ainfo.get_channels())+'\n'))
+                        m_depth = ainfo.get_depth()
+                        if m_bitrate != 0:
+                            media_info.append(str('depth = '+str(ainfo.get_depth())+'\n'))
+                        m_lang = ainfo.get_language()
+                        if m_lang != None:
+                            media_info.append(str('language = '+str(ainfo.get_language())+'\n'))
+                        m_max_bitrate = ainfo.get_max_bitrate()
+                        if m_max_bitrate != 0:
+                            media_info.append(str('max bitrate = '+str(ainfo.get_max_bitrate())+'\n'))
+                        m_sample_rate = ainfo.get_sample_rate()
+                        if m_sample_rate != None:
+                            media_info.append(str('sample rate = '+str(ainfo.get_sample_rate())+'\n'))
+                        media_info.append(str('seekable = '+str(local_convert_time(info.get_duration()))+'\n'))
+                    self.tooltip_now_text = ''
+                    for x in media_info:
+                        self.tooltip_now_text += x
+                #
+                self.thread_t = threading.Thread(target=m_i)
+                self.thread_t.daemon = True
+                self.thread_t.start()
+                #
             #
-            tooltip.set_text(self.tooltip_now_text)
+            if self.thread_t.is_alive():
+                tooltip.set_text('Идет поиск данных')
+            else:
+                tooltip.set_text(self.tooltip_now_text)
         else:
             tooltip.set_text('Нет информации')
         return True
@@ -1617,11 +1627,9 @@ class RadioWin(Gtk.Window):
             print('6 equalizer.link(audiosink) ==> OK LINKED')
 
         if self.run_radio_window == 0 and self.real_vol_save == 0:
-            print('1 self.run_radio_window & self.real_vol_save', self.run_radio_window, self.real_vol_save)
             self.scal_sl.set_value(0.50)
             self.volume.set_property('volume', 0.50)
         else:
-            print('2 self.run_radio_window & self.real_vol_save', self.run_radio_window, self.real_vol_save)
             self.scal_sl.set_value(self.real_vol_save)
             self.volume.set_property('volume', self.real_vol_save)
 
@@ -1635,7 +1643,8 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::buffering', self.message_buffering)
         message_bus.connect('message::duration', self.message_duration)
 
-        self.pipeline.set_state(Gst.State.PLAYING)
+        #self.pipeline.set_state(Gst.State.PLAYING)
+        self.pipeline.set_state(Gst.State.PAUSED)
 
         self.run_radio_window = 1
 
@@ -1834,10 +1843,11 @@ class RadioWin(Gtk.Window):
 
             print('\n', 'Получены ТЭГИ '+str(datetime.datetime.now().strftime('%H:%M:%S')), '\n', 's_tag_l ==> ', s_tag_l)
 
-            try:
-                self.label_title.set_label(re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M))
-            except:
-                pass
+            if len(s_tag_l) > 0:
+                try:
+                    self.label_title.set_label(re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M))
+                except:
+                    pass
 
             if self.file_play == 0 and not self.timer_title and self.id_chan[0][0].isdigit():
                 print('GLib.timeout_add', self.id_chan[0])
@@ -1887,6 +1897,7 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             if message.parse_buffering() == 100:
                 print('Buffering is done = ', message.parse_buffering())
+                self.pipeline.set_state(Gst.State.PLAYING)
 
         ###################################################
         ###################################################
@@ -2164,6 +2175,11 @@ class RadioWin(Gtk.Window):
 
     # Функция установки громкости
     def on_valu_ch(self, obj_send, value, *args):
+
+        if 'VolumeButton' in str(obj_send):
+            for x in self.vol_menu:
+                if int(x.get_label()) == round(int(self.scal_sl.get_value() * 100)/5)*5:
+                    x.set_active(True)
 
         r_value = round(Decimal.from_float(value), 2)
 
