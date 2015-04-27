@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.25'
+SCRIPT_VERSION = '0.0.0.26'
 
 
 class RadioWin(Gtk.Window):
@@ -123,6 +123,10 @@ class RadioWin(Gtk.Window):
         self.HURL = HackURL()# Получение адреса потока 101 RU
         self.wr_station_name_adr = WriteLastStation()# Запись последнего адреса потока
 
+        # Rec Object
+        self.rec_obj = 0
+        # Rec status
+        self.rec_status = False
         # Медиа данные (битрейт, моно или стерео)
         self.media_location = ''
         self.tooltip_now_text = ''
@@ -805,20 +809,42 @@ class RadioWin(Gtk.Window):
 
         # Создание кнопок (воспроизведение, открыть файл, открыть папку, пауза, стоп)
         self.button_array = []
-        self.button_actions = [self.on_click_bt1, self.on_click_bt2, self.on_click_bt3, self.on_click_bt4, self.on_click_bt5]
+        self.button_tooltip = [
+        'Воспроизведение',
+        'Воспроизвести файл',
+        'Воспроизвести директорию',
+        'Пауза',
+        'Стоп',
+        'Запись'
+        ]
+        self.button_actions = [
+        self.on_click_bt1,
+        self.on_click_bt2,
+        self.on_click_bt3,
+        self.on_click_bt4,
+        self.on_click_bt5,
+        self.on_click_bt6
+        ]
         self.img_for_button_array = []
-        self.button_img_array = [Gtk.STOCK_MEDIA_PLAY, Gtk.STOCK_FILE, Gtk.STOCK_DIRECTORY, Gtk.STOCK_MEDIA_PAUSE, Gtk.STOCK_MEDIA_STOP]
-        for x in range(5):
+        self.button_img_array = [
+        Gtk.STOCK_MEDIA_PLAY,
+        Gtk.STOCK_FILE,
+        Gtk.STOCK_DIRECTORY,
+        Gtk.STOCK_MEDIA_PAUSE,
+        Gtk.STOCK_MEDIA_STOP,
+        Gtk.STOCK_MEDIA_RECORD]
+        for x in range(6):
             self.img_for_button_array.append(Gtk.Image())
             self.img_for_button_array[x].set_from_stock(self.button_img_array[x], 4)
 
-            self.button_array.append(Gtk.Button())
-            self.button_array[x].set_use_stock(False)
+            self.button_array.append(Gtk.Button(use_stock=True))
             self.button_array[x].set_image(self.img_for_button_array[x])
             self.button_array[x].set_relief(Gtk.ReliefStyle.NONE)
             self.button_array[x].set_resize_mode(Gtk.ResizeMode.PARENT)
             self.button_array[x].set_alignment(0.5, 0.5)
+            self.button_array[x].set_tooltip_text(self.button_tooltip[x])
             self.button_array[x].connect("clicked", self.button_actions[x])
+            #self.button_array[x].connect("enter-notify-event", self.mous_move, self.button_tooltip[x])
 
         # Создание лейбла для отображения названия
         self.label_title = Gtk.Label()
@@ -859,6 +885,7 @@ class RadioWin(Gtk.Window):
         self.label_mon_st.connect("query-tooltip", self.media_tool_hint)
         self.label_mon_st.set_justify(Gtk.Justification.CENTER)
         self.label_mon_st.modify_font(Pango.FontDescription("9"))
+        self.label_mon_st.modify_font(Pango.FontDescription('bold'))
         self.label_mon_st.set_max_width_chars(10)
 
         ## Создание прогресса для отображения положения звучания
@@ -876,7 +903,7 @@ class RadioWin(Gtk.Window):
 
         # Создание сетки с кнопками
         self.grid_button.attach(self.button_array[0], 1, 1, 1, 1)
-        for x in range(1, 5):
+        for x in range(1, 6):
             self.grid_button.attach_next_to(self.button_array[x], self.button_array[x-1], Gtk.PositionType.RIGHT, 1, 1)
 
         self.grid_seek.attach(self.label_ldb, 0, 1, 2, 1)# Лейбл децебел
@@ -1525,6 +1552,7 @@ class RadioWin(Gtk.Window):
             if location[0].endswith('.flv'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('uridecodebin', 'source')
+                self.HURL.used_stream_adress.append(location[0])
                 source.set_property('uri', location[0])
                 #
                 get_id_chanel = re.sub(r'(.+?\=)(\d+)$', r'\2', self.real_adress, re.M)
@@ -1546,10 +1574,11 @@ class RadioWin(Gtk.Window):
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник RTMP "+str(datetime.datetime.now().strftime('%H:%M:%S')))
-            elif not location[0].startswith('http') or not location[0].startswith('rtmp') and location[0].endswith('.flv'):
+            elif not location[0].startswith('http') or not location[0].startswith('rtmp') and not location[0].endswith('.flv'):
                 self.media_location = 'file://'+str(location[0])
                 source = Gst.ElementFactory.make('filesrc', 'source')
                 print('************* ==> Источник файл '+str(datetime.datetime.now().strftime('%H:%M:%S')))
+                self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
             if len(location) > 1:
                 self.id_chan[0] = location[1]
@@ -1570,7 +1599,6 @@ class RadioWin(Gtk.Window):
             caps = pad.get_current_caps()
             print('Name Gst.Caps => ', caps.to_string())
             pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
-            #pad.link(audioconvert.get_static_pad('sink'))
 
         ## Создаем нужные элементы для плеера
         source = self.create_source(args)
@@ -1660,6 +1688,7 @@ class RadioWin(Gtk.Window):
             print('6 equalizer.link(audiosink) ==> OK LINKED')
 
         if self.run_radio_window == 0 and self.real_vol_save == 0:
+            self.real_vol_save = 0.50
             self.scal_sl.set_value(0.50)
             self.volume.set_property('volume', 0.50)
         else:
@@ -1676,7 +1705,6 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::buffering', self.message_buffering)
         message_bus.connect('message::duration', self.message_duration)
 
-        #self.pipeline.set_state(Gst.State.PLAYING)
         self.pipeline.set_state(Gst.State.PAUSED)
 
         self.run_radio_window = 1
@@ -1685,8 +1713,7 @@ class RadioWin(Gtk.Window):
     def convert_time(self, t):
 
         end_res = ''
-        dt = datetime.datetime.utcfromtimestamp(t/1e9)
-        mytime = dt.strftime('%H:%M:%S:%f')[:-4].split('::')
+        mytime = datetime.datetime.utcfromtimestamp(t/1e9).strftime('%H:%M:%S:%f')[:-4].split('::')
         for x in map(lambda x: '%s' % x, mytime):
             end_res = x
         return end_res
@@ -1983,6 +2010,11 @@ class RadioWin(Gtk.Window):
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
         if self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
+
+            for x in range(6):
+                if x == 5:
+                    self.button_array[x].show()
+
             print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ", f_name, 'self.real_adress ==> 1 ', self.real_adress)
             thread_1 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
             thread_1.daemon = True
@@ -2022,6 +2054,11 @@ class RadioWin(Gtk.Window):
                 self.My_ERROR_Mess = False
                 return True
         elif str(type(self.id_chan[0])) == "<class 'list'>" or (f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name)):
+
+            for x in range(6):
+                if x == 5:
+                    self.button_array[x].show()
+
             self.file_play = 0
             self.radio_play = 1
             print('Включение радио 2 '+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -2045,6 +2082,11 @@ class RadioWin(Gtk.Window):
                 self.on_click_bt5()
                 self.label_title.set_label('Нет рабочих потоков')
         elif self.id_chan[0] == 'file':# Если не пусто то файл
+
+            for x in range(6):
+                if x == 5:
+                    self.button_array[x].show()
+
             self.radio_play = 0
             self.file_play = 1
             print('Включение проигрывания файла '+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -2064,13 +2106,14 @@ class RadioWin(Gtk.Window):
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
         elif f_name == 0:
-            print('return False Not plaing chanel')
+            print('return False Канал не передает потока')
             return False
 
     # Кнопка плей
     def on_click_bt1(self, b1):
 
         print('Нажата кнопка Play')
+
         if self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'RREC':
             self.main_note_for_cont.set_show_tabs(False)
             self.play_stat_now(self.real_adress)
@@ -2150,6 +2193,17 @@ class RadioWin(Gtk.Window):
     def on_click_bt5(self, *b5):
 
         print('Нажата кнопка Stop')
+
+        for x in range(6):
+            if x == 5:
+                self.button_array[x].hide()
+
+        # STOP RECORDING
+        if self.rec_obj:
+            self.rec_status = False
+            self.rec_obj.rec_pipeline.set_state(Gst.State.NULL)
+            self.rec_obj = 0
+
         self.tooltip_now_text = ''
         self.id_chan = [0,0]
         self.real_adress = ''
@@ -2159,26 +2213,60 @@ class RadioWin(Gtk.Window):
         self.file_play = 0
         self.timer_title = 0
         self.timer = 0
+
         if self.timer_title_rtmp:
             self.timer_title_rtmp = 0
+
         for x in range(3):
             self.button_array[x].show()
+
         self.seek_line.hide()#SeekLine
         self.seek_line.set_value(0.01)
         self.main_note_for_cont.show()#Table
         self.label_title.set_label('')
         self.label_ldb.set_label('')
         self.label_rdb.set_label('')
+
         if self.pipeline:
             self.main_note_for_cont.set_show_tabs(True)
             self.main_note_for_cont.set_show_border(True)
             print('if self.pipeline: $$$ ==> self.pipeline.set_state(Gst.State.NULL) '+str(datetime.datetime.now().strftime('%H:%M:%S')))
             self.pipeline.set_state(Gst.State.NULL)
+
         self.pipeline = 0
         self.level_bar_l.set_fraction(0.0)
         self.level_bar_r.set_fraction(0.0)
         self.label_time.set_label('00:00:00:00')
         self.label_ltime.set_label('00:00:00:00')
+
+    # Кнопка записи
+    def on_click_bt6(self, *b6):
+
+        if not self.rec_status:
+
+            print('Record start', self.HURL.used_stream_adress[-1])
+
+            self.rec_obj = RecorderBin(self.HURL.used_stream_adress[-1])
+            self.rec_obj.rec_pipeline.set_state(Gst.State.PLAYING)
+            self.rec_status = 1
+
+    # Mouse Move
+    #def mous_move(self, widget, event, *args):
+
+        #def clear_label_after():
+            #if self.x_and_y_root != event.x_root+event.x_root:
+                #self.x_and_y_root = event.x_root+event.x_root
+                #self.label_title.set_text(args[0])
+                #time.sleep(self.time_to_event)
+                #self.label_title.set_text('')
+
+        #self.x_and_y_root = 0
+
+        #self.time_to_event = event.time//2000000
+
+        #thread_label_tt = threading.Thread(target=clear_label_after)
+        #thread_label_tt.daemon = True
+        #thread_label_tt.start()
 
     # Обработка выбора пункта в меню Equalizer
     def change_equlaizer(self, *gain):
@@ -3112,6 +3200,77 @@ class EQWindow(Gtk.Dialog):
                 self.label_l[x].set_label(self.scale_n.get(round(value[2])))
                 self.mdict[x] = self.scale_n.get(round(value[2]))
 
+# Класс Записи потока
+class RecorderBin(Gst.Bin):
+
+    def __init__(self, location):
+
+        self.rec_pipeline = self.create_rec_pipeline(location)
+
+        message_bus = self.rec_pipeline.get_bus()
+        message_bus.add_signal_watch_full(1)
+        message_bus.connect('message', self.message_handler)
+
+        #self.rec_pipeline.set_state(Gst.State.PLAYING)
+
+    def list_files(self, path):
+
+        name_files = []
+        for name in os.listdir(path):
+            if os.path.isfile(os.path.join(path, name)):
+                if 'new' in name:
+                    name_files.append(name)
+
+        files_list = sorted(name_files)
+
+        try:
+            d_name = re.findall(r'(^\d+)(.+?)$', files_list[-1])
+        except IndexError:
+            d_name = [(0, '_new.ogg')]
+
+        return str(int(d_name[0][0])+1)+str(d_name[0][1])
+
+    def create_rec_pipeline(self, location):
+
+        def on_pad_added(decodebin, pad):
+            pad.link_full(self.rec_audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
+
+        rec_pipeline = Gst.Pipeline()
+        '''
+        uridecodebin uri=http://air.radiorecord.ru:8102/club_320 !
+        audioconvert !
+        vorbisenc !
+        oggmux !
+        filesink location=1_new.ogg
+        '''
+
+        self.rec_uridecodebin = Gst.ElementFactory.make('uridecodebin', 'uridecodebin')
+        self.rec_audioconvert = Gst.ElementFactory.make('audioconvert', 'audioconvert')
+        self.rec_vorbisenc = Gst.ElementFactory.make("vorbisenc", "vorbisenc")
+        self.rec_oggmux = Gst.ElementFactory.make("oggmux", "oggmux")
+        self.rec_filesink = Gst.ElementFactory.make("filesink", "filesink")
+
+        self.rec_uridecodebin.connect('pad-added', on_pad_added)
+        self.rec_vorbisenc.set_property('managed', True)
+        self.rec_vorbisenc.set_property('quality', 0.9)
+        self.rec_uridecodebin.set_property('uri', location)
+        self.rec_filesink.set_property("location", self.list_files(os.path.dirname(os.path.realpath(__file__))))
+
+        [rec_pipeline.add(k) for k in [self.rec_vorbisenc, self.rec_oggmux,
+        self.rec_filesink, self.rec_uridecodebin, self.rec_audioconvert]]
+
+        print('REC-Linck №1 OK', self.rec_audioconvert.link(self.rec_vorbisenc))
+        print('REC-Linck №2 OK', self.rec_vorbisenc.link(self.rec_oggmux))
+        print('REC-Linck №3 OK', self.rec_oggmux.link(self.rec_filesink))
+
+        return rec_pipeline
+
+    def message_handler(self, bus, message):
+
+        if message.type == Gst.MessageType.EOS:
+            print('End Of Stream')
+            self.rec_pipeline.set_state(Gst.State.NULL)
+
 def exit_in_player(obj, event):
     Gtk.main_quit()
 
@@ -3145,6 +3304,9 @@ else:
     Radio_for_101.connect("delete-event", exit_in_player)
     Radio_for_101.show_all()
     Radio_for_101.seek_line.hide()
+    for x in range(6):
+        if x == 5:
+            Radio_for_101.button_array[x].hide()
 
 GObject.threads_init()
 Gtk.main()
