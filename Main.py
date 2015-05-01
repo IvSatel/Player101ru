@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.26'
+SCRIPT_VERSION = '0.0.0.27'
 
 
 class RadioWin(Gtk.Window):
@@ -95,7 +95,7 @@ class RadioWin(Gtk.Window):
             with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as adr101file:
                 adr101file.writelines(final_conf)
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig') as file_w:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig', errors='ignore') as file_w:
             read_adr = file_w.readlines()
 
         self.read_list_adr = []
@@ -120,8 +120,11 @@ class RadioWin(Gtk.Window):
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
-        self.HURL = HackURL()# Получение адреса потока 101 RU
-        self.wr_station_name_adr = WriteLastStation()# Запись последнего адреса потока
+
+        # Получение адреса потока 101 RU
+        self.HURL = HackURL()
+        # Запись последнего адреса потока
+        self.wr_station_name_adr = WriteLastStation()
 
         # Rec Object
         self.rec_obj = 0
@@ -975,8 +978,20 @@ class RadioWin(Gtk.Window):
         else:
             self.hide()
             self.show_all()
-            if self.file_play == 0:
-                self.seek_line.hide()
+            if self.radio_play == 1 or self.radio_rtmp_play == 1 or self.file_play == 1:
+                if self.file_play == 1:
+                    self.seek_line.show()
+                for x in range(6):
+                    if x == 5 or x == 1 or x == 2:
+                        self.button_array[x].hide()
+                    else:
+                        self.button_array[x].show()
+            if self.radio_play != 1 and self.radio_rtmp_play != 1 and self.file_play != 1:
+                if self.file_play == 0:
+                    self.seek_line.hide()
+                for x in range(6):
+                    if x == 5:
+                        self.button_array[x].hide()
 
     # Распознать кодировку
     def lang_ident_str(self, get_text):
@@ -1445,7 +1460,7 @@ class RadioWin(Gtk.Window):
 
             if progress.get_fraction() == 1.0:
 
-                with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig') as file_w:
+                with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig', errors='ignore') as file_w:
                     read_adr = file_w.readlines()
 
                 self.read_list_adr = []
@@ -2197,6 +2212,8 @@ class RadioWin(Gtk.Window):
         for x in range(6):
             if x == 5:
                 self.button_array[x].hide()
+            else:
+                self.button_array[x].show()
 
         # STOP RECORDING
         if self.rec_obj:
@@ -2216,9 +2233,6 @@ class RadioWin(Gtk.Window):
 
         if self.timer_title_rtmp:
             self.timer_title_rtmp = 0
-
-        for x in range(3):
-            self.button_array[x].show()
 
         self.seek_line.hide()#SeekLine
         self.seek_line.set_value(0.01)
@@ -2420,7 +2434,7 @@ class Script_Version_Compare():
                 old_script.write(update_source)
 
             sb_p = subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
-            #sb_p.wait()
+
         else:
             sb_p = subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
             Radio_for_101 = RadioWin()
@@ -2541,7 +2555,7 @@ class WriteLastStation(object):
 
         self.dirty_date = ''
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig') as main_param_file:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig', errors='ignore') as main_param_file:
             self.dirty_date = main_param_file.read()
 
         self.dirty_list_date = re.sub(r'amp;', r'', self.dirty_date).split('\n')
@@ -3154,7 +3168,7 @@ class EQWindow(Gtk.Dialog):
                 print('Есть текст в интри')
                 lasteq = self.name_entry.get_text()
                 wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
+                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig', errors='ignore') as configfile:
                     wr_config.write(configfile)
                 print('Zap2')
             elif self.name_entry.get_text() == '':
@@ -3162,7 +3176,7 @@ class EQWindow(Gtk.Dialog):
                 lasteq = 'lasteq'
                 try:
                     wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
+                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig', errors='ignore') as configfile:
                         wr_config.write(configfile)
                 except:
                     wr_config.add_section('EQ-Settings')
@@ -3176,7 +3190,7 @@ class EQWindow(Gtk.Dialog):
             else:
                 lasteq = 'lasteq'
             wr_config.set('EQ-Settings', lasteq, str(' '.join(self.arr_eq)))
-            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig') as configfile:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig', errors='ignore') as configfile:
                 wr_config.write(configfile)
 
     # Реакция на нажатие кнопки "Установить / Сохранить"
