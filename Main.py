@@ -29,7 +29,7 @@ from gi.repository import GLib
 from gi.repository import Pango
 from gi.repository import GObject
 
-Gst.init_check(None)# Разместить здесь, что-бы не вызвать ошибку инициализации у GstPbutils
+Gst.init(None)# Разместить здесь, что-бы не вызвать ошибку инициализации у GstPbutils
 
 from gi.repository import GdkPixbuf
 from gi.repository import GstPbutils
@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.27'
+SCRIPT_VERSION = '0.0.0.28'
 
 
 class RadioWin(Gtk.Window):
@@ -69,7 +69,7 @@ class RadioWin(Gtk.Window):
 
             # Запрос всех разделов
             with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
-                razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', source_101_http.read().decode('utf-8-sig', errors='ignore'), re.M)
+                razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', source_101_http.read().decode('utf-8', errors='ignore'), re.M)
 
             dict_101_ru = []
 
@@ -79,7 +79,7 @@ class RadioWin(Gtk.Window):
             for x, y in razdel_101_http:
                 a = []
                 with ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as source_101_razdel:
-                    source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', source_101_razdel.read().decode('utf-8-sig', errors='ignore'), re.M)
+                    source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
                     for z, c in source_101_http_razdel:
                         a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
                     dict_101_ru.append(a)
@@ -95,7 +95,7 @@ class RadioWin(Gtk.Window):
             with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as adr101file:
                 adr101file.writelines(final_conf)
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig', errors='ignore') as file_w:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r') as file_w:
             read_adr = file_w.readlines()
 
         self.read_list_adr = []
@@ -106,7 +106,7 @@ class RadioWin(Gtk.Window):
         # Существуют ли записи в файле set-eq.ini предустановок эквалайзера или нет
         try:
             config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
@@ -116,7 +116,7 @@ class RadioWin(Gtk.Window):
             config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
             with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
                 config.write(cfgfile)
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
@@ -222,7 +222,7 @@ class RadioWin(Gtk.Window):
         ]
 
         with dinamit_opener.open('http://www.dfm.ru/listen/dfmonline/') as dinamit_http_source:
-            dinamit_http_read_1 = dinamit_http_source.read().decode('utf-8-sig', errors='ignore')
+            dinamit_http_read_1 = dinamit_http_source.read().decode('utf-8', errors='ignore')
 
         dinamit_res = {x[1]:'http://www.dfm.ru'+x[0] for x in re.findall(r'<p><a href="(.+?)" title="Слушать.+?"><strong>(.+?)</strong>', dinamit_http_read_1, re.M)}
 
@@ -231,7 +231,7 @@ class RadioWin(Gtk.Window):
         try:
             for key, val in dinamit_res.items():
                 with dinamit_opener.open(val) as dinamit_http_source_2:
-                    dinamit_http_read = dinamit_http_source_2.read().decode('utf-8-sig', errors='ignor')
+                    dinamit_http_read = dinamit_http_source_2.read().decode('utf-8', errors='ignor')
                     self.d_fm_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
         except:
             ## Словарь Ди-ФМ
@@ -523,7 +523,7 @@ class RadioWin(Gtk.Window):
         self.RIC_url = ''
 
         self.loc_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        self.loc_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8-sig')
+        self.loc_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8')
         self.c_s = self.loc_config.sections()
 
         if len(self.c_s) == 0:
@@ -655,7 +655,7 @@ class RadioWin(Gtk.Window):
 
         try:
             with record_opener.open('http://www.radiorecord.ru/player/') as http_source:
-                http_read = http_source.read().decode('utf-8-sig', errors='ignore')
+                http_read = http_source.read().decode('utf-8', errors='ignore')
             record_res = re.findall(r'<div class="station".+?class="station-name">(.+?)</div><div class="station-track">.+?itemprop="url">(.+?)</div></div>', http_read, re.M)
 
             self.record_dict = {x[0]:x[1] for x in record_res}
@@ -1012,18 +1012,18 @@ class RadioWin(Gtk.Window):
                 print('2 MAX', max(b), min(b))
                 lang_ident = 'Ru'
                 try:
-                    return get_text.encode('cp1251').decode('utf-8-sig')
+                    return get_text.encode('cp1251').decode('utf-8')
                 except:
                     return get_text.encode('cp1251').decode('cp1251')
             elif max(b) < 129 and min(b) < 129:
                 print('3 MAX', max(b), min(b))
                 lang_ident = 'En'
-                return get_text.encode('utf_8', errors='ignore').decode('utf-8-sig', errors='ignore')
+                return get_text.encode('utf_8', errors='ignore').decode('utf-8', errors='ignore')
             elif max(b) < 256 and min(b) < 256:
                 print('4 MAX', max(b), min(b))
                 lang_ident = 'EnRu'
                 try:
-                    return get_text.encode('latin-1').decode('utf-8-sig')
+                    return get_text.encode('latin-1').decode('utf-8')
                 except:
                     return get_text.encode('latin-1').decode('cp1251')
         except ValueError:
@@ -1240,7 +1240,7 @@ class RadioWin(Gtk.Window):
         if response == 22:
             # Создание и установка элементов
             self.loc_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-            self.loc_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8-sig')
+            self.loc_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8')
             self.c_s = self.loc_config.sections()
             self.liststore_RIC = Gtk.ListStore(str, bool)
             for x in self.c_s:
@@ -1460,7 +1460,7 @@ class RadioWin(Gtk.Window):
 
             if progress.get_fraction() == 1.0:
 
-                with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig', errors='ignore') as file_w:
+                with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
                     read_adr = file_w.readlines()
 
                 self.read_list_adr = []
@@ -1482,7 +1482,7 @@ class RadioWin(Gtk.Window):
 
             # Запрос всех разделов
             with loc_ad_101_opener.open('http://101.ru/?an=port_allchannels') as loc_source_101_http:
-                loc_razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', loc_source_101_http.read().decode('utf-8-sig', errors='ignore'), re.M)
+                loc_razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', loc_source_101_http.read().decode('utf-8', errors='ignore'), re.M)
 
             loc_dict_101_ru = []
 
@@ -1491,7 +1491,7 @@ class RadioWin(Gtk.Window):
             for x, y in loc_razdel_101_http:
                 a = []
                 with loc_ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as loc_source_101_razdel:
-                    loc_source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', loc_source_101_razdel.read().decode('utf-8-sig', errors='ignore'), re.M)
+                    loc_source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', loc_source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
                     for z, c in loc_source_101_http_razdel:
                         a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
                     loc_dict_101_ru.append(a)
@@ -1572,7 +1572,7 @@ class RadioWin(Gtk.Window):
                 #
                 get_id_chanel = re.sub(r'(.+?\=)(\d+)$', r'\2', self.real_adress, re.M)
                 find_time = urllib.request.urlopen('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel')
-                j_date = json.loads(str(find_time.read().decode('utf-8-sig', errors='ignore')))
+                j_date = json.loads(str(find_time.read().decode('utf-8', errors='ignore')))
                 restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
                 GLib.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
                 #
@@ -1666,7 +1666,7 @@ class RadioWin(Gtk.Window):
                     chek += 1
             except:# Если отсутствует значение
                 no_config = configparser.ConfigParser()
-                no_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+                no_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
                 no_config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
                 leq = config['EQ-Settings']['lasteq'].split(' ')
                 self.eq_set_preset = []
@@ -1769,7 +1769,7 @@ class RadioWin(Gtk.Window):
         try:
             # Запрос
             with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
-                razdel_title_http = source_title_http.read().decode('utf-8-sig', errors='ignore')
+                razdel_title_http = source_title_http.read().decode('utf-8', errors='ignore')
             find_url_stream = re.findall(r'class\="icon.+?>(\w.+?)<', razdel_title_http, re.M)
         except HTTPError as e:
             print('The server couldn\'t fulfill the request.')
@@ -2288,7 +2288,7 @@ class RadioWin(Gtk.Window):
         if (self.radio_rtmp_play == 1 or self.radio_play == 1 or self.file_play == 1) and str(gain[1]) != 'Редактировать положение эквалайзера':
             print('def change_equlaizer(self, *gain):', str(gain[1]))
             eq_config = configparser.ConfigParser()
-            eq_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+            eq_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             eq_set = []
             self.eq_set_preset = gain[1]
             eq = self.pipeline.get_by_name('equalizer-nbands')
@@ -2366,7 +2366,7 @@ class RadioWin(Gtk.Window):
                 try:
                     # Запрос
                     with person_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal') as source_person:
-                        html = source_person.read().decode('utf-8-sig', errors='ignore')
+                        html = source_person.read().decode('utf-8', errors='ignore')
                     find_pars = json.loads(html)
 
                     find_title_song_from_stream = find_pars['result']['title']
@@ -2428,7 +2428,7 @@ class Script_Version_Compare():
             ]
 
             with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
-                update_source = update_http.read().decode('utf-8-sig', errors='ignore')
+                update_source = update_http.read().decode('utf-8', errors='ignore')
 
             with open(os.path.abspath(__file__), 'w') as old_script:
                 old_script.write(update_source)
@@ -2481,7 +2481,7 @@ class HackURL(object):
         try:
             print('Отправка запроса')
             with r101_opener.open(adres) as r101_http_source:
-                html = r101_http_source.read().decode('utf-8-sig', errors='ignore')
+                html = r101_http_source.read().decode('utf-8', errors='ignore')
             if person == 0:
                 find_url_stream = re.findall(r"'st'\:'/design/images/.+?\.st'\,'\w+'\:'(.+?)'\,'wheel'\:\d+", html, re.M)
             elif person == 1:
@@ -2503,11 +2503,11 @@ class HackURL(object):
                 print(re.sub(r"\|", r"&", find_url_stream[0]))
 
                 with r101_opener.open("http://101.ru/"+re.sub(r"\|", r"&", find_url_stream[0])+"-1") as r101_http_source2:
-                    html2 = r101_http_source2.read().decode('utf-8-sig', errors='ignore')
+                    html2 = r101_http_source2.read().decode('utf-8', errors='ignore')
 
                 print('Разбор запроса', find_url_stream)
                 print('response2 = urllib.request.urlopen(req)')
-                print("html2 = response2.read().decode('utf-8-sig', errors='ignore')")
+                print("html2 = response2.read().decode('utf-8', errors='ignore')")
                 find_url_stream2 = re.findall(r'"file":"(.+?)"', str(html2), re.S)
                 print("find_url_stream2 = re.findall(file:(.+?), str(html2), re.S)")
                 print('*********************************')
@@ -2555,7 +2555,7 @@ class WriteLastStation(object):
 
         self.dirty_date = ''
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8-sig', errors='ignore') as main_param_file:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as main_param_file:
             self.dirty_date = main_param_file.read()
 
         self.dirty_list_date = re.sub(r'amp;', r'', self.dirty_date).split('\n')
@@ -2572,7 +2572,7 @@ class WriteLastStation(object):
         '''[LastStation][BestStatin]'''
         try:
             config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding='utf-8-sig')
+            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding='utf-8')
             leq = config['LastStation']
         except:
             config = configparser.ConfigParser()
@@ -2599,7 +2599,7 @@ class WriteLastStation(object):
             print('if nam != '':', nam)
             if nam != '':
                 config = configparser.ConfigParser()
-                config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
+                config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
                 config.set('LastStation', 'addrstation', adr)
                 if args[1][0] == 'PS':
                     config.set('LastStation', 'namestation', 'PS')
@@ -2615,7 +2615,7 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', nam)
             else:
                 config = configparser.ConfigParser()
-                config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
+                config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
                 config.set('LastStation', 'addrstation', ''.join(args[0]))
                 if args[1][0] == 'PS':
                     config.set('LastStation', 'namestation', 'PS')
@@ -2629,12 +2629,12 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'Internet Radio COM')
                 else:
                     config.remove_option('LastStation', 'namestation')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8-sig') as configfile:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
         elif 'rtmp' in ''.join(args[0]):
             print('RTMP WRITE RTMP WRITE RTMP WRITE RTMP WRITE RTMP WRITE ')
             config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
+            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
             config.set('LastStation', 'addrstation', ''.join(args[0]))
             if args[1][0] == 'PS':
                 config.set('LastStation', 'namestation', 'PS')
@@ -2646,7 +2646,7 @@ class WriteLastStation(object):
                 config.set('LastStation', 'namestation', 'Internet Radio COM')
             else:
                 config.remove_option('LastStation', 'namestation')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8-sig') as configfile:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
 
     def write_best_station(self, *args):
@@ -2702,7 +2702,7 @@ class WriteLastStation(object):
             if adr == '':
                 adr = str_adr_chanel
             config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
+            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
             config.set('BestStation', 'addrstation', adr)
             print('nam ==> ', nam)
             print('take_param_adr ==> ', type(take_param_adr), take_param_adr)
@@ -2719,11 +2719,11 @@ class WriteLastStation(object):
                     config.set('BestStation', 'namestation', 'Internet Radio COM')
             else:
                 config.set('BestStation', 'namestation', nam)
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8-sig') as configfile:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
         elif 'rtmp' in str_adr_chanel:
             config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
+            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
             config.set('BestStation', 'addrstation', str_adr_chanel)
             if take_param_adr in 'PS':
                 config.set('BestStation', 'namestation', 'PS')
@@ -2737,13 +2737,13 @@ class WriteLastStation(object):
                 config.set('BestStation', 'namestation', 'Internet Radio COM')
             else:
                 config.remove_option('BestStation', 'namestation')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8-sig') as configfile:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
 
     def read_last_station(self, *args):
 
         config = configparser.ConfigParser()
-        config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
+        config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
         adr = config['LastStation']
         print(adr)
         return adr.get('addrstation'), adr.get('namestation')
@@ -2751,7 +2751,7 @@ class WriteLastStation(object):
     def read_best_station(self, *args):
 
         config = configparser.ConfigParser()
-        config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8-sig')
+        config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
         adr = config['BestStation']
         return adr.get('addrstation'), adr.get('namestation')
 
@@ -2869,10 +2869,10 @@ class DialogFindPersonalStation(Gtk.Dialog):
         self.s_treeview.remove_column(self.s_column_radio)
         self.s_treeview.append_column(self.s_column_text)
         self.s_treeview.append_column(self.s_column_radio)
-        zapros = urllib.parse.quote(self.s_entry.get_text(), encoding='utf-8-sig', errors=None)
+        zapros = urllib.parse.quote(self.s_entry.get_text(), encoding='utf-8', errors=None)
         adr_req = 'http://101.ru/?an=port_search_pers&search='+str(zapros)
         f = urllib.request.urlopen(adr_req)
-        sourse = re.sub(r'(&#\d+;)', r'', f.read().decode('utf-8-sig', errors='ignore'), re.S)
+        sourse = re.sub(r'(&#\d+;)', r'', f.read().decode('utf-8', errors='ignore'), re.S)
         res_error = re.findall(r'<h3 class="full">(.+?)</h3>', sourse)
         self.s_res_find_name = re.findall(r'<h2 class="title"><a href=".+?">(.+?)</a></h2>', re.sub(r'&amp;|&quot;|&#\d+?;', r'&', sourse, re.S), re.S)
         res_find_adr = re.findall(r'<h2 class="title"><a href="(.+?)">.+?</a></h2>', sourse, re.S)
@@ -2910,9 +2910,78 @@ class DialogEntryAdr(Gtk.Dialog):
 class DialogC_A_L(Gtk.Dialog):
 
 
+    def c_a_l(self):
+
+        def m_m(x):
+            #print('m_m', x)
+            self.main_progress.set_fraction(x[0])
+            self.main_progress.set_text(x[1])
+
+        def m_p(x):
+            #print('m_p', x)
+            self.part_progress.set_fraction(x[0])
+            self.part_progress.set_text(x[1])
+
+        for_short_name = urllib.request.urlopen('http://www.internet-radio.com')
+        page_short_name = for_short_name.read().decode('utf-8', errors='ignore')
+        ptrn = '''<li><a onClick\="ga\('send'\, 'event'\, 'genreclick'\, 'navbar'\, '.+?'\)\;" href\=".+?">(.+?)</a></li>'''
+        short_sum_page = [x for x in re.findall(r''+str(ptrn)+'', page_short_name, re.M)]
+
+        for_full_name = urllib.request.urlopen('http://www.internet-radio.com/stations/')
+        full_page_name = for_full_name.read().decode('utf-8', errors='ignore')
+        ptrn = '''<dt class="text\-capitalize" style="font\-size\: .+?\;"><a href=".+?">(.+?)</a></dt>'''
+        full_sum_page = [x for x in re.findall(r''+str(ptrn)+'', full_page_name, re.M)]
+
+        line_to_write = []
+        res_dict = {}
+        pat = ['^\s+', '^\s*\-\s*', ':{2,}', '^\s*\=+\s*', '^\s*\:+\s*']
+        if self.my_args[0] == 1:
+            choice_page = short_sum_page
+        elif self.my_args[0] == 2:
+            choice_page = full_sum_page
+        m_check = 1
+        with open(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', 'w', encoding = 'utf-8') as file_d:
+            for x in choice_page:
+                ar = urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/')
+                page_r = ar.read().decode('utf-8', errors='ignore')
+                sum_page = [int(x) for x in re.findall(r'href="/stations/.+?/page\d+">(\d+)</a>', page_r, re.M)]
+                if m_check == 0:
+                    line_to_write.append('['+x+']\n')
+                else:
+                    line_to_write.append('\n['+x+']\n')
+                if len(sum_page) == 0:
+                    sum_page = [1]
+                check = 1
+                while check <= max(sum_page):
+                    req = urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/page'+str(check))
+                    s_page_r = req.read().decode('utf-8', errors='ignore')
+                    fr = re.findall(r"mount=(.+?)&amp;title=(.+?)&amp;", s_page_r, re.M)
+                    res_dict[x] = fr
+                    for e in fr:
+                        line_to_write.append(re.sub(r'\s+$', r'', str(e[1]), re.S)+' = '+re.sub(r'\/live\.m3u', r'/live', re.sub(r'\/listen\.pls', r'/;', re.sub(r'\/listen\.pls\?sid\=1', r'/;', re.sub(r'\.m3u', r'', re.sub(r'^=\s*', r'', str(e[0]), re.M), re.M), re.M), re.M), re.M))
+
+                    mm_m = []
+                    mm_m.append(float(m_check//(len(choice_page)/100)) / 100)
+                    mm_m.append(str(int(m_check//(len(choice_page)/100)))+' %')
+                    GLib.idle_add(m_m, mm_m)
+
+                    mm_p = []
+                    mm_p.append(float(check//(max(sum_page)/100)) / 100)
+                    mm_p.append(str(int(check//(max(sum_page)/100)))+' %')
+                    GLib.idle_add(m_p, mm_p)
+
+                    check += 1
+                m_check += 1
+            for h in list(OrderedDict.fromkeys(line_to_write)):
+                d_part = h
+                for o_d in range(len(pat)):
+                    d_part = re.sub(pat[o_d], r'', d_part, re.S)
+                file_d.write(d_part+'\n')
+            self.response(22)
+
     def __init__(self, parent, *args):
 
-        Gtk.Dialog.__init__(self, "Создания адресного листа для IRC", parent, Gtk.DialogFlags.MODAL)
+        Gtk.Dialog.__init__(self, "Создание адресного листа для IRC", parent, Gtk.DialogFlags.MODAL)
 
         self.my_args = args
 
@@ -2937,72 +3006,17 @@ class DialogC_A_L(Gtk.Dialog):
         threadm.daemon = True
         threadm.start()
 
-    def c_a_l(self):
-
-        for_short_name = urllib.request.urlopen('http://www.internet-radio.com')
-        page_short_name = for_short_name.read().decode('utf-8-sig', errors='ignore')
-        ptrn = '''<li><a onClick\="ga\('send'\, 'event'\, 'genreclick'\, 'navbar'\, '.+?'\)\;" href\=".+?">(.+?)</a></li>'''
-        short_sum_page = [x for x in re.findall(r''+str(ptrn)+'', page_short_name, re.M)]
-
-        for_full_name = urllib.request.urlopen('http://www.internet-radio.com/stations/')
-        full_page_name = for_full_name.read().decode('utf-8-sig', errors='ignore')
-        ptrn = '''<dt class="text\-capitalize" style="font\-size\: .+?\;"><a href=".+?">(.+?)</a></dt>'''
-        full_sum_page = [x for x in re.findall(r''+str(ptrn)+'', full_page_name, re.M)]
-
-        line_to_write = []
-        res_dict = {}
-        pat = ['^\s+', '^\s*\-\s*', ':{2,}', '^\s*\=+\s*', '^\s*\:+\s*']
-        if self.my_args[0] == 1:
-            choice_page = short_sum_page
-        elif self.my_args[0] == 2:
-            choice_page = full_sum_page
-        with open(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', 'w', encoding = 'utf-8-sig') as file_d:
-            m_check = 0
-            for x in choice_page:
-                ar = urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/')
-                page_r = ar.read().decode('utf-8-sig', errors='ignore')
-                sum_page = [int(x) for x in re.findall(r'href="/stations/.+?/page\d+">(\d+)</a>', page_r, re.M)]
-                if m_check == 0:
-                    line_to_write.append('['+x+']\n')
-                else:
-                    line_to_write.append('\n['+x+']\n')
-                if len(sum_page) == 0:
-                    sum_page = [1]
-                check = 1
-                while check <= max(sum_page):
-                    req = urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/page'+str(check))
-                    s_page_r = req.read().decode('utf-8-sig', errors='ignore')
-                    fr = re.findall(r"mount=(.+?)&amp;title=(.+?)&amp;", s_page_r, re.M)
-                    res_dict[x] = fr
-                    for e in fr:
-                        line_to_write.append(re.sub(r'\s+$', r'', str(e[1]), re.S)+' = '+re.sub(r'\/live\.m3u', r'/live', re.sub(r'\/listen\.pls', r'/;', re.sub(r'\/listen\.pls\?sid\=1', r'/;', re.sub(r'\.m3u', r'', re.sub(r'^=\s*', r'', str(e[0]), re.M), re.M), re.M), re.M), re.M))
-                    Gdk.threads_enter()
-                    self.main_progress.set_fraction(float(m_check//(len(choice_page)/100)) / 100)
-                    self.main_progress.set_text(str(int(m_check//(len(choice_page)/100)))+' %')
-
-                    self.part_progress.set_fraction(float(check//(max(sum_page)/100)) / 100)
-                    self.part_progress.set_text(str(int(check//(max(sum_page)/100)))+' %')
-                    Gdk.threads_leave()
-                    check += 1
-                m_check += 1
-            for h in list(OrderedDict.fromkeys(line_to_write)):
-                d_part = h
-                for o_d in range(len(pat)):
-                    d_part = re.sub(pat[o_d], r'', d_part, re.S)
-                file_d.write(d_part+'\n')
         # Удаление пустых секций
         fin_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        fin_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8-sig')
+        fin_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8')
         all_sections = fin_config.sections()
 
         for x in all_sections:
             if len(fin_config.options(x)) == 0:
                 fin_config.remove_section(x)
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', 'w', encoding='utf-8-sig') as configfile:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', 'w', encoding='utf-8') as configfile:
             fin_config.write(configfile)
-        #
-        self.response(22)
 
 # Диалог отображения эквалайзера
 class EQWindow(Gtk.Dialog):
@@ -3026,7 +3040,7 @@ class EQWindow(Gtk.Dialog):
         # Установлен эквалайзер или нет
         try:
             test_config = configparser.ConfigParser()
-            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             leq = test_config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.mdict.append(x)
@@ -3039,7 +3053,7 @@ class EQWindow(Gtk.Dialog):
             with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
                 test_config.write(cfgfile)
             print('Zap1')
-            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             for x in test_config.items('EQ-Settings'):
                 self.name_combo.append_text(str(x[0]))
             leq = test_config['EQ-Settings']['lasteq'].split(' ')
@@ -3131,7 +3145,7 @@ class EQWindow(Gtk.Dialog):
     def on_currency_combo_changed(self, combo):
 
         combo_config = configparser.ConfigParser()
-        combo_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+        combo_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
         self.arr_eq = []
         text = combo.get_active_text()
         if text != None:
@@ -3161,14 +3175,14 @@ class EQWindow(Gtk.Dialog):
     def write_cfg_prs(self, *args):
 
         wr_config = configparser.ConfigParser()
-        wr_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8-sig')
+        wr_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
 
         if len(self.arr_eq) != 18:
             if self.name_entry.get_text() != '':
                 print('Есть текст в интри')
                 lasteq = self.name_entry.get_text()
                 wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig', errors='ignore') as configfile:
+                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
                     wr_config.write(configfile)
                 print('Zap2')
             elif self.name_entry.get_text() == '':
@@ -3176,7 +3190,7 @@ class EQWindow(Gtk.Dialog):
                 lasteq = 'lasteq'
                 try:
                     wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig', errors='ignore') as configfile:
+                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
                         wr_config.write(configfile)
                 except:
                     wr_config.add_section('EQ-Settings')
@@ -3190,7 +3204,7 @@ class EQWindow(Gtk.Dialog):
             else:
                 lasteq = 'lasteq'
             wr_config.set('EQ-Settings', lasteq, str(' '.join(self.arr_eq)))
-            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8-sig', errors='ignore') as configfile:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
                 wr_config.write(configfile)
 
     # Реакция на нажатие кнопки "Установить / Сохранить"
@@ -3305,7 +3319,7 @@ if SCRIPT_VERSION < remote_vers:
     ]
 
     with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
-        update_source = update_http.read().decode('utf-8-sig', errors='ignore')
+        update_source = update_http.read().decode('utf-8', errors='ignore')
 
     with open(os.path.abspath(__file__), 'w') as old_script:
         old_script.write(update_source)
