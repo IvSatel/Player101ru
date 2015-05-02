@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.31'
+SCRIPT_VERSION = '0.0.0.33'
 
 
 class RadioWin(Gtk.Window):
@@ -3317,7 +3317,7 @@ if SCRIPT_VERSION < remote_vers:
     ]
 
     with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
-        update_source = update_http.read().decode('utf-8', errors='ignore')
+        update_source = update_http.read().decode('utf-8-sig', errors='ignore')
 
     with open(os.path.abspath(__file__), 'w') as old_script:
         old_script.write(update_source)
