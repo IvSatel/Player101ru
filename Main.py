@@ -3299,7 +3299,6 @@ class RecorderBin(Gst.Bin):
 
 def exit_in_player(obj, event):
     Gtk.main_quit()
-    sys.exit()
 
 # Проверка версии
 version_opener = urllib.request.build_opener()
