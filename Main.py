@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.29'
+SCRIPT_VERSION = '0.0.0.30'
 
 
 class RadioWin(Gtk.Window):
@@ -92,10 +92,10 @@ class RadioWin(Gtk.Window):
                 for d in x:
                     final_conf.append(d+'\n')
 
-            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as adr101file:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as adr101file:
                 adr101file.writelines(final_conf)
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r') as file_w:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
             read_adr = file_w.readlines()
 
         self.read_list_adr = []
@@ -472,8 +472,7 @@ class RadioWin(Gtk.Window):
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         # Иконка программы по умолчанию
         self.set_title("Radio Player")
-        self.set_default_icon(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
-        self.set_icon(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
+        self.set_default_icon(GdkPixbuf.Pixbuf.new_from_file_at_size(os.path.dirname(os.path.realpath(__file__))+'/Radio.png', 32, 32))
         self.set_resizable(False)# Не менять размер
         self.set_border_width(10)# Ширина границ края основной формы
         self.set_position(Gtk.WindowPosition.CENTER)# Установки позиции окна на экране по центру
@@ -1085,8 +1084,9 @@ class RadioWin(Gtk.Window):
     # Диалог о программе
     def dialog_about(self, widget):
 
-        about = Gtk.AboutDialog('О Программе', self, Gtk.DialogFlags.MODAL)
-        about.set_program_name("Radio")
+        about = Gtk.AboutDialog()
+        about.set_transient_for(self)
+        about.set_program_name("Internet Radio Player")
         about.set_version(SCRIPT_VERSION)
         about.set_copyright("(c) IvSatel 2015")
         about.set_comments("Internet Radio Player")
@@ -1629,8 +1629,6 @@ class RadioWin(Gtk.Window):
         audiosink = Gst.ElementFactory.make('autoaudiosink', 'autoaudiosink')
 
         decodebin.connect('pad-added', on_pad_added)
-        audioconvert.set_property('dithering', 'High frequency triangular dithering')
-        audioconvert.set_property('noise-shaping', 'High 8-pole noise shaping')
         queue.set_property('use-buffering', True)
         queue.set_property('max-size-bytes', 5242880)
 
