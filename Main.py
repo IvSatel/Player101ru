@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.30'
+SCRIPT_VERSION = '0.0.0.31'
 
 
 class RadioWin(Gtk.Window):
@@ -92,10 +92,10 @@ class RadioWin(Gtk.Window):
                 for d in x:
                     final_conf.append(d+'\n')
 
-            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as adr101file:
+            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w', encoding='utf-8', errors='replace') as adr101file:
                 adr101file.writelines(final_conf)
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='replace') as file_w:
             read_adr = file_w.readlines()
 
         self.read_list_adr = []
