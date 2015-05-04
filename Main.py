@@ -41,7 +41,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.36'
+SCRIPT_VERSION = '0.0.0.37'
 
 
 class RadioWin(Gtk.Window):
@@ -65,7 +65,7 @@ class RadioWin(Gtk.Window):
             print('Файл с адресами создается '+str(datetime.datetime.now().strftime('%H:%M:%S')))
 
             ad_101_opener = urllib.request.build_opener()
-            ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+            ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
 
             # Запрос всех разделов
             with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
@@ -218,7 +218,7 @@ class RadioWin(Gtk.Window):
         dinamit_opener = urllib.request.build_opener()
         dinamit_opener.addheaders = [
         ('Host', 'www.dfm.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
         ]
 
         with dinamit_opener.open('http://www.dfm.ru/listen/dfmonline/') as dinamit_http_source:
@@ -244,6 +244,7 @@ class RadioWin(Gtk.Window):
             'DFM Russian Dance': 'http://st03.fmtuner.ru'}
 
         self.di_grid = Gtk.Grid()
+        #self.di_grid.set_border_width(5)
 
         # ЛистСтор для Тривью Ди-ФМ
         self.di_liststore = Gtk.ListStore(str, bool)
@@ -474,7 +475,7 @@ class RadioWin(Gtk.Window):
         self.set_title("Radio Player")
         self.set_default_icon(GdkPixbuf.Pixbuf.new_from_file_at_size(os.path.dirname(os.path.realpath(__file__))+'/Radio.png', 32, 32))
         self.set_resizable(False)# Не менять размер
-        self.set_border_width(10)# Ширина границ края основной формы
+        self.set_border_width(5)# Ширина границ края основной формы
         self.set_position(Gtk.WindowPosition.CENTER)# Установки позиции окна на экране по центру
         self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
         self.connect('key_press_event', self.on_key_press_event)
@@ -527,6 +528,7 @@ class RadioWin(Gtk.Window):
 
         if len(self.c_s) == 0:
             self.w_grid = Gtk.Grid()
+            self.w_grid.set_border_width(5)
             self.w_label = Gtk.Label('Файл с адресами Internet Radio COM не найден!')
             self.w_label.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.0, 0.2, 0.0))
             self.w_batton1 = Gtk.Button('Создать стандартный файл адресов')
@@ -617,9 +619,8 @@ class RadioWin(Gtk.Window):
 
         # Создание окна с прокруткой для размещения в нем List Di-FM
         self.di_scrolled_window = Gtk.ScrolledWindow()
-        self.di_scrolled_window.set_min_content_height(300)
+        self.di_scrolled_window.set_min_content_height(150)
         self.di_scrolled_window.set_min_content_width(300)
-        self.di_scrolled_window.set_size_request(300, 300)
         self.di_scrolled_window.add(self.di_grid)
 
         # Создание окна с прокруткой для размещения в нем Radio Internet
@@ -649,7 +650,7 @@ class RadioWin(Gtk.Window):
         record_opener = urllib.request.build_opener()
         record_opener.addheaders = [
         ('Host', 'www.radiorecord.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
         ]
 
         try:
@@ -765,10 +766,10 @@ class RadioWin(Gtk.Window):
         self.main_note_for_cont = Gtk.Notebook()
         self.main_note_for_cont.set_border_width(5)
         self.main_note_for_cont.set_scrollable(True)
-        self.main_note_for_cont.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.0, 1.0, 1.0))
-        self.main_note_for_cont.set_property('expand', True)
+        #self.main_note_for_cont.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.0, 1.0, 1.0))
+        self.main_note_for_cont.set_property('expand', False)
         self.main_note_for_cont.set_property('enable-popup', True)
-        self.main_note_for_cont.set_property('show-border', True)
+        self.main_note_for_cont.set_property('show-border', False)
 
         # Добавление табов с порталами
         self.main_note_for_cont.append_page(self.scrolled_window_101, Gtk.Label('Radio 101'))
@@ -782,7 +783,7 @@ class RadioWin(Gtk.Window):
         self.scal_sl.set_hexpand_set(True)
         self.scal_sl.set_adjustment(Gtk.Adjustment.new(0.50, 0.00, 1.00, 0.01, 0.02, 0.01))
         self.scal_sl.set_relief(2)
-        self.scal_sl.set_border_width(10)
+        self.scal_sl.set_border_width(5)
         self.scal_sl.connect("value-changed", self.on_valu_ch)
 
         ## Создание левого и правого "Эквалайзеров"
@@ -797,7 +798,9 @@ class RadioWin(Gtk.Window):
 
         # Создание сетки для левого и правого эквалайзеров
         self.grid_for_left_eq = Gtk.Grid()
+        self.grid_for_left_eq.set_border_width(5)
         self.grid_for_riht_eq = Gtk.Grid()
+        self.grid_for_riht_eq.set_border_width(5)
 
         self.grid_for_left_eq.attach(self.level_bar_l, 1, 1, 1, 1)
         self.grid_for_riht_eq.attach(self.level_bar_r, 1, 1, 1, 1)
@@ -898,10 +901,13 @@ class RadioWin(Gtk.Window):
         self.seek_line.connect('adjust-bounds', self.new_seek_pos_set)
 
         self.grid = Gtk.Grid()# Первая (основная сетка размещения)
+        self.grid.set_border_width(5)
 
         self.grid_button = Gtk.Grid()# Вторая сетка размещения для кнопок
+        self.grid_button.set_border_width(5)
 
         self.grid_seek = Gtk.Grid()# Третья сетка для ползунка продолжительности
+        self.grid_seek.set_border_width(5)
 
         # Создание сетки с кнопками
         self.grid_button.attach(self.button_array[0], 1, 1, 1, 1)
@@ -1480,7 +1486,7 @@ class RadioWin(Gtk.Window):
         def example_target():
 
             loc_ad_101_opener = urllib.request.build_opener()
-            loc_ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+            loc_ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
 
             # Запрос всех разделов
             with loc_ad_101_opener.open('http://101.ru/?an=port_allchannels') as loc_source_101_http:
@@ -1581,7 +1587,7 @@ class RadioWin(Gtk.Window):
             if location[0].startswith('http'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
-                source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+                source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник HTTP "+str(datetime.datetime.now().strftime('%H:%M:%S')))
@@ -1765,7 +1771,7 @@ class RadioWin(Gtk.Window):
         title_opener = urllib.request.build_opener()
         title_opener.addheaders = [
         ('Host', '101.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
         try:
             # Запрос
             with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
@@ -2359,7 +2365,7 @@ class RadioWin(Gtk.Window):
             person_opener = urllib.request.build_opener()
             person_opener.addheaders = [
             ('Host', '101.ru'),
-            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
 
             chek = 0
             while chek < 3:
@@ -2416,7 +2422,7 @@ class Script_Version_Compare():
         version_opener = urllib.request.build_opener()
         version_opener.addheaders = [(
         'User-agent',
-        'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0'
+        'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
         )]
         with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
             self.remote_vers = fo.read().decode()
@@ -2424,7 +2430,7 @@ class Script_Version_Compare():
             update_opener = urllib.request.build_opener()
             update_opener.addheaders = [
             ('Host', 'github.com'),
-            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
             ]
 
             with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
@@ -2447,7 +2453,7 @@ class Script_Version_Compare():
         #version_opener = urllib.request.build_opener()
         #version_opener.addheaders = [(
         #'User-agent',
-        #'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0'
+        #'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
         #)]
         #with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
             #self.remote_vers = fo.read().decode()
@@ -2476,7 +2482,7 @@ class HackURL(object):
             person = 0
 
         r101_opener = urllib.request.build_opener()
-        r101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')]
+        r101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
 
         try:
             print('Отправка запроса')
@@ -2778,6 +2784,7 @@ class DialogFindPersonalStation(Gtk.Dialog):
         box = self.get_content_area()
 
         self.s_grid = Gtk.Grid()
+        self.s_grid.set_border_width(5)
 
         self.s_entry = Gtk.Entry()
         self.s_entry.set_icon_from_stock(Gtk.EntryIconPosition.SECONDARY, Gtk.STOCK_FIND)
@@ -2988,6 +2995,7 @@ class DialogC_A_L(Gtk.Dialog):
         self.set_default_size(300, 50)
 
         self.dialog_grid = Gtk.Grid()
+        self.dialog_grid.set_border_width(5)
 
         self.main_progress = Gtk.ProgressBar(show_text=True)
         self.part_progress = Gtk.ProgressBar(show_text=True)
@@ -3073,9 +3081,11 @@ class EQWindow(Gtk.Dialog):
         self.box = self.get_content_area()
 
         self.grid_w_eq = Gtk.Grid()
+        self.grid_w_eq.set_border_width(5)
         self.box.add(self.grid_w_eq)
 
         self.grid_edit = Gtk.Grid()
+        self.grid_edit.set_border_width(5)
 
         self.sc_l = [Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, 0, 36, 0.1) for x in range(18)]
         self.label_l = [Gtk.Label.new() for x in range(18)]
@@ -3306,7 +3316,7 @@ def exit_in_player(obj, event):
 version_opener = urllib.request.build_opener()
 version_opener.addheaders = [(
 'User-agent',
-'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0'
+'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
 )]
 remote_vers = ''
 with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
@@ -3315,7 +3325,7 @@ if SCRIPT_VERSION < remote_vers:
     update_opener = urllib.request.build_opener()
     update_opener.addheaders = [
     ('Host', 'github.com'),
-    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0')
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
     ]
 
     with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
