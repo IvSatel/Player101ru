@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.39'
+SCRIPT_VERSION = '0.0.0.40'
 
 
 class RadioWin(Gtk.Window):
@@ -1978,6 +1978,7 @@ class RadioWin(Gtk.Window):
                 except socket.gaierror:
                     self.pipeline.set_state(Gst.State.NULL)
                     self.pipeline = 0
+                    self.on_click_bt5()
                     self.label_title.set_text('Отсутствует интернет соединение')
                     self.My_ERROR_Mess = 0
 
@@ -2149,6 +2150,8 @@ class RadioWin(Gtk.Window):
             if self.My_ERROR_Mess:
                 print('if self.My_ERROR_Mess: ==> self.pipeline.set_state(Gst.State.NULL)')
                 self.pipeline.set_state(Gst.State.NULL)
+                self.on_click_bt5()
+                self.label_title.set_text('Отсутствует поток')
                 self.My_ERROR_Mess = 0
             else:
                 self.My_ERROR_Mess = False
