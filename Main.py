@@ -29,7 +29,8 @@ from gi.repository import GLib
 from gi.repository import Pango
 from gi.repository import GObject
 
-Gst.init(None)# Разместить здесь, что-бы не вызвать ошибку инициализации у GstPbutils
+# Разместить здесь, что-бы не вызвать ошибку инициализации у GstPbutils
+Gst.init(None)
 
 from gi.repository import GdkPixbuf
 from gi.repository import GstPbutils
@@ -41,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.38'
+SCRIPT_VERSION = '0.0.0.39'
 
 
 class RadioWin(Gtk.Window):
@@ -52,10 +53,16 @@ class RadioWin(Gtk.Window):
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         # Настройки окна программы по умолчанию
         self.set_title("Radio Player")
-        self.set_default_icon(GdkPixbuf.Pixbuf.new_from_file_at_size(os.path.dirname(os.path.realpath(__file__))+'/Radio.png', 32, 32))
-        self.set_resizable(False)# Не менять размер
-        self.set_border_width(5)# Ширина границ края основной формы
-        self.set_position(Gtk.WindowPosition.CENTER)# Установки позиции окна на экране по центру
+        self.set_default_icon(
+            GdkPixbuf.Pixbuf.new_from_file_at_size(
+                os.path.dirname(os.path.realpath(__file__)) +
+                '/Radio.png', 32, 32))
+        # Не менять размер
+        self.set_resizable(False)
+        # Ширина границ края основной формы
+        self.set_border_width(5)
+        # Установки позиции окна на экране по центру
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
         self.connect('key_press_event', self.on_key_press_event)
         #
@@ -68,16 +75,19 @@ class RadioWin(Gtk.Window):
             self.check_internet_connection()
             sys.exit(0)
 
-        self.eq_set_preset = []# Список действующей настройки эквалайзера
+        self.eq_set_preset = []  # Список действующей настройки эквалайзера
 
         # Если файл с адресами станций есть, то пропускаем
-        if os.path.isfile(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini'):
+        if os.path.isfile(
+            os.path.dirname(os.path.realpath(__file__)) + '/adres_list.ini'):
             print('Файл с адресами найден ' + self.get_time_now())
-        else:# Если файл с адресами станций отсутствует то получаем его
+        else:  # Если файл с адресами станций отсутствует то получаем его
             print('Файл с адресами создается ' + self.get_time_now())
 
             ad_101_opener = urllib.request.build_opener()
-            ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+            ad_101_opener.addheaders = [
+                ('Host', '101.ru'),
+                ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
 
             # Запрос всех разделов
             with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
@@ -185,6 +195,9 @@ class RadioWin(Gtk.Window):
         self.real_adress = ''# Адрес потока с контентом
         self.uri = []# Список хранящий адреса на поток вещания
         self.My_ERROR_Mess = False# Чекер ошибок
+
+        # Маркер установка маркеров на линии воспроизведения
+        self.cue_file_find = 0
 
         # Инфо ТАГ
         self.get_info_tag = [
@@ -898,7 +911,9 @@ class RadioWin(Gtk.Window):
         self.seek_line = Gtk.HScale.new_with_range(0, 100, 0.01)
         self.seek_line.set_draw_value(False)
         self.seek_line.set_digits(2)
-        self.seek_line.connect('adjust-bounds', self.new_seek_pos_set)
+        #self.seek_line.connect('adjust-bounds', self.new_seek_pos_set)
+        self.seek_line.connect('button-release-event', self.new_seek_pos_set)
+        self.seek_line.connect('button-press-event', self.marck_seek_line)
 
         self.grid = Gtk.Grid()# Первая (основная сетка размещения)
         self.grid.set_border_width(5)
@@ -990,7 +1005,10 @@ class RadioWin(Gtk.Window):
             self.show_all()
             if self.radio_play == 1 or self.radio_rtmp_play == 1 or self.file_play == 1:
                 if self.file_play == 1:
+                    # Отобразить SeekLine
                     self.seek_line.show()
+                    # Скрыть Notebook
+                    self.main_note_for_cont.hide()
                 else:
                     self.seek_line.hide()
                 for x in range(6):
@@ -1017,18 +1035,18 @@ class RadioWin(Gtk.Window):
 
         try:
             if max(b) > 256 and max(b) < 2000:
-                print('1 MAX', max(b), min(b))
+                #print('1 MAX', max(b), min(b))
                 lang_ident = 'Ru'
                 return get_text.encode('cp1251', errors='ignore').decode('cp1251', errors='ignore')
             elif max(b) > 2000:
-                print('2 MAX', max(b), min(b))
+                #print('2 MAX', max(b), min(b))
                 lang_ident = 'Ru'
                 try:
                     return get_text.encode('cp1251').decode('utf-8')
                 except:
                     return get_text.encode('cp1251').decode('cp1251')
             elif max(b) < 129 and min(b) < 129:
-                print('3 MAX', max(b), min(b))
+                #print('3 MAX', max(b), min(b))
                 lang_ident = 'En'
                 return get_text.encode('utf_8', errors='ignore').decode('utf-8', errors='ignore')
             elif max(b) < 256 and min(b) < 256:
@@ -1074,7 +1092,7 @@ class RadioWin(Gtk.Window):
             self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
 
     ## Pop-up menu
-    def button_press(self,widget,event):
+    def button_press(self, widget, event):
 
         if event.button == 3:
             self.menu_pop_show = Gtk.Menu()
@@ -1561,7 +1579,6 @@ class RadioWin(Gtk.Window):
             self.label_title.set_text('Канал не передает звукового потока!')
             raise IOError(" 1 Источник %s не найден" % location)
             return 0
-        print('len(location)', len(location), 'location = ', location)
         if len(location) != 0:
             print('***** location ==> ' + self.get_time_now(), type(location), len(location), location)
 
@@ -1805,15 +1822,36 @@ class RadioWin(Gtk.Window):
                     GObject.source_remove(self.timer_title)
 
     # Установка нового места начала востпроизведения
-    def new_seek_pos_set(self, bas, pos):
+    def new_seek_pos_set(self, widget, pos):
 
-        if self.pipeline:
+        try:
+            if pos.button == 3:
+                return False
+        except AttributeError:
+            pass
+
+        if 'MenuItem' in str(widget):
+
+            self.pipeline.set_state(Gst.State.PAUSED)
+
+            self.pipeline.seek_simple(
+            Gst.Format.TIME,
+            Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, int(pos * Gst.SECOND))
+
+            self.pipeline.set_state(Gst.State.PLAYING)
+            print('SEEK => if self.pipeline:')
+
+        if 'HScale' in str(widget):
             a = self.seek_line.get_value()
             self.pipeline.set_state(Gst.State.PAUSED)
-            self.pipeline.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, int(a*(int(self.pipeline.query_duration(Gst.Format.TIME)[1])/100)))
+
+            self.pipeline.seek_simple(
+            Gst.Format.TIME,
+            Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
+            int(a * (int(self.pipeline.query_duration(Gst.Format.TIME)[1])/100)))
+
             self.pipeline.set_state(Gst.State.PLAYING)
-        elif self.pipeline:
-            self.seek_line.set_value(float(1.0))
+            print('SEEK => if self.pipeline:')
 
     # Продвижение ползунка по мере звучания файла
     def update_seek_line(self, *user_date):
@@ -1831,6 +1869,42 @@ class RadioWin(Gtk.Window):
                     GObject.source_remove(self.timer)
         except ZeroDivisionError:
             return True
+
+    # Маркировка линии воспроизведения
+    def marck_seek_line(self, widget, event):
+
+        try:
+            cue_file_name = [x for x in os.listdir(self.cue_file_find[1]) if x == str(self.cue_file_find[0] + '.cue')]
+        except:
+            return False
+
+        if event.button == 3:
+
+            if len(cue_file_name) > 0:
+                with open(str(self.cue_file_find[1]) +'/'+ str(cue_file_name[0]), 'r', encoding='cp1251', errors='ignore') as cue_f:
+                    source_cue = cue_f.read()
+
+                rez = re.findall(r'TRACK (\d+) AUDIO.+?TITLE (.+?)\n.+?PERFORMER (.+?)\s.+?INDEX 01 (.+?)\s', source_cue, re.S)
+
+                pop_menu = []
+                time_for_menu = []
+
+                self.menu_pop_show = Gtk.Menu()
+
+                for x in [x for x in rez]:
+                    a = x[1].split(':')
+                    t = x[3].split(':')
+                    pop_menu.append(Gtk.MenuItem(re.sub(r'"', r' ', a[0])))
+                    time_for_menu.append((int(t[0]) * 60) + int(t[1]))
+
+                check_t = 0
+                for x in pop_menu:
+                    x.connect('activate', self.new_seek_pos_set, time_for_menu[check_t])
+                    self.menu_pop_show.append(x)
+                    check_t += 1
+
+                self.menu_pop_show.show_all()
+                self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
 
     # Обработка сообщений элементов
     def message_element(self, bus, message):
@@ -1916,9 +1990,9 @@ class RadioWin(Gtk.Window):
             s_tag_l = []
             for h in self.get_info_tag:
                 if tag_l.get_string(h)[0] == True:
-                    print('TAG ==> ', tag_l.get_string(h))
+                    #print('TAG ==> ', tag_l.get_string(h))
                     if h == 'organization':
-                        print('self.tag_organization = tag_l.get_string(h)[1] ==> ', tag_l.get_string(h)[1])
+                        #print('self.tag_organization = tag_l.get_string(h)[1] ==> ', tag_l.get_string(h)[1])
                         self.tag_organization = tag_l.get_string(h)[1]
                     if '101.ru' in str(tag_l.get_string(h)):
                         s_tag_l.append(re.sub(r'(101\.ru\:\s?)(.+?)$', r'\2 ', str(tag_l.get_string(h)[1]), re.M))
@@ -1927,7 +2001,7 @@ class RadioWin(Gtk.Window):
                 else:
                     pass
 
-            print('\n', 'Получены ТЭГИ ' + self.get_time_now(), '\n', 's_tag_l ==> ', s_tag_l)
+            #print('\n', 'Получены ТЭГИ ' + self.get_time_now(), '\n', 's_tag_l ==> ', s_tag_l)
 
             if len(s_tag_l) > 0:
                 try:
@@ -2115,12 +2189,17 @@ class RadioWin(Gtk.Window):
 
             self.radio_play = 0
             self.file_play = 1
+
             print('Включение проигрывания файла ' + self.get_time_now())
+
             self.f_name_len = []
+
             for x in range(3):
                 self.button_array[x].hide()
-            self.seek_line.show()
-            self.main_note_for_cont.hide()#Table
+
+            #Notebook
+            self.main_note_for_cont.hide()
+
             if "<class 'list'>" == str(type(f_name)):
                 for x in f_name:
                     self.f_name_len.append(x)
@@ -2131,8 +2210,11 @@ class RadioWin(Gtk.Window):
                 self.create_pipeline(f_name)
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
+
+            self.seek_line.show()
+
         elif f_name == 0:
-            print('return False Канал не передает потока')
+            print('return False Нет потока для воспроизведения')
             return False
 
     # Кнопка плей
@@ -2169,6 +2251,7 @@ class RadioWin(Gtk.Window):
 
         if response == Gtk.ResponseType.OK:
             filename = dialog.get_filename()
+            self.cue_file_find = [re.sub(r'(.+\/)(.+?)\.\w+$', r'\2', filename), dialog.get_current_folder()]
             self.id_chan[0] = 'file'
             self.play_stat_now(filename)
         elif response == Gtk.ResponseType.CANCEL:
@@ -2241,6 +2324,7 @@ class RadioWin(Gtk.Window):
         self.file_play = 0
         self.timer_title = 0
         self.timer = 0
+        self.cue_file_find = 0
 
         if self.timer_title_rtmp:
             self.timer_title_rtmp = 0
