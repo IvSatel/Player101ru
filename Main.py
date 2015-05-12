@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.40'
+SCRIPT_VERSION = '0.0.0.41'
 
 
 class RadioWin(Gtk.Window):
@@ -67,13 +67,6 @@ class RadioWin(Gtk.Window):
         self.connect('key_press_event', self.on_key_press_event)
         #
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-        # Проверка наличия интернет соединения
-        try:
-            socket.gethostbyaddr('www.yandex.ru')
-        except socket.gaierror:
-            self.check_internet_connection()
-            sys.exit(0)
 
         self.eq_set_preset = []  # Список действующей настройки эквалайзера
 
@@ -318,6 +311,11 @@ class RadioWin(Gtk.Window):
         self.di_treeview = Gtk.TreeView(model=self.di_liststore)
         self.di_treeview.set_enable_search(True)
         self.di_treeview.set_show_expanders(False)
+
+        #
+        self.di_model = self.di_treeview.get_model()
+        self.di_iter = self.di_model.get_iter_first()
+        #
 
         di_renderer_text = Gtk.CellRendererText()
         di_column_text = Gtk.TreeViewColumn("Станция", di_renderer_text, text=0)
@@ -913,7 +911,7 @@ class RadioWin(Gtk.Window):
         self.seek_line.set_digits(2)
         #self.seek_line.connect('adjust-bounds', self.new_seek_pos_set)
         self.seek_line.connect('button-release-event', self.new_seek_pos_set)
-        self.seek_line.connect('button-press-event', self.marck_seek_line)
+        self.seek_line.connect('button-press-event', self.popup_for_cue_on_seek_line)
 
         self.grid = Gtk.Grid()# Первая (основная сетка размещения)
         self.grid.set_border_width(5)
@@ -1036,22 +1034,22 @@ class RadioWin(Gtk.Window):
         try:
             if max(b) > 256 and max(b) < 2000:
                 #print('1 MAX', max(b), min(b))
-                lang_ident = 'Ru'
+                #lang_ident = 'Ru'
                 return get_text.encode('cp1251', errors='ignore').decode('cp1251', errors='ignore')
             elif max(b) > 2000:
                 #print('2 MAX', max(b), min(b))
-                lang_ident = 'Ru'
+                #lang_ident = 'Ru'
                 try:
                     return get_text.encode('cp1251').decode('utf-8')
                 except:
                     return get_text.encode('cp1251').decode('cp1251')
             elif max(b) < 129 and min(b) < 129:
                 #print('3 MAX', max(b), min(b))
-                lang_ident = 'En'
+                #lang_ident = 'En'
                 return get_text.encode('utf_8', errors='ignore').decode('utf-8', errors='ignore')
             elif max(b) < 256 and min(b) < 256:
-                print('4 MAX', max(b), min(b))
-                lang_ident = 'EnRu'
+                #print('4 MAX', max(b), min(b))
+                #lang_ident = 'EnRu'
                 try:
                     return get_text.encode('latin-1').decode('utf-8')
                 except:
@@ -1091,7 +1089,7 @@ class RadioWin(Gtk.Window):
             self.menu_pop_show.show_all()
             self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
 
-    ## Pop-up menu
+    ## Pop-up menu for 101 RU
     def button_press(self, widget, event):
 
         if event.button == 3:
@@ -1101,16 +1099,6 @@ class RadioWin(Gtk.Window):
             self.menu_pop_show.append(self.menu_copy)
             self.menu_pop_show.show_all()
             self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
-
-    # Диалог вывода сообщения об отсутствии соединения с интернет
-    def check_internet_connection(self, *args):
-
-        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR,
-            Gtk.ButtonsType.OK, "Ошибка!")
-        dialog.format_secondary_text(
-            "Соединение с интернет не обнаружено\nпрограмма будет закрыта.")
-        dialog.run()
-        dialog.destroy()
 
     # Диалог о программе
     def dialog_about(self, widget):
@@ -1125,7 +1113,7 @@ class RadioWin(Gtk.Window):
         about.run()
         about.destroy()
 
-    # Реакция на выбор в окне MyPLS
+    # Реакция на сохранение в окне MyPLS
     def save_adres_in_pls(self, *args):
 
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
@@ -1345,7 +1333,7 @@ class RadioWin(Gtk.Window):
             selected_path = Gtk.TreePath(path)
             source_cell = self.liststore_sub.get_iter(path)
             print('----------------------------------------')
-            print(source_cell, ' $$$ ', self.liststore_sub.get_value(source_cell, 0))
+            print(self.liststore_sub.get_value(source_cell, 0))
             print('----------------------------------------')
             for row in self.liststore_sub:
                 row[1] = (row.path == selected_path)
@@ -1580,7 +1568,7 @@ class RadioWin(Gtk.Window):
             raise IOError(" 1 Источник %s не найден" % location)
             return 0
         if len(location) != 0:
-            print('***** location ==> ' + self.get_time_now(), type(location), len(location), location)
+            print('***** location ==> ' + self.get_time_now(), location)
 
             if str(type(location)) == "<class 'str'>" and len(location) > 2:
                 location = [location]
@@ -1599,6 +1587,7 @@ class RadioWin(Gtk.Window):
                 source = Gst.ElementFactory.make('uridecodebin', 'source')
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('uri', location[0])
+                print("************* ==> Источник HTTP *.flv "+self.get_time_now())
                 #
                 get_id_chanel = re.sub(r'(.+?\=)(\d+)$', r'\2', self.real_adress, re.M)
                 find_time = urllib.request.urlopen('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel')
@@ -1660,9 +1649,6 @@ class RadioWin(Gtk.Window):
 
         decodebin.connect('pad-added', on_pad_added)
         queue.set_property('use-buffering', True)
-        queue.set_property('max-size-bytes', 5242880)
-
-        print('type(self.eq_set_preset) ==> ', type(self.eq_set_preset), ' ', self.get_time_now())
 
         if str(type(self.eq_set_preset)) != "<class 'list'>" and 'Редактировать положение эквалайзера' != str(self.eq_set_preset):
             equalizer.set_property('num-bands', 18)
@@ -1784,7 +1770,7 @@ class RadioWin(Gtk.Window):
     def get_title_from_url(self, adres):
 
         try:
-            print('adres[0] = ', int(adres[0]))
+            print('adres[0] = ', adres[0])
         except ValueError:
             if self.timer_title:
                 GObject.source_remove(self.timer_title)
@@ -1870,8 +1856,8 @@ class RadioWin(Gtk.Window):
         except ZeroDivisionError:
             return True
 
-    # Маркировка линии воспроизведения
-    def marck_seek_line(self, widget, event):
+    # Создание Pop-Up Menu для CUE файлов на полосе воспроизведения
+    def popup_for_cue_on_seek_line(self, widget, event):
 
         try:
             cue_file_name = [x for x in os.listdir(self.cue_file_find[1]) if x == str(self.cue_file_find[0] + '.cue')]
@@ -1906,7 +1892,7 @@ class RadioWin(Gtk.Window):
                 self.menu_pop_show.show_all()
                 self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
 
-    # Обработка сообщений элементов
+    # Обработка сообщений от элементов
     def message_element(self, bus, message):
 
         if message.type == Gst.MessageType.ELEMENT:
@@ -1957,7 +1943,6 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.DURATION_CHANGED:
             print('message.type == Gst.MessageType.DURATION_CHANGED')
             s = Gst.Message.get_structure(message)
-            print(s.to_string())
             if self.radio_play:
                 self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
@@ -1998,7 +1983,7 @@ class RadioWin(Gtk.Window):
                     if '101.ru' in str(tag_l.get_string(h)):
                         s_tag_l.append(re.sub(r'(101\.ru\:\s?)(.+?)$', r'\2 ', str(tag_l.get_string(h)[1]), re.M))
                     else:
-                        s_tag_l.append(tag_l.get_string(h)[1])
+                        s_tag_l.append(re.sub(r'/', r' ', tag_l.get_string(h)[1]))
                 else:
                     pass
 
@@ -2011,7 +1996,6 @@ class RadioWin(Gtk.Window):
                     pass
 
             if self.file_play == 0 and not self.timer_title and self.id_chan[0][0].isdigit():
-                print('GLib.timeout_add', self.id_chan[0])
                 self.timer_title = GLib.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
     # Обработка сообщений конца потока
@@ -2106,8 +2090,6 @@ class RadioWin(Gtk.Window):
     # Функция воспроизведения
     def play_stat_now(self, f_name=''):
 
-        print('self.id_chan[0] ', self.id_chan[0])
-
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
         if self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
@@ -2141,7 +2123,7 @@ class RadioWin(Gtk.Window):
                     self.radio_play = 0
                     self.radio_rtmp_play = 1
                     print('f_name', f_name)
-                    self.get_title_song(re.sub(r'(rtmp:\/\/wz7\.101\.ru\/pradio22\/)(.+?)(\?setst\=\&uid\=\-1\/main)', r'\2', f_name))
+                    self.get_title_song_personal_station(re.sub(r'(rtmp:\/\/wz7\.101\.ru\/pradio22\/)(.+?)(\?setst\=\&uid\=\-1\/main)', r'\2', f_name))
                 elif not 'rtmp' in str(f_name):
                     self.radio_rtmp_play = 0
             else:
@@ -2312,6 +2294,26 @@ class RadioWin(Gtk.Window):
             else:
                 self.button_array[x].show()
 
+        #!!!!!!!!!!!
+        # Снять чекбоксы с плейлистов DI-FM
+        for x in self.di_liststore:
+            x[1] = False
+        # Снять чекбоксы с плейлистов 101
+        for x in self.liststore_101:
+            x[1] = False
+        # Снять чекбоксы с плейлистов RIC
+        for x in self.liststore_RIC:
+            x[1] = False
+        for x in self.liststore_sub:
+            x[1] = False
+        # Снять чекбоксы с плейлистов Record
+        for x in self.record_liststore:
+            x[1] = False
+        # Снять чекбоксы с плейлистов MyPlaylist
+        for x in self.my_pls_liststore:
+            x[1] = False
+        #!!!!!!!!!!!
+
         # STOP RECORDING
         if self.rec_obj:
             self.rec_status = False
@@ -2356,7 +2358,7 @@ class RadioWin(Gtk.Window):
 
         if not self.rec_status:
 
-            print('Record start', self.HURL.used_stream_adress[-1])
+            print('Recording start', self.HURL.used_stream_adress[-1])
 
             self.rec_obj = RecorderBin(self.HURL.used_stream_adress[-1])
             self.rec_obj.rec_pipeline.set_state(Gst.State.PLAYING)
@@ -2430,7 +2432,7 @@ class RadioWin(Gtk.Window):
             dialog.destroy()
 
     # Получение названия трека персональных станций
-    def get_title_song(self, idch):
+    def get_title_song_personal_station(self, idch):
 
         if self.radio_rtmp_play == 1:
             id_ch = idch
@@ -2459,30 +2461,30 @@ class RadioWin(Gtk.Window):
                     self.label_title.set_label(re.sub(r'&amp;|&#\d+;', r'',find_title_song_from_stream))
 
                     if find_duration_song_stream > 0 and find_start_song_stream == find_stop_song_stream:
-                        print('0', find_duration_song_stream)
+                        print('1', find_duration_song_stream)
                         t_time_s = find_duration_song_stream - (find_query_song_stream - find_start_song_stream)
                     elif find_start_song_stream == 0:
-                        print('0.1', (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream))
+                        print('2', (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream))
                         t_time_s = 10
                     elif find_start_song_stream < find_stop_song_stream and find_start_song_stream != 0:
-                        print('1', (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream))
+                        print('3', (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream))
                         t_time_s = (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream)
                     elif find_duration_song_stream == 0 and find_start_song_stream == find_stop_song_stream:
-                        print('2', find_current_song_stream - find_query_song_stream)
+                        print('4', find_current_song_stream - find_query_song_stream)
                         t_time_s = 10
                     if t_time_s < 0:
                         t_time_s = 5
-                    print('t_time_s ==>  In get_title_song ', t_time_s)
+                    print('t_time_s ==>  In get_title_song_personal_station ', t_time_s)
                     chek = 3
                 except HTTPError as e:
-                    print('The server couldn\'t fulfill the request. In get_title_song')
-                    print('Error code In get_title_song: ', e.code)
+                    print('The server couldn\'t fulfill the request. In get_title_song_personal_station')
+                    print('Error code In get_title_song_personal_station: ', e.code)
                     chek += 1
                 except URLError as e:
-                    print('We failed to reach a server. In get_title_song')
-                    print('Reason In get_title_song: ', e.reason)
+                    print('We failed to reach a server. In get_title_song_personal_station')
+                    print('Reason In get_title_song_personal_station: ', e.reason)
                     chek += 1
-            self.timer_title_rtmp = GLib.timeout_add_seconds(t_time_s, self.get_title_song, id_ch)
+            self.timer_title_rtmp = GLib.timeout_add_seconds(t_time_s, self.get_title_song_personal_station, id_ch)
         else:
             if self.timer_title_rtmp:
                 GLib.source_remove(self.timer_title_rtmp)
@@ -2551,34 +2553,25 @@ class HackURL(object):
                 find_url_stream = re.findall(r"'st'\:'/design/images/.+?\.st'\,'\w+'\:'(.+?)'\,'wheel'\:\d+", html, re.M)
             elif person == 1:
                 find_url_stream = re.findall(r"(rtmp://.+?)///main", html, re.S)
-                for x in find_url_stream:
-                    print(x)
                 try:
                     res_rtmp_url = re.sub(r'\|', r'&', find_url_stream[0], re.S)+'/main'
                 except IndexError:
                     res_rtmp_url = 0
-
                 print('res_rtmp_url ==> ', res_rtmp_url)
                 return res_rtmp_url
-            print('$$$$$$$$$$ find_url_stream $$$$$$$$$$$$$$ => \n', find_url_stream)
             if '.flv' in str(find_url_stream):
                 '''http://f1.101.ru/api/getplayingtrackinfo.php?station_id=82&typechannel=channel'''
                 return find_url_stream[0]
             if len(find_url_stream) >= 1:
-                print(re.sub(r"\|", r"&", find_url_stream[0]))
 
                 with r101_opener.open("http://101.ru/"+re.sub(r"\|", r"&", find_url_stream[0])+"-1") as r101_http_source2:
                     html2 = r101_http_source2.read().decode('utf-8', errors='ignore')
 
-                print('Разбор запроса', find_url_stream)
-                print('response2 = urllib.request.urlopen(req)')
-                print("html2 = response2.read().decode('utf-8', errors='ignore')")
+                print('Разбор запроса для заполнения find_url_stream')
                 find_url_stream2 = re.findall(r'"file":"(.+?)"', str(html2), re.S)
-                print("find_url_stream2 = re.findall(file:(.+?), str(html2), re.S)")
                 print('*********************************')
                 print('*********************************')
-                print(find_url_stream2)
-                print('*********************************')
+                print('Count find_url_stream2 ', len(find_url_stream2))
                 print('*********************************')
                 print('*********************************')
                 len_adr_list = 0
@@ -2592,8 +2585,7 @@ class HackURL(object):
                         print('ERROR : ', x)
                         len_adr_list += 1
                     else:
-                        print('OK ==> ', response.info(), response.geturl())
-                        print('Возвращение результата запроса', self.used_stream_adress)
+                        print('OK Response ==> \n', response.info())
                         if not x in self.used_stream_adress and self.check_stream_adress <= len(find_url_stream2):
                             print('self.check_stream_adress ==> ', self.check_stream_adress)
                             self.check_stream_adress += 1
@@ -2656,16 +2648,14 @@ class WriteLastStation(object):
 
     def write_last_station(self, *args):
 
-        print('def write_last_station(self, *args): +++===+++\n', args)
         if 'http' in ''.join(args[0]):
-            print('HTTP WRITE HTTP WRITE HTTP WRITE HTTP WRITE HTTP WRITE ', ''.join(args[0]))
+            print('HTTP WRITE ', ''.join(args[0]))
             adr = ''
             nam = ''
             for key in self.dict_name_adr:
                 if self.dict_name_adr[key] == ''.join(args[0]):
                     adr = self.dict_name_adr[key]
                     nam = str(key)
-            print('if nam != '':', nam)
             if nam != '':
                 config = configparser.ConfigParser()
                 config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
@@ -2705,7 +2695,7 @@ class WriteLastStation(object):
             with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
         elif 'rtmp' in ''.join(args[0]):
-            print('RTMP WRITE RTMP WRITE RTMP WRITE RTMP WRITE RTMP WRITE ')
+            print('RTMP WRITE ', ''.join(args[0]))
             config = configparser.ConfigParser()
             config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
             config.set('LastStation', 'addrstation', ''.join(args[0]))
@@ -2724,7 +2714,6 @@ class WriteLastStation(object):
 
     def write_best_station(self, *args):
 
-        print('type(args) ==> ', type(args), args)
         print('def write_best_station(self, *args): ==> ', ''.join(args[0][0]))
 
         take_param_adr = 0
@@ -2827,7 +2816,6 @@ class WriteLastStation(object):
         encoding = 'utf-8')
 
         adr = config['LastStation']
-        print(adr)
         return adr.get('addrstation'), adr.get('namestation')
 
     def read_best_station(self, *args):
@@ -2943,8 +2931,8 @@ class DialogFindPersonalStation(Gtk.Dialog):
             if str(x) == str(self.s_liststore.get_value(c, 0)):
                 print('----------------------------------------')
                 print(self.s_liststore.get_value(c, 0))
-                print('----------------------------------------')
                 print(self.s_find_dict.get(str(x)))
+                print('----------------------------------------')
                 self.return_adres = self.hurl.hack_url_adres(self.s_find_dict.get(str(x)))
         for row in self.s_liststore:
             row[1] = (row.path == selected_path)
@@ -3397,39 +3385,58 @@ class RecorderBin(Gst.Bin):
 def exit_in_player(obj, event):
     Gtk.main_quit()
 
-# Проверка версии
-version_opener = urllib.request.build_opener()
-version_opener.addheaders = [(
-'User-agent',
-'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
-)]
-remote_vers = ''
-with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
-    remote_vers = fo.read().decode()
-if SCRIPT_VERSION < remote_vers:
-    update_opener = urllib.request.build_opener()
-    update_opener.addheaders = [
-    ('Host', 'github.com'),
-    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
-    ]
+def main_funck():
+    # Проверка версии
+    version_opener = urllib.request.build_opener()
+    version_opener.addheaders = [(
+    'User-agent',
+    'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
+    )]
+    remote_vers = ''
+    with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
+        remote_vers = fo.read().decode()
+    if SCRIPT_VERSION < remote_vers:
+        update_opener = urllib.request.build_opener()
+        update_opener.addheaders = [
+        ('Host', 'github.com'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
+        ]
 
-    with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
-        update_source = update_http.read().decode('utf-8', errors='ignore')
+        with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
+            update_source = update_http.read().decode('utf-8', errors='ignore')
 
-    with open(os.path.abspath(__file__), 'w', encoding='utf-8', errors='ignore') as old_script:
-        old_script.write(update_source)
+        with open(os.path.abspath(__file__), 'w', encoding='utf-8', errors='ignore') as old_script:
+            old_script.write(update_source)
 
-    subprocess.Popen((sys.executable, os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
-    sys.exit()
+        subprocess.Popen((sys.executable, os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
+        sys.exit()
 
-else:
-    Radio_for_101 = RadioWin()
-    Radio_for_101.connect("delete-event", exit_in_player)
-    Radio_for_101.show_all()
-    Radio_for_101.seek_line.hide()
-    for x in range(6):
-        if x == 5:
-            Radio_for_101.button_array[x].hide()
+    else:
+        Radio_for_101 = RadioWin()
+        Radio_for_101.connect("delete-event", exit_in_player)
+        Radio_for_101.show_all()
+        Radio_for_101.seek_line.hide()
+        for x in range(6):
+            if x == 5:
+                Radio_for_101.button_array[x].hide()
 
-GObject.threads_init()
-Gtk.main()
+    GObject.threads_init()
+    Gtk.main()
+
+# Диалог вывода сообщения об отсутствии соединения с интернет
+def check_internet_connection(*args):
+
+    dialog = Gtk.MessageDialog(Gtk.Window(), 0, Gtk.MessageType.ERROR,
+        Gtk.ButtonsType.OK, "Ошибка!")
+    dialog.format_secondary_text(
+        "Соединение с интернет не обнаружено\nпрограмма будет закрыта.")
+    dialog.run()
+    dialog.destroy()
+
+# Проверка наличия интернет соединения
+try:
+    socket.gethostbyaddr('www.yandex.ru')
+    main_funck()
+except socket.gaierror:
+    check_internet_connection()
+    sys.exit(0)
