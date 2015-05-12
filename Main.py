@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.41'
+SCRIPT_VERSION = '0.0.0.42'
 
 
 class RadioWin(Gtk.Window):
@@ -311,11 +311,6 @@ class RadioWin(Gtk.Window):
         self.di_treeview = Gtk.TreeView(model=self.di_liststore)
         self.di_treeview.set_enable_search(True)
         self.di_treeview.set_show_expanders(False)
-
-        #
-        self.di_model = self.di_treeview.get_model()
-        self.di_iter = self.di_model.get_iter_first()
-        #
 
         di_renderer_text = Gtk.CellRendererText()
         di_column_text = Gtk.TreeViewColumn("Станция", di_renderer_text, text=0)
@@ -1135,23 +1130,24 @@ class RadioWin(Gtk.Window):
     # Реакция на выбор в окне MyPLS
     def my_pls_on_cell_radio_toggled(self, widget, path):
 
-        selected_path = Gtk.TreePath(path)
-        c = self.my_pls_liststore.get_iter(path)
-        for key in self.my_pls_config.sections():
-                if key == self.my_pls_liststore.get_value(c, 0):
-                    self.id_chan = ['My', self.my_pls_config[key]['addrstation']]
-                    self.real_adress = self.my_pls_config[key]['addrstation']
-                    print('----------------------------------------')
-                    print(self.my_pls_liststore.get_value(c, 0))
-                    print(self.my_pls_config[key]['addrstation'])
-                    print('----------------------------------------')
-        for row in self.my_pls_liststore:
-            row[1] = (row.path == selected_path)
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
+            selected_path = Gtk.TreePath(path)
+            c = self.my_pls_liststore.get_iter(path)
+            for key in self.my_pls_config.sections():
+                    if key == self.my_pls_liststore.get_value(c, 0):
+                        self.id_chan = ['My', self.my_pls_config[key]['addrstation']]
+                        self.real_adress = self.my_pls_config[key]['addrstation']
+                        print('----------------------------------------')
+                        print(self.my_pls_liststore.get_value(c, 0))
+                        print(self.my_pls_config[key]['addrstation'])
+                        print('----------------------------------------')
+            for row in self.my_pls_liststore:
+                row[1] = (row.path == selected_path)
 
     # Реакция на выбор в окне RadioRecord
     def record_on_cell_radio_toggled(self, widget, path):
 
-        if self.file_play == 0 and self.radio_play == 0:
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
             selected_path = Gtk.TreePath(path)
             c = self.record_liststore.get_iter(path)
             # Поиск значения в модели и сопоставление адреса в окне RadioRecord
@@ -1311,7 +1307,7 @@ class RadioWin(Gtk.Window):
     def on_cell_radio_toggled_RIC(self, widget, path):
 
         self.RIC_url = ''
-        if self.file_play == 0 and self.radio_play == 0:
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
             selected_path = Gtk.TreePath(path)
             source_cell = self.liststore_RIC.get_iter(path)
             self.liststore_sub.clear()
@@ -1329,7 +1325,7 @@ class RadioWin(Gtk.Window):
     # Реакция на выбор Internet Radio Com Sub
     def on_cell_radio_toggled_s_RIC(self, widget, path):
 
-        if self.file_play == 0 and self.radio_play == 0:
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
             selected_path = Gtk.TreePath(path)
             source_cell = self.liststore_sub.get_iter(path)
             print('----------------------------------------')
@@ -1344,131 +1340,141 @@ class RadioWin(Gtk.Window):
     # Реакция на выбор DIFM
     def di_on_cell_radio_toggled(self, widget, path):
 
-        selected_path = Gtk.TreePath(path)
-        source_cell = self.di_liststore.get_iter(path)
-        for key, val in self.d_fm_dict.items():
-            if key == self.di_liststore.get_value(source_cell, 0):
-                print('----------------------------------------')
-                print(self.di_liststore.get_value(source_cell, 0))
-                print('----------------------------------------')
-                self.real_adress = val
-                self.id_chan = ['DI', val]
-        for row in self.di_liststore:
-            row[1] = (row.path == selected_path)
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
+            selected_path = Gtk.TreePath(path)
+            source_cell = self.di_liststore.get_iter(path)
+            for key, val in self.d_fm_dict.items():
+                if key == self.di_liststore.get_value(source_cell, 0):
+                    print('----------------------------------------')
+                    print(self.di_liststore.get_value(source_cell, 0))
+                    print('----------------------------------------')
+                    self.real_adress = val
+                    self.id_chan = ['DI', val]
+            for row in self.di_liststore:
+                row[1] = (row.path == selected_path)
 
     # Воспроизвести последнюю станцию
     def on_play_last_st(self, *args):
 
-        last_adr = self.wr_station_name_adr.read_last_station()
-        print('\n')
-        print('1 last_adr = self.wr_station_name_adr.read_last_station()', last_adr)
-        print('\n')
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
+            last_adr = self.wr_station_name_adr.read_last_station()
+            print('\n')
+            print('1 last_adr = self.wr_station_name_adr.read_last_station()', last_adr)
+            print('\n')
 
-        if '101.ru'.find(last_adr[0]) and not 'pradio22' in str(last_adr[0]):
-            self.id_chan[0] = re.sub(r'(.+?\=)(\d+)$', r'\2', str(last_adr[0]), re.S)
-            res = last_adr[0]
-            print('res ^^^^^^^^^^^^ ==>>>> ', type(res), res)
-            if res != 0:
-                self.play_stat_now(res)
+            if '101.ru'.find(last_adr[0]) and not 'pradio22' in str(last_adr[0]):
+                self.id_chan[0] = re.sub(r'(.+?\=)(\d+)$', r'\2', str(last_adr[0]), re.S)
+                res = last_adr[0]
+                print('res ^^^^^^^^^^^^ ==>>>> ', type(res), res)
+                if res != 0:
+                    self.play_stat_now(res)
+                    return True
+                else:
+                    pass
+
+            if 'pradio22'.find(last_adr[0]):
+                self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(last_adr[0]), re.S)
+                print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr[0]), last_adr[0])
+                self.play_stat_now(last_adr[0])
                 return True
-            else:
-                pass
 
-        if 'pradio22'.find(last_adr[0]):
-            self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(last_adr[0]), re.S)
-            print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr[0]), last_adr[0])
-            self.play_stat_now(last_adr[0])
-            return True
-
-        if not 'pradio22' in str(last_adr[0]) and not '101.ru' in str(last_adr[0]) or 'http' in str(last_adr[0]) or 'rtmp' in str(last_adr[0]):
-            if 'PS' in str(last_adr[1]):
-                self.id_chan[0] = 'PS'
-            elif 'Radio-Record' in str(last_adr[1]):
-                self.id_chan[0] = 'RREC'
-            elif 'My' in str(last_adr[1]):
-                self.id_chan[0] = 'My'
-            elif 'Internet Radio COM' in str(last_adr[1]):
-                self.id_chan[0] = 'IRC'
-            elif 'D-FM' in str(last_adr[1]):
-                self.id_chan[0] = 'DI'
-                print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr), last_adr)
-            self.play_stat_now(last_adr)
-            return True
+            if not 'pradio22' in str(last_adr[0]) and not '101.ru' in str(last_adr[0]) or 'http' in str(last_adr[0]) or 'rtmp' in str(last_adr[0]):
+                if 'PS' in str(last_adr[1]):
+                    self.id_chan[0] = 'PS'
+                elif 'Radio-Record' in str(last_adr[1]):
+                    self.id_chan[0] = 'RREC'
+                elif 'My' in str(last_adr[1]):
+                    self.id_chan[0] = 'My'
+                elif 'Internet Radio COM' in str(last_adr[1]):
+                    self.id_chan[0] = 'IRC'
+                elif 'D-FM' in str(last_adr[1]):
+                    self.id_chan[0] = 'DI'
+                    print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr), last_adr)
+                self.play_stat_now(last_adr)
+                return True
 
     # Воспроизвести лучшую станцию
     def on_play_best_st(self, *args):
 
-        best_adr = self.wr_station_name_adr.read_best_station()
-        print('best_adr = self.wr_station_name_adr.read_best_station() => ', best_adr)
-        if '101.ru' in str(best_adr) and not 'pradio22' in str(best_adr):
-            self.id_chan[0] = int(re.sub(r'(?:.+?channel\=)(\d+)\D+(?:.*?)', r'\1', str(best_adr), re.M))
-            res = self.HURL.hack_url_adres(best_adr[0])
-            print('res $$$$$$$$$$$$ ==>>>> ', type(res), res)
-            if res != 0:
-                self.play_stat_now(res)
-        elif 'Internet Radio COM' in str(best_adr):
-            print('OK => Internet Radio COM')
-            self.id_chan[0] = 'IRC'
-            self.play_stat_now(best_adr)
-        elif 'Radio-Record' in str(best_adr):
-            print('OK => Radio-Record')
-            self.id_chan[0] = 'RREC'
-            self.play_stat_now(best_adr)
-        elif 'D-FM' in str(best_adr):
-            print('OK => D-FM')
-            self.id_chan[0] = 'IRC'
-            self.play_stat_now(best_adr)
-        elif 'pradio22' in str(best_adr):
-            self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(best_adr), re.S)
-            print('best_adr $$$$$$$$$$$$ ==>>>> ', type(best_adr), best_adr)
-            self.play_stat_now(best_adr)
-        elif not 'pradio22' in str(best_adr) and not '101.ru' in str(best_adr) or 'http' in str(best_adr) or 'rtmp' in str(best_adr):
-            self.id_chan = [0,0]
-            print('best_adr $$$$$$$$$$$$ ==>>>> ', type(best_adr), best_adr)
-            self.play_stat_now(best_adr)
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
+            best_adr = self.wr_station_name_adr.read_best_station()
+            print('best_adr = self.wr_station_name_adr.read_best_station() => ', best_adr)
+            if '101.ru' in str(best_adr) and not 'pradio22' in str(best_adr):
+                self.id_chan[0] = int(re.sub(r'(?:.+?channel\=)(\d+)\D+(?:.*?)', r'\1', str(best_adr), re.M))
+                res = self.HURL.hack_url_adres(best_adr[0])
+                print('res $$$$$$$$$$$$ ==>>>> ', type(res), res)
+                if res != 0:
+                    self.play_stat_now(res)
+            elif 'Internet Radio COM' in str(best_adr):
+                print('OK => Internet Radio COM')
+                self.id_chan[0] = 'IRC'
+                self.play_stat_now(best_adr)
+            elif 'Radio-Record' in str(best_adr):
+                print('OK => Radio-Record')
+                self.id_chan[0] = 'RREC'
+                self.play_stat_now(best_adr)
+            elif 'D-FM' in str(best_adr):
+                print('OK => D-FM')
+                self.id_chan[0] = 'IRC'
+                self.play_stat_now(best_adr)
+            elif 'pradio22' in str(best_adr):
+                self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(best_adr), re.S)
+                print('best_adr $$$$$$$$$$$$ ==>>>> ', type(best_adr), best_adr)
+                self.play_stat_now(best_adr)
+            elif not 'pradio22' in str(best_adr) and not '101.ru' in str(best_adr) or 'http' in str(best_adr) or 'rtmp' in str(best_adr):
+                self.id_chan = [0,0]
+                print('best_adr $$$$$$$$$$$$ ==>>>> ', type(best_adr), best_adr)
+                self.play_stat_now(best_adr)
 
     # Сохранить лучшую станцию
     def on_write_best_st(self, *args):
 
-        print(type(args), args)
-        if args[1] == 0 and self.real_adress != '':
-            print('111 **************************** self.real_adress, self.id_chan ', self.real_adress, self.id_chan)
-            param_send = [self.real_adress,self.id_chan[0]]
-            self.wr_station_name_adr.write_best_station(param_send)
-        elif args[1] == 1:
-            print('222 ****************************')
-            self.id_chan[0] = re.sub(r'(.+?\=)(\d+)$', r'\2', str(self.wr_station_name_adr.read_best_station()), re.S)
-            if self.id_chan[0] == 0 and self.id_chan[1] == 0:
-                print('333 ****************************')
-                self.on_click_bt5()
-            else:
-                print('444 ****************************')
-                res = self.HURL.hack_url_adres(self.wr_station_name_adr.read_best_station())
-                print('res &&&&&&&&&&&>>>> ', type(res), res)
-                if res != 0:
-                    self.play_stat_now(res)
+        if self.radio_play == 1 or self.radio_rtmp_play == 1:
+            print(type(args), args)
+            if args[1] == 0 and self.real_adress != '':
+                print('111 **************************** self.real_adress, self.id_chan ', self.real_adress, self.id_chan)
+                param_send = [self.real_adress,self.id_chan[0]]
+                self.wr_station_name_adr.write_best_station(param_send)
+            elif args[1] == 1:
+                print('222 ****************************')
+                self.id_chan[0] = re.sub(r'(.+?\=)(\d+)$', r'\2', str(self.wr_station_name_adr.read_best_station()), re.S)
+                if self.id_chan[0] == 0 and self.id_chan[1] == 0:
+                    print('333 ****************************')
+                    self.on_click_bt5()
+                else:
+                    print('444 ****************************')
+                    res = self.HURL.hack_url_adres(self.wr_station_name_adr.read_best_station())
+                    print('res &&&&&&&&&&&>>>> ', type(res), res)
+                    if res != 0:
+                        self.play_stat_now(res)
 
     # Диалоговое окно поиска персональных станций
     def search_in_personal_station(self, widget):
 
-        def w_c_l(self, *args):
-            dialog.destroy()
+        if self.radio_play == 1 or self.radio_rtmp_play == 1:
+            def w_c_l(self, *args):
+                dialog.destroy()
 
-        dialog = DialogFindPersonalStation(self)
-        dialog.connect('delete-event', w_c_l)
-        response = dialog.run()
-        if response == Gtk.ResponseType.OK:
-            self.real_adress = dialog.return_adres
-            print('self.real_adress ==> ', self.real_adress)
-            self.id_chan[0] = 'PS'
-            self.play_stat_now(self.real_adress)
-            dialog.destroy()
-        elif response == Gtk.ResponseType.CLOSE:
-            dialog.destroy()
+            dialog = DialogFindPersonalStation(self)
+            dialog.connect('delete-event', w_c_l)
+            response = dialog.run()
+            if response == Gtk.ResponseType.OK:
+                self.real_adress = dialog.return_adres
+                print('self.real_adress ==> ', self.real_adress)
+                self.id_chan[0] = 'PS'
+                self.play_stat_now(self.real_adress)
+                dialog.destroy()
+            elif response == Gtk.ResponseType.CLOSE:
+                dialog.destroy()
 
     # Обновление адресного листа 101
     # Модальное окно с прогрессбаром в отдельном потоке
     def on_refresh_list(self, widget):
+
+        if self.radio_play == 0 and self.radio_rtmp_play == 0:
+            pass
+        else:
+            return False
 
         self.liststore_101.clear()
 
@@ -2055,24 +2061,25 @@ class RadioWin(Gtk.Window):
     # Действие для передачи пользовательского адреса из диалога
     def on_dialog_choice(self, widget):
 
-        dialog = DialogEntryAdr(self)
-        response = dialog.run()
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
+            dialog = DialogEntryAdr(self)
+            response = dialog.run()
 
-        if response == Gtk.ResponseType.OK:
-            self.real_adress = dialog.entry.get_text()
-            print("The OK button was clicked", self.real_adress)
-            self.id_chan = ['My', self.real_adress]
-            self.play_stat_now(self.real_adress)
-        elif response == Gtk.ResponseType.CANCEL:
-            print("The Cancel button was clicked")
+            if response == Gtk.ResponseType.OK:
+                self.real_adress = dialog.entry.get_text()
+                print("The OK button was clicked", self.real_adress)
+                self.id_chan = ['My', self.real_adress]
+                self.play_stat_now(self.real_adress)
+            elif response == Gtk.ResponseType.CANCEL:
+                print("The Cancel button was clicked")
+                dialog.destroy()
+
             dialog.destroy()
-
-        dialog.destroy()
 
     # Реакция на нажатие радиобаттон в модели 101
     def on_cell_radio_toggled(self, widget, path):
 
-        if self.file_play == 0 and self.radio_play == 0:
+        if self.radio_play == 0 and self.radio_rtmp_play == 0:
             selected_path = Gtk.TreePath(path)
             c = self.liststore_101.get_iter(path)
             # Поиск значения в модели и сопоставление с адресом
@@ -2402,9 +2409,10 @@ class RadioWin(Gtk.Window):
 
         if self.pipeline != 0 and r_value != self.real_vol_save:
 
-            self.real_vol_save = r_value
             self.scal_sl.set_value(r_value)
             self.volume.set_property('volume', r_value)
+
+        self.real_vol_save = r_value
 
     # Диалог редактирования пользовательских пресетов эквалайзера
     def edit_eq(self, widget):
