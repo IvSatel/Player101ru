@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.42'
+SCRIPT_VERSION = '0.0.0.43'
 
 
 class RadioWin(Gtk.Window):
@@ -1368,7 +1368,6 @@ class RadioWin(Gtk.Window):
                 print('res ^^^^^^^^^^^^ ==>>>> ', type(res), res)
                 if res != 0:
                     self.play_stat_now(res)
-                    return True
                 else:
                     pass
 
@@ -1399,12 +1398,21 @@ class RadioWin(Gtk.Window):
         if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
             best_adr = self.wr_station_name_adr.read_best_station()
             print('best_adr = self.wr_station_name_adr.read_best_station() => ', best_adr)
+
+            if len(best_adr[0]) == 0:
+                self.label_title.set_label('Нет записи адреса лучшей станции')
+                return
+
             if '101.ru' in str(best_adr) and not 'pradio22' in str(best_adr):
                 self.id_chan[0] = int(re.sub(r'(?:.+?channel\=)(\d+)\D+(?:.*?)', r'\1', str(best_adr), re.M))
                 res = self.HURL.hack_url_adres(best_adr[0])
                 print('res $$$$$$$$$$$$ ==>>>> ', type(res), res)
                 if res != 0:
                     self.play_stat_now(res)
+            elif 'My' in str(best_adr):
+                print('OK => My')
+                self.id_chan = ['My', best_adr[0]]
+                self.play_stat_now(best_adr)
             elif 'Internet Radio COM' in str(best_adr):
                 print('OK => Internet Radio COM')
                 self.id_chan[0] = 'IRC'
@@ -1451,21 +1459,21 @@ class RadioWin(Gtk.Window):
     # Диалоговое окно поиска персональных станций
     def search_in_personal_station(self, widget):
 
-        if self.radio_play == 1 or self.radio_rtmp_play == 1:
-            def w_c_l(self, *args):
-                dialog.destroy()
+        #if self.radio_play == 0 or self.radio_rtmp_play == 0:
+        def w_c_l(self, *args):
+            dialog.destroy()
 
-            dialog = DialogFindPersonalStation(self)
-            dialog.connect('delete-event', w_c_l)
-            response = dialog.run()
-            if response == Gtk.ResponseType.OK:
-                self.real_adress = dialog.return_adres
-                print('self.real_adress ==> ', self.real_adress)
-                self.id_chan[0] = 'PS'
-                self.play_stat_now(self.real_adress)
-                dialog.destroy()
-            elif response == Gtk.ResponseType.CLOSE:
-                dialog.destroy()
+        dialog = DialogFindPersonalStation(self)
+        dialog.connect('delete-event', w_c_l)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.real_adress = dialog.return_adres
+            print('self.real_adress ==> ', self.real_adress)
+            self.id_chan[0] = 'PS'
+            self.play_stat_now(self.real_adress)
+            dialog.destroy()
+        elif response == Gtk.ResponseType.CLOSE:
+            dialog.destroy()
 
     # Обновление адресного листа 101
     # Модальное окно с прогрессбаром в отдельном потоке
@@ -2145,7 +2153,8 @@ class RadioWin(Gtk.Window):
             else:
                 self.My_ERROR_Mess = False
                 return True
-        elif str(type(self.id_chan[0])) == "<class 'list'>" or (f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name)):
+        #elif str(type(self.id_chan[0])) == "<class 'list'>" or (f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name)):
+        elif '101.ru' in self.id_chan[0] or (f_name == '' and f_name != 0 and not 'http' in str(f_name) and not 'rtmp' in str(f_name)):
 
             for x in range(6):
                 if x == 5:
