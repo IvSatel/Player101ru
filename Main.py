@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.44'
+SCRIPT_VERSION = '0.0.0.45'
 
 
 class RadioWin(Gtk.Window):
@@ -1992,7 +1992,7 @@ class RadioWin(Gtk.Window):
             s_tag_l = []
             for h in self.get_info_tag:
                 if tag_l.get_string(h)[0] == True:
-                    print('TAG ==> ', tag_l.get_string(h))
+                    #print('TAG ==> ', tag_l.get_string(h))
                     if h == 'organization':
                         #print('self.tag_organization = tag_l.get_string(h)[1] ==> ', tag_l.get_string(h)[1])
                         self.tag_organization = tag_l.get_string(h)[1]
