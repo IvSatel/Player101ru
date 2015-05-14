@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.43'
+SCRIPT_VERSION = '0.0.0.44'
 
 
 class RadioWin(Gtk.Window):
@@ -50,7 +50,7 @@ class RadioWin(Gtk.Window):
     def __init__(self):
         super(RadioWin, self).__init__()
 
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         # Настройки окна программы по умолчанию
         self.set_title("Radio Player")
         self.set_default_icon(
@@ -66,9 +66,10 @@ class RadioWin(Gtk.Window):
         self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
         self.connect('key_press_event', self.on_key_press_event)
         #
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-        self.eq_set_preset = []  # Список действующей настройки эквалайзера
+        # Список действующей настройки эквалайзера
+        self.eq_set_preset = []
 
         # Если файл с адресами станций есть, то пропускаем
         if os.path.isfile(
@@ -141,10 +142,12 @@ class RadioWin(Gtk.Window):
         # Запись последнего адреса потока
         self.wr_station_name_adr = WriteLastStation()
 
-        # Rec Object
+        # Объект Записи
         self.rec_obj = 0
-        # Rec status
+
+        # Статус Записи
         self.rec_status = False
+
         # Медиа данные (битрейт, моно или стерео)
         self.media_location = ''
         self.tooltip_now_text = ''
@@ -173,13 +176,12 @@ class RadioWin(Gtk.Window):
         # Контейнер для Gst.Pipeline
         self.pipeline = 0
 
-        self.f_name_len = []# Список хранящий плей лист
+        # Список хранящий плей лист
+        self.f_name_len = []
 
         # Предел громкости для шкалы
         self.min_dcb = -45
         self.max_dcb = 0
-
-        self.m_buffers = []# Список хранящий прогресс буферизации
 
         ## Иннфо канала
         # 0 = буквенное обозначение если не 101, если 101 то ID
@@ -204,7 +206,7 @@ class RadioWin(Gtk.Window):
         'start-time',
         'end-time'
         ]
-        self.test_tag_list = []
+
         self.tag_organization = ''
 
         ## Предустановки эквалайзера
@@ -1798,7 +1800,7 @@ class RadioWin(Gtk.Window):
             # Запрос
             with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
                 razdel_title_http = source_title_http.read().decode('utf-8', errors='ignore')
-            find_url_stream = re.findall(r'class\="icon.+?>(\w.+?)<', razdel_title_http, re.M)
+            find_title_in_url_stream = re.findall(r'class\="icon.+?>(\w.+?)<', razdel_title_http, re.M)
         except HTTPError as e:
             print('The server couldn\'t fulfill the request.')
             print('Error code: ', e.code)
@@ -1806,13 +1808,13 @@ class RadioWin(Gtk.Window):
             print('We failed to reach a server.')
             print('Reason: ', e.reason)
         try:
-            print('*****    get_title_from_url(self, adres) ==> ', find_url_stream[0], '$<==#==>$', self.label_title.get_text())
+            print('*****    get_title_from_url(self, adres) ==> ', find_title_in_url_stream[0], '$<==#==>$', self.label_title.get_text())
             print('Устанавливается значение title из get_title_from_url')
             print('self.label_title.get_text()', self.label_title.get_text())
-            print('find_url_stream[0]', find_url_stream[0])
-            if not self.label_title.get_text().find(find_url_stream[0]):
+            print('find_title_in_url_stream[0]', find_title_in_url_stream[0])
+            if not self.label_title.get_text().find(find_title_in_url_stream[0]):
                 a = self.label_title.get_text()
-                self.label_title.set_label(str(a)+' - '+str(find_url_stream[0]))
+                self.label_title.set_label(str(a)+' - '+str(find_title_in_url_stream[0]))
                 if self.timer_title:
                     GObject.source_remove(self.timer_title)
         except IndexError:
@@ -1990,7 +1992,7 @@ class RadioWin(Gtk.Window):
             s_tag_l = []
             for h in self.get_info_tag:
                 if tag_l.get_string(h)[0] == True:
-                    #print('TAG ==> ', tag_l.get_string(h))
+                    print('TAG ==> ', tag_l.get_string(h))
                     if h == 'organization':
                         #print('self.tag_organization = tag_l.get_string(h)[1] ==> ', tag_l.get_string(h)[1])
                         self.tag_organization = tag_l.get_string(h)[1]
