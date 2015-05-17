@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.45'
+SCRIPT_VERSION = '0.0.0.46'
 
 
 class RadioWin(Gtk.Window):
@@ -2109,7 +2109,11 @@ class RadioWin(Gtk.Window):
 
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
-        if self.id_chan[0] == 'RREC' or self.id_chan[0] == 'DI' or self.id_chan[0] == 'IRC' or self.id_chan[0] == 'My' or self.id_chan[0] == 'PS':
+        if (self.id_chan[0] == 'RREC' \
+        or self.id_chan[0] == 'DI' \
+        or self.id_chan[0] == 'IRC' \
+        or self.id_chan[0] == 'My' \
+        or self.id_chan[0] == 'PS') and not '101.ru' in str(self.id_chan[1]):
 
             for x in range(6):
                 if x == 5:
