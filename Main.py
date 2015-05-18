@@ -42,7 +42,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.46'
+SCRIPT_VERSION = '0.0.0.47'
 
 
 class RadioWin(Gtk.Window):
@@ -54,16 +54,16 @@ class RadioWin(Gtk.Window):
         # Настройки окна программы по умолчанию
         self.set_title("Radio Player")
         self.set_default_icon(
-            GdkPixbuf.Pixbuf.new_from_file_at_size(
-                os.path.dirname(os.path.realpath(__file__)) +
-                '/Radio.png', 32, 32))
+        GdkPixbuf.Pixbuf.new_from_file(
+        os.path.dirname(os.path.realpath(__file__)) +
+        '/resource/Radio32.png'))
         # Не менять размер
         self.set_resizable(False)
         # Ширина границ края основной формы
         self.set_border_width(5)
         # Установки позиции окна на экране по центру
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
+        self.set_type_hint(Gdk.WindowTypeHint.MENU)
         self.connect('key_press_event', self.on_key_press_event)
         #
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -81,7 +81,8 @@ class RadioWin(Gtk.Window):
             ad_101_opener = urllib.request.build_opener()
             ad_101_opener.addheaders = [
                 ('Host', '101.ru'),
-                ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+                ('User-agent',
+                'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
 
             # Запрос всех разделов
             with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
@@ -478,7 +479,7 @@ class RadioWin(Gtk.Window):
 
         # Создание иконки/меню в трее
         if APP_INDICATOR:
-            self.tray_icon = AppIndicator3.Indicator.new('Radio Player', os.path.dirname(os.path.realpath(__file__))+'/Radio.png', AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+            self.tray_icon = AppIndicator3.Indicator.new('Radio Player', os.path.dirname(os.path.realpath(__file__))+'/resource/Radio24.png', AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
             self.tray_icon.set_status (AppIndicator3.IndicatorStatus.ACTIVE)
             self.tray_icon.set_title('Radio Player')
             self.tray_icon.set_menu(self.main_menu)
@@ -486,7 +487,7 @@ class RadioWin(Gtk.Window):
             self.tray_icon = Gtk.StatusIcon()
             self.tray_icon.connect('popup-menu', self.create_main_menu)
             self.tray_icon.set_tooltip_text("Radio Player")
-            self.tray_icon.set_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png')
+            self.tray_icon.set_from_file(os.path.dirname(os.path.realpath(__file__))+'/resource/Radio32.png')
             self.tray_icon.set_visible(True)
 
         # Создание List с именами всех станций 101 RU
@@ -1106,7 +1107,7 @@ class RadioWin(Gtk.Window):
         about.set_version(SCRIPT_VERSION)
         about.set_copyright("(c) IvSatel 2015")
         about.set_comments("Internet Radio Player")
-        about.set_logo(GdkPixbuf.Pixbuf.new_from_file(os.path.dirname(os.path.realpath(__file__))+'/Radio.png'))
+        about.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(os.path.dirname(os.path.realpath(__file__))+'/resource/Radio256.png', 256, 256))
         about.run()
         about.destroy()
 
@@ -2513,40 +2514,6 @@ class RadioWin(Gtk.Window):
                 GLib.source_remove(self.timer_title_rtmp)
             return False
 
-class Script_Version_Compare():
-
-
-    def __init__(self):
-
-        version_opener = urllib.request.build_opener()
-        version_opener.addheaders = [(
-        'User-agent',
-        'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
-        )]
-        with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
-            self.remote_vers = fo.read().decode()
-        if SCRIPT_VERSION < self.remote_vers:
-            update_opener = urllib.request.build_opener()
-            update_opener.addheaders = [
-            ('Host', 'github.com'),
-            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
-            ]
-
-            with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
-                update_source = update_http.read().decode('utf-8', errors='ignore')
-
-            with open(os.path.abspath(__file__), 'w') as old_script:
-                old_script.write(update_source)
-
-            sb_p = subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
-
-        else:
-            sb_p = subprocess.Popen(('python3', os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
-            Radio_for_101 = RadioWin()
-            Radio_for_101.connect("delete-event", Gtk.main_quit)
-            Radio_for_101.show_all()
-            Radio_for_101.seek_line.hide()
-
 # Класс получения источника потока 101.RU
 class HackURL(object):
 
@@ -3405,9 +3372,6 @@ class RecorderBin(Gst.Bin):
             print('End Of Stream')
             self.rec_pipeline.set_state(Gst.State.NULL)
 
-def exit_in_player(obj, event):
-    Gtk.main_quit()
-
 def main_funck():
     # Проверка версии
     version_opener = urllib.request.build_opener()
@@ -3436,15 +3400,14 @@ def main_funck():
 
     else:
         Radio_for_101 = RadioWin()
-        Radio_for_101.connect("delete-event", exit_in_player)
+        Radio_for_101.connect("delete-event", Gtk.main_quit)
         Radio_for_101.show_all()
         Radio_for_101.seek_line.hide()
         for x in range(6):
             if x == 5:
                 Radio_for_101.button_array[x].hide()
-
-    GObject.threads_init()
-    Gtk.main()
+        GObject.threads_init()
+        Gtk.main()
 
 # Диалог вывода сообщения об отсутствии соединения с интернет
 def check_internet_connection(*args):
