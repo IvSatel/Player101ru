@@ -5,6 +5,7 @@ import configparser
 import subprocess
 import threading
 import datetime
+import zipfile
 import socket
 import math
 import json
@@ -42,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.47'
+SCRIPT_VERSION = '0.0.0.48'
 
 
 class RadioWin(Gtk.Window):
@@ -2325,8 +2326,11 @@ class RadioWin(Gtk.Window):
         for x in self.liststore_101:
             x[1] = False
         # Снять чекбоксы с плейлистов RIC
-        for x in self.liststore_RIC:
-            x[1] = False
+        try:
+            for x in self.liststore_RIC:
+                x[1] = False
+        except AttributeError:
+            pass
         for x in self.liststore_sub:
             x[1] = False
         # Снять чекбоксы с плейлистов Record
@@ -3372,6 +3376,39 @@ class RecorderBin(Gst.Bin):
             print('End Of Stream')
             self.rec_pipeline.set_state(Gst.State.NULL)
 
+def download_up_date():
+
+    update_prog_opener = urllib.request.build_opener()
+    update_prog_opener.addheaders = [('Host', 'github.com'), ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+
+    with update_prog_opener.open('https://github.com/IvSatel/Player101ru/archive/master.zip') as source_up_zip:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/master.zip', 'wb') as myzip:
+            myzip.write(source_up_zip.read())
+
+    def assure_path_exists(path):
+
+        s_dir = os.path.dirname(path)
+        if not os.path.exists(s_dir):
+            os.mkdir(s_dir)
+
+    with zipfile.ZipFile(os.path.dirname(os.path.realpath(__file__)) + '/master.zip') as my_z_file:
+
+        for x in my_z_file.namelist():
+
+            if x.replace('Player101ru-master', '') != '':
+
+                f = my_z_file.read(x)
+
+                dir_mp = re.sub(r'//$', r'/', str(os.path.dirname(os.path.realpath(__file__)) +'/'+ x.replace('Player101ru-master', '')))
+
+                if len(f) == 0:
+                    assure_path_exists(dir_mp)
+                else:
+                    with open(dir_mp, 'wb') as w_f:
+                        w_f.write(f)
+
+    os.remove(os.path.dirname(os.path.realpath(__file__)) + '/master.zip')
+
 def main_funck():
     # Проверка версии
     version_opener = urllib.request.build_opener()
@@ -3382,18 +3419,11 @@ def main_funck():
     remote_vers = ''
     with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
         remote_vers = fo.read().decode()
-    if SCRIPT_VERSION < remote_vers:
-        update_opener = urllib.request.build_opener()
-        update_opener.addheaders = [
-        ('Host', 'github.com'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
-        ]
+    if SCRIPT_VERSION < remote_vers or \
+    not os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/resource') or \
+    not os.path.isfile(os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/Radio.png')):
 
-        with update_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/Main.py') as update_http:
-            update_source = update_http.read().decode('utf-8', errors='ignore')
-
-        with open(os.path.abspath(__file__), 'w', encoding='utf-8', errors='ignore') as old_script:
-            old_script.write(update_source)
+        download_up_date()
 
         subprocess.Popen((sys.executable, os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
         sys.exit()
