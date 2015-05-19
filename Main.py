@@ -3407,7 +3407,7 @@ def download_up_date():
                     with open(dir_mp, 'wb') as w_f:
                         w_f.write(f)
 
-    os.remove(os.path.dirname(os.path.realpath(__file__)) + '/master.zip')
+        os.remove(os.path.dirname(os.path.realpath(__file__)) + '/master.zip')
 
 def main_funck():
     # Проверка версии
@@ -3419,9 +3419,7 @@ def main_funck():
     remote_vers = ''
     with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
         remote_vers = fo.read().decode()
-    if SCRIPT_VERSION < remote_vers or \
-    not os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/resource') or \
-    not os.path.isfile(os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/Radio.png')):
+    if SCRIPT_VERSION < remote_vers or (not os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/resource') or not os.path.isfile(os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/Radio.png'))):
 
         download_up_date()
 
