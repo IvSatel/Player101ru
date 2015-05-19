@@ -3419,7 +3419,7 @@ def main_funck():
     remote_vers = ''
     with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
         remote_vers = fo.read().decode()
-    if SCRIPT_VERSION < remote_vers or not os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/resource':
+    if SCRIPT_VERSION < remote_vers or not os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/resource'):
 
         download_up_date()
 
