@@ -17,8 +17,8 @@ import gi
 import urllib.parse
 import urllib.request
 from decimal import Decimal
-from urllib.error import URLError, HTTPError
 from collections import OrderedDict
+from urllib.error import URLError, HTTPError
 
 gi.require_version('Gst', '1.0')
 gi.require_version('Gtk', '3.0')
@@ -43,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.48'
+SCRIPT_VERSION = '0.0.0.49'
 
 
 class RadioWin(Gtk.Window):
@@ -51,13 +51,15 @@ class RadioWin(Gtk.Window):
     def __init__(self):
         super(RadioWin, self).__init__()
 
+        # Путь запуска программы
+        self.prog_full_path = os.path.dirname(os.path.realpath(__file__))
+
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         # Настройки окна программы по умолчанию
         self.set_title("Radio Player")
         self.set_default_icon(
         GdkPixbuf.Pixbuf.new_from_file(
-        os.path.dirname(os.path.realpath(__file__)) +
-        '/resource/Radio32.png'))
+        self.prog_full_path + '/resource/Radio32.png'))
         # Не менять размер
         self.set_resizable(False)
         # Ширина границ края основной формы
@@ -73,8 +75,7 @@ class RadioWin(Gtk.Window):
         self.eq_set_preset = []
 
         # Если файл с адресами станций есть, то пропускаем
-        if os.path.isfile(
-            os.path.dirname(os.path.realpath(__file__)) + '/adres_list.ini'):
+        if os.path.isfile(self.prog_full_path + '/adres_list.ini'):
             print('Файл с адресами найден ' + self.get_time_now())
         else:  # Если файл с адресами станций отсутствует то получаем его
             print('Файл с адресами создается ' + self.get_time_now())
@@ -87,7 +88,9 @@ class RadioWin(Gtk.Window):
 
             # Запрос всех разделов
             with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
-                razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', source_101_http.read().decode('utf-8', errors='ignore'), re.M)
+                razdel_101_http = re.findall(
+                r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>',
+                source_101_http.read().decode('utf-8', errors='ignore'), re.M)
 
             dict_101_ru = []
 
@@ -97,7 +100,9 @@ class RadioWin(Gtk.Window):
             for x, y in razdel_101_http:
                 a = []
                 with ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as source_101_razdel:
-                    source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
+                    source_101_http_razdel = re.findall(
+                    r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>',
+                    source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
                     for z, c in source_101_http_razdel:
                         a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
                     dict_101_ru.append(a)
@@ -110,10 +115,10 @@ class RadioWin(Gtk.Window):
                 for d in x:
                     final_conf.append(d+'\n')
 
-            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as adr101file:
+            with open(self.prog_full_path + '/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as adr101file:
                 adr101file.writelines(final_conf)
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
+        with open(self.prog_full_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
             read_adr = file_w.readlines()
 
         self.read_list_adr = []
@@ -124,7 +129,7 @@ class RadioWin(Gtk.Window):
         # Существуют ли записи в файле set-eq.ini предустановок эквалайзера или нет
         try:
             config = configparser.ConfigParser()
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
+            config.read(self.prog_full_path + '/set-eq.ini', encoding='utf-8')
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
@@ -132,9 +137,9 @@ class RadioWin(Gtk.Window):
             config = configparser.ConfigParser()
             config.add_section('EQ-Settings')
             config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
+            with open(self.prog_full_path + '/set-eq.ini', 'w') as cfgfile:
                 config.write(cfgfile)
-            config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
+            config.read(self.prog_full_path + '/set-eq.ini', encoding='utf-8')
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
@@ -480,7 +485,7 @@ class RadioWin(Gtk.Window):
 
         # Создание иконки/меню в трее
         if APP_INDICATOR:
-            self.tray_icon = AppIndicator3.Indicator.new('Radio Player', os.path.dirname(os.path.realpath(__file__))+'/resource/Radio24.png', AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+            self.tray_icon = AppIndicator3.Indicator.new('Radio Player', self.prog_full_path + '/resource/Radio24.png', AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
             self.tray_icon.set_status (AppIndicator3.IndicatorStatus.ACTIVE)
             self.tray_icon.set_title('Radio Player')
             self.tray_icon.set_menu(self.main_menu)
@@ -488,7 +493,7 @@ class RadioWin(Gtk.Window):
             self.tray_icon = Gtk.StatusIcon()
             self.tray_icon.connect('popup-menu', self.create_main_menu)
             self.tray_icon.set_tooltip_text("Radio Player")
-            self.tray_icon.set_from_file(os.path.dirname(os.path.realpath(__file__))+'/resource/Radio32.png')
+            self.tray_icon.set_from_file(self.prog_full_path + '/resource/Radio32.png')
             self.tray_icon.set_visible(True)
 
         # Создание List с именами всех станций 101 RU
@@ -534,7 +539,7 @@ class RadioWin(Gtk.Window):
         self.RIC_url = ''
 
         self.loc_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        self.loc_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8')
+        self.loc_config.read(self.prog_full_path + '/radiointernet.txt', encoding = 'utf-8')
         self.c_s = self.loc_config.sections()
 
         if len(self.c_s) == 0:
@@ -731,7 +736,7 @@ class RadioWin(Gtk.Window):
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+        self.my_pls_config.read(self.prog_full_path + '/my_pls.ini')
 
         self.my_pls_liststore = Gtk.ListStore(str, bool)
         for x in sorted(self.my_pls_config.sections()):
@@ -1060,14 +1065,14 @@ class RadioWin(Gtk.Window):
     def n_next(self, *args):
 
         self.del_my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        self.del_my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+        self.del_my_pls_config.read(self.prog_full_path + '/my_pls.ini')
 
         for x in self.del_my_pls_config.sections():
             if x == args[1]:
                 print('Удаление записи адреса из моего плейлиста ==> ', args[1])
                 self.del_my_pls_config.remove_section(args[1])
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini', 'w') as configfile:
+        with open(self.prog_full_path + '/my_pls.ini', 'w') as configfile:
             self.del_my_pls_config.write(configfile)
 
         self.my_pls_liststore.clear()
@@ -1108,7 +1113,7 @@ class RadioWin(Gtk.Window):
         about.set_version(SCRIPT_VERSION)
         about.set_copyright("(c) IvSatel 2015")
         about.set_comments("Internet Radio Player")
-        about.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(os.path.dirname(os.path.realpath(__file__))+'/resource/Radio256.png', 256, 256))
+        about.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(self.prog_full_path + '/resource/Radio256.png', 256, 256))
         about.run()
         about.destroy()
 
@@ -1116,15 +1121,15 @@ class RadioWin(Gtk.Window):
     def save_adres_in_pls(self, *args):
 
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+        self.my_pls_config.read(self.prog_full_path + '/my_pls.ini')
         print('Запись адреса в мой плейлист ==> ', self.tag_organization, self.real_adress)
         self.my_pls_config.add_section(self.tag_organization)
         self.my_pls_config.set(self.tag_organization, 'addrstation', self.real_adress)
-        with open(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini', 'w') as configfile:
+        with open(self.prog_full_path + '/my_pls.ini', 'w') as configfile:
             self.my_pls_config.write(configfile)
 
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        self.my_pls_config.read(os.path.dirname(os.path.realpath(__file__))+'/my_pls.ini')
+        self.my_pls_config.read(self.prog_full_path + '/my_pls.ini')
 
         self.my_pls_liststore.clear()
 
@@ -1259,7 +1264,7 @@ class RadioWin(Gtk.Window):
         if response == 22:
             # Создание и установка элементов
             self.loc_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-            self.loc_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8')
+            self.loc_config.read(self.prog_full_path + '/radiointernet.txt', encoding = 'utf-8')
             self.c_s = self.loc_config.sections()
             self.liststore_RIC = Gtk.ListStore(str, bool)
             for x in self.c_s:
@@ -1362,9 +1367,8 @@ class RadioWin(Gtk.Window):
 
         if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
             last_adr = self.wr_station_name_adr.read_last_station()
-            print('\n')
+
             print('1 last_adr = self.wr_station_name_adr.read_last_station()', last_adr)
-            print('\n')
 
             if '101.ru'.find(last_adr[0]) and not 'pradio22' in str(last_adr[0]):
                 self.id_chan[0] = re.sub(r'(.+?\=)(\d+)$', r'\2', str(last_adr[0]), re.S)
@@ -1379,22 +1383,25 @@ class RadioWin(Gtk.Window):
                 self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(last_adr[0]), re.S)
                 print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr[0]), last_adr[0])
                 self.play_stat_now(last_adr[0])
-                return True
 
-            if not 'pradio22' in str(last_adr[0]) and not '101.ru' in str(last_adr[0]) or 'http' in str(last_adr[0]) or 'rtmp' in str(last_adr[0]):
-                if 'PS' in str(last_adr[1]):
-                    self.id_chan[0] = 'PS'
-                elif 'Radio-Record' in str(last_adr[1]):
-                    self.id_chan[0] = 'RREC'
-                elif 'My' in str(last_adr[1]):
-                    self.id_chan[0] = 'My'
-                elif 'Internet Radio COM' in str(last_adr[1]):
-                    self.id_chan[0] = 'IRC'
-                elif 'D-FM' in str(last_adr[1]):
-                    self.id_chan[0] = 'DI'
-                    print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr), last_adr)
-                self.play_stat_now(last_adr)
-                return True
+            #if not 'pradio22' in str(last_adr[0]) and not '101.ru' in str(last_adr[0]) or 'http' in str(last_adr[0]) or 'rtmp' in str(last_adr[0]):
+            if 'PS' == last_adr[1]:
+                print('Select PS')
+                self.id_chan[0] = 'PS'
+            elif 'Radio-Record' == last_adr[1]:
+                print('Select Radio-Record')
+                self.id_chan[0] = 'RREC'
+            elif 'My' == last_adr[1]:
+                print('Select My')
+                self.id_chan[0] = 'My'
+            elif 'Internet Radio COM' == last_adr[1]:
+                print('Select Internet Radio COM')
+                self.id_chan[0] = 'IRC'
+            elif 'D-FM' == last_adr[1]:
+                print('Select D-FM')
+                self.id_chan[0] = 'DI'
+                print('last_adr ^^^^^^^^^^^^ ==>>>> ', type(last_adr), last_adr)
+            self.play_stat_now(last_adr)
 
     # Воспроизвести лучшую станцию
     def on_play_best_st(self, *args):
@@ -1497,7 +1504,7 @@ class RadioWin(Gtk.Window):
 
             if progress.get_fraction() == 1.0:
 
-                with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
+                with open(self.prog_full_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
                     read_adr = file_w.readlines()
 
                 self.read_list_adr = []
@@ -1542,7 +1549,7 @@ class RadioWin(Gtk.Window):
                 for d in x:
                     loc_final_conf.append(d+'\n')
 
-            with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'w') as loc_adr101file:
+            with open(self.prog_full_path + '/adres_list.ini', 'w') as loc_adr101file:
                 loc_adr101file.writelines(loc_final_conf)
 
         def w_d(*args):
@@ -1698,13 +1705,13 @@ class RadioWin(Gtk.Window):
                     chek += 1
             except:# Если отсутствует значение
                 no_config = configparser.ConfigParser()
-                no_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
+                no_config.read(self.prog_full_path + '/set-eq.ini', encoding='utf-8')
                 no_config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
                 leq = config['EQ-Settings']['lasteq'].split(' ')
                 self.eq_set_preset = []
                 for x in leq:
                     self.eq_set_preset.append(x)
-                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
+                with open(self.prog_full_path + '/set-eq.ini', 'w') as cfgfile:
                     no_config.write(cfgfile)
                 chek= 0
                 for x in self.eq_set_preset:
@@ -2109,6 +2116,9 @@ class RadioWin(Gtk.Window):
     # Функция воспроизведения
     def play_stat_now(self, f_name=''):
 
+        if self.pipeline != 0:
+            return False
+
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
         if (self.id_chan[0] == 'RREC' \
@@ -2397,7 +2407,7 @@ class RadioWin(Gtk.Window):
         if (self.radio_rtmp_play == 1 or self.radio_play == 1 or self.file_play == 1) and str(gain[1]) != 'Редактировать положение эквалайзера':
             print('def change_equlaizer(self, *gain):', str(gain[1]))
             eq_config = configparser.ConfigParser()
-            eq_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
+            eq_config.read(self.prog_full_path + '/set-eq.ini', encoding='utf-8')
             eq_set = []
             self.eq_set_preset = gain[1]
             eq = self.pipeline.get_by_name('equalizer-nbands')
@@ -2414,7 +2424,7 @@ class RadioWin(Gtk.Window):
                 pass
 
             eq_config.set('EQ-Settings','lasteq',''.join(str(eq_set)).strip('][').replace(',', ''))
-            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
+            with open(self.prog_full_path + '/set-eq.ini', 'w') as cfgfile:
                 eq_config.write(cfgfile)
 
     # Функция установки громкости
@@ -2605,8 +2615,9 @@ class WriteLastStation(object):
     def __init__(self):
 
         self.dirty_date = ''
+        self.wr_path = os.path.dirname(os.path.realpath(__file__))
 
-        with open(os.path.dirname(os.path.realpath(__file__))+'/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as main_param_file:
+        with open(self.wr_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as main_param_file:
             self.dirty_date = main_param_file.read()
 
         self.dirty_list_date = re.sub(r'amp;', r'', self.dirty_date).split('\n')
@@ -2637,7 +2648,7 @@ class WriteLastStation(object):
             config.add_section('BestStation')
             config.set('BestStation', 'addrstation', '')
             config.set('BestStation', 'namestation', '')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w') as cfgfile:
+            with open(self.wr_path + '/station.ini', 'w') as cfgfile:
                 config.write(cfgfile)
 
     def write_last_station(self, *args):
@@ -2686,7 +2697,7 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'Internet Radio COM')
                 else:
                     config.remove_option('LastStation', 'namestation')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
+            with open(self.wr_path + '/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
         elif 'rtmp' in ''.join(args[0]):
             print('RTMP WRITE ', ''.join(args[0]))
@@ -2703,7 +2714,7 @@ class WriteLastStation(object):
                 config.set('LastStation', 'namestation', 'Internet Radio COM')
             else:
                 config.remove_option('LastStation', 'namestation')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
+            with open(self.wr_path + '/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
 
     def write_best_station(self, *args):
@@ -2776,7 +2787,7 @@ class WriteLastStation(object):
                     config.set('BestStation', 'namestation', 'Internet Radio COM')
             else:
                 config.set('BestStation', 'namestation', nam)
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
+            with open(self.wr_path + '/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
         elif 'rtmp' in str_adr_chanel:
             config = configparser.ConfigParser()
@@ -2798,7 +2809,7 @@ class WriteLastStation(object):
                 config.set('BestStation', 'namestation', 'Internet Radio COM')
             else:
                 config.remove_option('BestStation', 'namestation')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/station.ini', 'w', encoding = 'utf-8') as configfile:
+            with open(self.wr_path + '/station.ini', 'w', encoding = 'utf-8') as configfile:
                 config.write(configfile)
 
     def read_last_station(self, *args):
@@ -3013,7 +3024,7 @@ class DialogC_A_L(Gtk.Dialog):
         elif self.my_args[0] == 2:
             choice_page = full_sum_page
         m_check = 1
-        with open(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', 'w', encoding = 'utf-8') as file_d:
+        with open(self.dial_path + '/radiointernet.txt', 'w', encoding = 'utf-8') as file_d:
             for x in choice_page:
                 ar = urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/')
                 page_r = ar.read().decode('utf-8', errors='ignore')
@@ -3057,6 +3068,7 @@ class DialogC_A_L(Gtk.Dialog):
         Gtk.Dialog.__init__(self, "Создание адресного листа для IRC", parent, Gtk.DialogFlags.MODAL)
 
         self.my_args = args
+        self.dial_path = os.path.dirname(os.path.realpath(__file__))
 
         self.set_default_size(300, 50)
 
@@ -3103,6 +3115,7 @@ class EQWindow(Gtk.Dialog):
              Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
         self.set_default_size(250, 250)
+        self.eq_path = os.path.dirname(os.path.realpath(__file__))
 
         self.mdict = []
         self.arr_eq = []
@@ -3124,7 +3137,7 @@ class EQWindow(Gtk.Dialog):
             test_config = configparser.ConfigParser()
             test_config.add_section('EQ-Settings')
             test_config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
-            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as cfgfile:
+            with open(self.eq_path + '/set-eq.ini', 'w') as cfgfile:
                 test_config.write(cfgfile)
             test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             for x in test_config.items('EQ-Settings'):
@@ -3259,7 +3272,7 @@ class EQWindow(Gtk.Dialog):
                 print('Есть текст в интри')
                 lasteq = self.name_entry.get_text()
                 wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
+                with open(self.eq_path + '/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
                     wr_config.write(configfile)
                 print('Zap2')
             elif self.name_entry.get_text() == '':
@@ -3267,12 +3280,12 @@ class EQWindow(Gtk.Dialog):
                 lasteq = 'lasteq'
                 try:
                     wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
+                    with open(self.eq_path + '/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
                         wr_config.write(configfile)
                 except:
                     wr_config.add_section('EQ-Settings')
                     wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
-                    with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w') as configfile:
+                    with open(self.eq_path + '/set-eq.ini', 'w') as configfile:
                         wr_config.write(configfile)
         elif len(self.arr_eq) == 18:
             self.mdict = self.arr_eq
@@ -3281,7 +3294,7 @@ class EQWindow(Gtk.Dialog):
             else:
                 lasteq = 'lasteq'
             wr_config.set('EQ-Settings', lasteq, str(' '.join(self.arr_eq)))
-            with open(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
+            with open(self.eq_path + '/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
                 wr_config.write(configfile)
 
     # Реакция на нажатие кнопки "Установить / Сохранить"
@@ -3378,36 +3391,52 @@ class RecorderBin(Gst.Bin):
 
 def download_up_date():
 
-    update_prog_opener = urllib.request.build_opener()
-    update_prog_opener.addheaders = [('Host', 'github.com'), ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+    my_path_up = os.path.dirname(os.path.realpath(__file__))
 
+    update_prog_opener = urllib.request.build_opener()
+    update_prog_opener.addheaders = [
+    ('Host', 'github.com'),
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
+    ]
+
+    # Загрузка архива
     with update_prog_opener.open('https://github.com/IvSatel/Player101ru/archive/master.zip') as source_up_zip:
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/master.zip', 'wb') as myzip:
+        with open(my_path_up + '/master.zip', 'wb') as myzip:
             myzip.write(source_up_zip.read())
 
+    # Проверка на существование пути
     def assure_path_exists(path):
 
         s_dir = os.path.dirname(path)
+        # Если нет то создать
         if not os.path.exists(s_dir):
             os.mkdir(s_dir)
 
-    with zipfile.ZipFile(os.path.dirname(os.path.realpath(__file__)) + '/master.zip') as my_z_file:
+    # Открыть файл архива
+    with zipfile.ZipFile(my_path_up + '/master.zip') as my_z_file:
 
+        # Итерируем имена в архиве
         for x in my_z_file.namelist():
 
+            # Удаляем корневую папку в архиве
             if x.replace('Player101ru-master', '') != '':
 
+                # Читаем файлы в архиве
                 f = my_z_file.read(x)
 
-                dir_mp = re.sub(r'//$', r'/', str(os.path.dirname(os.path.realpath(__file__)) +'/'+ x.replace('Player101ru-master', '')))
+                # Создаем структуру папок
+                dir_mp = re.sub(r'//$', r'/', str(my_path_up +'/'+ x.replace('Player101ru-master', '')))
 
+                # Если прочитано 0 то значит это папка
                 if len(f) == 0:
                     assure_path_exists(dir_mp)
                 else:
+                    # Если прочитано не 0 то записываем на диск
                     with open(dir_mp, 'wb') as w_f:
                         w_f.write(f)
 
-        os.remove(os.path.dirname(os.path.realpath(__file__)) + '/master.zip')
+    # Удаляем скаченый файл архива
+    os.remove(my_path_up + '/master.zip')
 
 def main_funck():
     # Проверка версии
@@ -3416,9 +3445,12 @@ def main_funck():
     'User-agent',
     'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
     )]
+
     remote_vers = ''
+
     with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
         remote_vers = fo.read().decode()
+
     if SCRIPT_VERSION < remote_vers or not os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/resource'):
 
         download_up_date()
@@ -3427,13 +3459,16 @@ def main_funck():
         sys.exit()
 
     else:
+
         Radio_for_101 = RadioWin()
         Radio_for_101.connect("delete-event", Gtk.main_quit)
         Radio_for_101.show_all()
         Radio_for_101.seek_line.hide()
+
         for x in range(6):
             if x == 5:
                 Radio_for_101.button_array[x].hide()
+
         GObject.threads_init()
         Gtk.main()
 
