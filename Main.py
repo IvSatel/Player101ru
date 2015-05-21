@@ -43,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.50'
+SCRIPT_VERSION = '0.0.0.51'
 
 
 class RadioWin(Gtk.Window):
@@ -68,6 +68,7 @@ class RadioWin(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_type_hint(Gdk.WindowTypeHint.MENU)
         self.connect('key_press_event', self.on_key_press_event)
+        self.window_state_on_desctop = 1
         #
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -999,9 +1000,13 @@ class RadioWin(Gtk.Window):
     # Отобразить/скрыть окно
     def on_show_wed(self, *args):
 
-        if self.is_active():
+        #if self.is_active():
+        #if 'RadioWin object' in str(self.list_toplevels()):
+        if self.window_state_on_desctop:
             self.hide()
+            self.window_state_on_desctop = 0
         else:
+            self.window_state_on_desctop = 1
             self.hide()
             self.show_all()
             if self.radio_play == 1 or self.radio_rtmp_play == 1 or self.file_play == 1:
@@ -2343,9 +2348,6 @@ class RadioWin(Gtk.Window):
     def on_click_bt5(self, *b5):
 
         print('Нажата кнопка Stop')
-
-        if not self.pipeline:
-            return
 
         for x in range(6):
             if x == 5:
