@@ -43,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.51'
+SCRIPT_VERSION = '0.0.0.52'
 
 
 class RadioWin(Gtk.Window):
@@ -357,7 +357,7 @@ class RadioWin(Gtk.Window):
         self.main_menu = Gtk.Menu()
 
         # HIDE SHOW
-        self.main_menu_items_hide = Gtk.MenuItem.new_with_label("Скрыть окно/Отобразить окно")
+        self.main_menu_items_hide = Gtk.MenuItem.new_with_label("Скрыть/Отобразить окно")
         self.main_menu.append(self.main_menu_items_hide)
         self.main_menu_items_hide.connect("activate", self.on_show_wed)
         self.main_menu_items_hide.show()
@@ -372,26 +372,31 @@ class RadioWin(Gtk.Window):
         self.main_menu.append(self.main_menu_items_play)
         self.main_menu_items_play.connect("activate", self.on_click_bt1)
         self.main_menu_items_play.show()
+
         # Воспроизвести лучшую станцию
         self.main_menu_items_play_best_st = Gtk.MenuItem.new_with_label("Воспроизвести лучшую станцию")
         self.main_menu.append(self.main_menu_items_play_best_st)
         self.main_menu_items_play_best_st.connect("activate", self.on_play_best_st, 1)
         self.main_menu_items_play_best_st.show()
+
         # Воспроизвести последнюю станцию
         self.main_menu_items_play_last_st = Gtk.MenuItem.new_with_label("Воспроизвести последнюю станцию")
         self.main_menu.append(self.main_menu_items_play_last_st)
         self.main_menu_items_play_last_st.connect("activate", self.on_play_last_st, 1)
         self.main_menu_items_play_last_st.show()
+
         # Проиграть интернет адрес станции
         self.main_menu_items_play_m = Gtk.MenuItem.new_with_label("Воспроизвести пользовательский URL адрес")
         self.main_menu.append(self.main_menu_items_play_m)
         self.main_menu_items_play_m.connect("activate", self.on_dialog_choice)
         self.main_menu_items_play_m.show()
+
         # Пауза
         self.main_menu_items_pause = Gtk.MenuItem.new_with_label("Пауза")
         self.main_menu.append(self.main_menu_items_pause)
         self.main_menu_items_pause.connect("activate", self.on_click_bt4)
         self.main_menu_items_pause.show()
+
         # Стоп
         self.main_menu_items_stop = Gtk.MenuItem.new_with_label("Стоп")
         self.main_menu.append(self.main_menu_items_stop)
@@ -408,6 +413,7 @@ class RadioWin(Gtk.Window):
         self.main_menu.append(self.main_menu_items_save_mpls)
         self.main_menu_items_save_mpls.connect("activate", self.save_adres_in_pls)
         self.main_menu_items_save_mpls.show()
+
         # Сохранить лучшую станцию
         self.main_menu_items_write_best_st = Gtk.MenuItem.new_with_label("Сохранить лучшую станцию")
         self.main_menu.append(self.main_menu_items_write_best_st)
@@ -424,6 +430,7 @@ class RadioWin(Gtk.Window):
         self.main_menu.append(self.main_menu_items_play_person)
         self.main_menu_items_play_person.connect("activate", self.search_in_personal_station)
         self.main_menu_items_play_person.show()
+
         # Обновить адресный лист
         self.main_menu_items_refresh_pl = Gtk.MenuItem.new_with_label("Обновить адресный лист 101.ru")
         self.main_menu.append(self.main_menu_items_refresh_pl)
@@ -436,6 +443,7 @@ class RadioWin(Gtk.Window):
         self.main_menu_separator_items_4.show()
 
         self.vol_menu = Gtk.Menu()
+
         # Громкость
         self.main_menu_items_vol = Gtk.MenuItem.new_with_label("Громкость")
         self.main_menu_items_vol.set_submenu(self.vol_menu)
@@ -448,14 +456,17 @@ class RadioWin(Gtk.Window):
             x.show()
 
         self.eq_menu = Gtk.Menu()
+
         # Подменю Эквалайзера
         self.main_menu_items_eq = Gtk.MenuItem.new_with_label("Эквалайзер")
         self.main_menu_items_eq.set_submenu(self.eq_menu)
+
         # Редактировать пользовательские пресеты эквалайзера
         self.eq_menu_items_eq_edit = Gtk.MenuItem.new_with_label("Редактировать положение эквалайзера")
         self.eq_menu.append(self.eq_menu_items_eq_edit)
         self.eq_menu_items_eq_edit.connect("activate", self.edit_eq)
         self.eq_menu_items_eq_edit.show()
+
         # Установки именованных настроек эквалайзера
         for x in sorted(self.equalizer_presets_dict):
             self.eq_menu.append(Gtk.MenuItem.new_with_label(str(x)))
@@ -475,6 +486,7 @@ class RadioWin(Gtk.Window):
         self.main_menu.append(self.main_menu_items_quit)
         self.main_menu_items_quit.connect("activate", Gtk.main_quit)
         self.main_menu_items_quit.show()
+
         # О Программе
         self.main_menu_items_about = Gtk.MenuItem.new_with_label("О Программе")
         self.main_menu.append(self.main_menu_items_about)
@@ -485,7 +497,11 @@ class RadioWin(Gtk.Window):
 
         # Создание иконки/меню в трее
         if APP_INDICATOR:
-            self.tray_icon = AppIndicator3.Indicator.new('Radio Player', self.prog_full_path + '/resource/Radio24.png', AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+            self.tray_icon = AppIndicator3.Indicator.new(
+            'Radio Player',
+            self.prog_full_path + '/resource/Radio24.png',
+            AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+
             self.tray_icon.set_status (AppIndicator3.IndicatorStatus.ACTIVE)
             self.tray_icon.set_title('Radio Player')
             self.tray_icon.set_menu(self.main_menu)
@@ -528,10 +544,6 @@ class RadioWin(Gtk.Window):
         column_radio_101.set_resizable(False)
         column_radio_101.set_expand(False)
         self.treeview_101.append_column(column_radio_101)
-
-        #***************************************************************
-        #***************************************************************
-        #***************************************************************
 
         # Создание сетки для размещения Internet Radio COM
         self.grid_for_IRC = Gtk.Grid.new()
@@ -588,7 +600,6 @@ class RadioWin(Gtk.Window):
             self.top_column_radio.set_resizable(False)
             self.top_treeview.append_column(self.top_column_radio)
 
-        #***************************************************************
         self.liststore_sub = Gtk.ListStore(str, bool)
 
         self.sub_treeview = Gtk.TreeView(model=self.liststore_sub)
@@ -623,10 +634,6 @@ class RadioWin(Gtk.Window):
 
         self.sub_treeview.append_column(sub_column_radio)
 
-        #***************************************************************
-        #***************************************************************
-        #***************************************************************
-
         # Создание окна с прокруткой для размещения в нем List 101
         self.scrolled_window_101 = Gtk.ScrolledWindow()
         self.scrolled_window_101.set_min_content_height(150)
@@ -648,7 +655,7 @@ class RadioWin(Gtk.Window):
         else:
             self.top_window.add(self.top_treeview)
 
-        #Создание окна с прокруткой для размещения в нем Radio Internet
+        # Создание окна с прокруткой для размещения в нем Radio Internet
         self.sub_window = Gtk.ScrolledWindow()
         self.sub_window.set_min_content_height(150)
         self.sub_window.set_min_content_width(300)
@@ -660,9 +667,8 @@ class RadioWin(Gtk.Window):
         self.grid_for_IRC.set_column_homogeneous(True)# Ровнять
         self.grid_for_IRC.set_row_homogeneous(False)
         self.grid_for_IRC.set_column_spacing(1)
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        #'''# Радио рекорд
+
+        # Радио рекорд
         record_opener = urllib.request.build_opener()
         record_opener.addheaders = [
         ('Host', 'www.radiorecord.ru'),
@@ -730,11 +736,8 @@ class RadioWin(Gtk.Window):
         self.record_scrolled_window.set_min_content_height(150)
         self.record_scrolled_window.set_min_content_width(300)
         self.record_scrolled_window.add(self.record_treeview)
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
         # My Play List
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
         self.my_pls_config.read(self.prog_full_path + '/my_pls.ini')
 
@@ -775,14 +778,10 @@ class RadioWin(Gtk.Window):
         self.my_pls_scrolled_window.set_min_content_width(300)
         self.my_pls_scrolled_window.set_size_request(300, 300)
 
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
         # Создание табов для порталов
         self.main_note_for_cont = Gtk.Notebook()
         self.main_note_for_cont.set_border_width(5)
         self.main_note_for_cont.set_scrollable(True)
-        #self.main_note_for_cont.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.0, 1.0, 1.0))
         self.main_note_for_cont.set_property('expand', False)
         self.main_note_for_cont.set_property('enable-popup', True)
         self.main_note_for_cont.set_property('show-border', False)
@@ -913,17 +912,19 @@ class RadioWin(Gtk.Window):
         self.seek_line = Gtk.HScale.new_with_range(0, 100, 0.01)
         self.seek_line.set_draw_value(False)
         self.seek_line.set_digits(2)
-        #self.seek_line.connect('adjust-bounds', self.new_seek_pos_set)
         self.seek_line.connect('button-release-event', self.new_seek_pos_set)
         self.seek_line.connect('button-press-event', self.popup_for_cue_on_seek_line)
 
-        self.grid = Gtk.Grid()# Первая (основная сетка размещения)
+        # Первая (основная сетка размещения)
+        self.grid = Gtk.Grid()
         self.grid.set_border_width(5)
 
-        self.grid_button = Gtk.Grid()# Вторая сетка размещения для кнопок
+        # Вторая сетка размещения для кнопок
+        self.grid_button = Gtk.Grid()
         self.grid_button.set_border_width(5)
 
-        self.grid_seek = Gtk.Grid()# Третья сетка для ползунка продолжительности
+        # Третья сетка для ползунка продолжительности
+        self.grid_seek = Gtk.Grid()
         self.grid_seek.set_border_width(5)
 
         # Создание сетки с кнопками
@@ -939,9 +940,11 @@ class RadioWin(Gtk.Window):
         # Помещение сетки с кнопками в основную сетку
         self.grid.attach(self.grid_button, 1, 1, 5, 1)# Разиестить сетку с кнопками
         self.grid.attach(self.grid_seek, 1, 8, 5, 2)# Разиестить сетку с полосой
+
         # Помещение сетки с левым и правым эквал-ми в основную сетку
         self.grid.attach(self.grid_for_left_eq, 0, 1, 1, 7)# Шкала громкости
         self.grid.attach(self.grid_for_riht_eq, 6, 1, 1, 7)# Шкала громкости
+
         # Помещение табов в основную сетку
         self.grid.attach(self.main_note_for_cont, 1, 2, 5, 4)# Окно со станциями
         self.grid.attach(self.scal_sl, 2, 6, 3, 1)# Регулятор громкости
@@ -1000,8 +1003,6 @@ class RadioWin(Gtk.Window):
     # Отобразить/скрыть окно
     def on_show_wed(self, *args):
 
-        #if self.is_active():
-        #if 'RadioWin object' in str(self.list_toplevels()):
         if self.window_state_on_desctop:
             self.hide()
             self.window_state_on_desctop = 0
@@ -1152,8 +1153,7 @@ class RadioWin(Gtk.Window):
                         self.id_chan = ['My', self.my_pls_config[key]['addrstation']]
                         self.real_adress = self.my_pls_config[key]['addrstation']
                         print('----------------------------------------')
-                        print(self.my_pls_liststore.get_value(c, 0))
-                        print(self.my_pls_config[key]['addrstation'])
+                        print(self.my_pls_liststore.get_value(c, 0), self.my_pls_config[key]['addrstation'])
                         print('----------------------------------------')
             for row in self.my_pls_liststore:
                 row[1] = (row.path == selected_path)
@@ -1190,45 +1190,30 @@ class RadioWin(Gtk.Window):
 
         def m_i():
 
+            if self.tooltip_now_text != '':
+                return True
+
             media_info = []
             discoverer = GstPbutils.Discoverer()
             info = discoverer.discover_uri(self.media_location)# Create = GstPbutils.DiscovererInfo
 
+            name_command_info = ['caps', 'misc', 'next', 'type', 'toc',
+            'bitrate', 'chanels', 'depth', 'language', 'max bitrate', 'sample rate', 'seekable']
+
             for ainfo in info.get_audio_streams():# Create = GstPbutils.DiscovererStreamInfo
-                m_caps = str(ainfo.get_caps()).split(',')
-                if m_caps != None:
-                    media_info.append(str('caps = '+str(m_caps[0])+'\n'))
-                m_misc = ainfo.get_misc()
-                if m_misc != None:
-                    media_info.append(str('misc = '+str(ainfo.get_misc())+'\n'))
-                m_next = ainfo.get_next()
-                if m_next != None:
-                    media_info.append(str('next = '+str(ainfo.get_next())+'\n'))
-                m_nick = ainfo.get_stream_type_nick()
-                if m_nick != None:
-                    media_info.append(str('type = '+str(ainfo.get_stream_type_nick())+'\n'))
-                m_toc = ainfo.get_toc()
-                if m_toc != None:
-                    media_info.append(str('toc = '+str(ainfo.get_toc())+'\n'))
-                m_bitrate = ainfo.get_bitrate()
-                if m_bitrate != 0:
-                    media_info.append(str('bitrate = '+str(ainfo.get_bitrate())+'\n'))
-                m_chanels = ainfo.get_channels()
-                if m_chanels != None:
-                    media_info.append(str('channels = '+str(ainfo.get_channels())+'\n'))
-                m_depth = ainfo.get_depth()
-                if m_bitrate != 0:
-                    media_info.append(str('depth = '+str(ainfo.get_depth())+'\n'))
-                m_lang = ainfo.get_language()
-                if m_lang != None:
-                    media_info.append(str('language = '+str(ainfo.get_language())+'\n'))
-                m_max_bitrate = ainfo.get_max_bitrate()
-                if m_max_bitrate != 0:
-                    media_info.append(str('max bitrate = '+str(ainfo.get_max_bitrate())+'\n'))
-                m_sample_rate = ainfo.get_sample_rate()
-                if m_sample_rate != None:
-                    media_info.append(str('sample rate = '+str(ainfo.get_sample_rate())+'\n'))
-                media_info.append(str('seekable = '+str(local_convert_time(info.get_duration()))+'\n'))
+
+                if self.tooltip_now_text != '':
+                    return True
+
+                name_metod_info = [str(ainfo.get_caps()).split(',')[0], str(ainfo.get_misc()), str(ainfo.get_next()),
+                str(ainfo.get_stream_type_nick()), str(ainfo.get_toc()), str(ainfo.get_bitrate()),
+                str(ainfo.get_channels()), str(ainfo.get_depth()), str(ainfo.get_language()), str(ainfo.get_max_bitrate()),
+                str(ainfo.get_sample_rate()), str(ainfo.get_sample_rate()), str(local_convert_time(info.get_duration()))]
+
+                for j in range(0, 12):
+                    if name_metod_info[j] != 'None' and name_metod_info[j] != 0:
+                        media_info.append(str(name_command_info[j])+' = '+str(name_metod_info[j])+'\n')
+
             self.tooltip_now_text = ''
             for x in media_info:
                 self.tooltip_now_text += x
@@ -1244,8 +1229,10 @@ class RadioWin(Gtk.Window):
 
             if self.thread_t.is_alive():
                 tooltip.set_text('Идет поиск данных')
+                return True
             else:
                 tooltip.set_text(self.tooltip_now_text)
+                return True
         else:
             tooltip.set_text('Нет информации')
         return True
@@ -1582,8 +1569,6 @@ class RadioWin(Gtk.Window):
     # Определение источник "файл или http" и создание элемента source
     def create_source(self, location):
 
-        """ ***** location ==> 23:22:05 <class 'str'> 22 http://st16.fmtuner.ru """
-        """ ***** location ==> 23:23:16 <class 'tuple'> 2 ('http://st16.fmtuner.ru', 'D-FM') """
         if location == 0:
             self.label_title.set_text('Канал не передает звукового потока!')
             raise IOError(" 1 Источник %s не найден" % location)
@@ -1826,7 +1811,7 @@ class RadioWin(Gtk.Window):
         except URLError as e:
             print('We failed to reach a server.', e.code)
         try:
-            print('*****    get_title_from_url(self, adres) ==> ', find_title_in_url_stream[0], '$<==#==>$', self.label_title.get_text())
+            print('get_title_from_url(self, adres) ==> ', find_title_in_url_stream[0], '$<==#==>$', self.label_title.get_text())
             print('Устанавливается значение title из get_title_from_url')
             print('self.label_title.get_text()', self.label_title.get_text())
             print('find_title_in_url_stream[0]', find_title_in_url_stream[0])
@@ -1927,6 +1912,14 @@ class RadioWin(Gtk.Window):
                 self.menu_pop_show.show_all()
                 self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
 
+    #꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾#
+    ################### ######### #####################
+    #################### ####### ######################
+    ##################### ##### #######################
+    ###################### ### ########################
+    ####################### # #########################
+    ######################## ##########################
+
     # Обработка сообщений от элементов
     def message_element(self, bus, message):
 
@@ -2017,9 +2010,7 @@ class RadioWin(Gtk.Window):
             s_tag_l = []
             for h in self.get_info_tag:
                 if tag_l.get_string(h)[0] == True:
-                    #print('TAG ==> ', tag_l.get_string(h))
                     if h == 'organization':
-                        #print('self.tag_organization = tag_l.get_string(h)[1] ==> ', tag_l.get_string(h)[1])
                         self.tag_organization = tag_l.get_string(h)[1]
                     if '101.ru' in str(tag_l.get_string(h)):
                         s_tag_l.append(re.sub(r'(101\.ru\:\s?)(.+?)$', r'\2 ', str(tag_l.get_string(h)[1]), re.M))
@@ -2027,8 +2018,6 @@ class RadioWin(Gtk.Window):
                         s_tag_l.append(re.sub(r'/', r' ', tag_l.get_string(h)[1]))
                 else:
                     pass
-
-            #print('\n', 'Получены ТЭГИ ' + self.get_time_now(), '\n', 's_tag_l ==> ', s_tag_l)
 
             if len(s_tag_l) > 0:
                 try:
@@ -2043,7 +2032,7 @@ class RadioWin(Gtk.Window):
     def message_eos(self, bus, message):
 
         if message.type == Gst.MessageType.EOS:
-            print('Получено сообщение об окончании потока (Gst.MessageType.EOS) ' + self.get_time_now())
+            print('Получено сообщение об окончании потока ' + self.get_time_now())
             if self.file_play == 1:
                 print(' \n end of track \n')
                 self.level_bar_l.set_fraction(1.0)
@@ -2051,7 +2040,7 @@ class RadioWin(Gtk.Window):
                 self.label_time.set_label('00:00:00:00')
                 self.label_ltime.set_label('00:00:00:00')
                 self.seek_line.set_value(float(0.01))
-                print('self.pipeline.set_state(Gst.State.NULL) ==> self.pipeline.set_state(Gst.State.NULL)')
+                print('eos1 self.pipeline.set_state(Gst.State.NULL)')
                 self.pipeline.set_state(Gst.State.NULL)
 
                 Gst.Event.new_flush_stop(True)
@@ -2059,7 +2048,7 @@ class RadioWin(Gtk.Window):
                 if len(self.f_name_len) >= 2:
                     print('len(self.f_name_len) ==> ', len(self.f_name_len))
                     self.f_name_len.pop(0)
-                    print('self.pipeline.set_state(Gst.State.NULL) ==> self.pipeline.set_state(Gst.State.NULL)')
+                    print('eos2 self.pipeline.set_state(Gst.State.NULL)')
                     self.pipeline.set_state(Gst.State.NULL)
                     self.pipeline = 0
                     try:
@@ -2085,12 +2074,12 @@ class RadioWin(Gtk.Window):
                 print('Buffering is done = ', message.parse_buffering())
                 self.pipeline.set_state(Gst.State.PLAYING)
 
-        ###################################################
-        ###################################################
-        ###################################################
-        ###################################################
-        ###################################################
-        ###################################################
+        ####################### ###########################
+        ###################### # ##########################
+        ##################### ### #########################
+        #################### ##### ########################
+        ################### ####### #######################
+        ################## ######### ######################
         #꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾#
 
     # Действие для передачи пользовательского адреса из диалога
