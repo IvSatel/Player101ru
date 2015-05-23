@@ -43,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.52'
+SCRIPT_VERSION = '0.0.0.53'
 
 
 class RadioWin(Gtk.Window):
@@ -1208,11 +1208,13 @@ class RadioWin(Gtk.Window):
                 name_metod_info = [str(ainfo.get_caps()).split(',')[0], str(ainfo.get_misc()), str(ainfo.get_next()),
                 str(ainfo.get_stream_type_nick()), str(ainfo.get_toc()), str(ainfo.get_bitrate()),
                 str(ainfo.get_channels()), str(ainfo.get_depth()), str(ainfo.get_language()), str(ainfo.get_max_bitrate()),
-                str(ainfo.get_sample_rate()), str(ainfo.get_sample_rate()), str(local_convert_time(info.get_duration()))]
+                str(ainfo.get_sample_rate()), str(local_convert_time(info.get_duration()))]
 
                 for j in range(0, 12):
-                    if name_metod_info[j] != 'None' and name_metod_info[j] != 0:
+                    if name_metod_info[j] != 'None' and name_metod_info[j] != '0':
                         media_info.append(str(name_command_info[j])+' = '+str(name_metod_info[j])+'\n')
+                    else:
+                        pass
 
             self.tooltip_now_text = ''
             for x in media_info:
