@@ -6,7 +6,6 @@ import subprocess
 import threading
 import datetime
 import zipfile
-import inspect
 import socket
 import math
 import json
@@ -44,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.54'
+SCRIPT_VERSION = '0.0.0.55'
 
 
 class RadioWin(Gtk.Window):
@@ -53,8 +52,7 @@ class RadioWin(Gtk.Window):
         super(RadioWin, self).__init__()
 
         # Путь запуска программы
-        #self.prog_full_path = os.path.dirname(os.path.realpath(__file__))
-        self.prog_full_path = GetPathOrScriptName().get_script_dir()
+        self.prog_full_path = os.path.dirname(os.path.realpath(__file__))
 
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         # Настройки окна программы по умолчанию
@@ -2634,8 +2632,7 @@ class WriteLastStation(object):
     def __init__(self):
 
         self.dirty_date = ''
-        #self.wr_path = os.path.dirname(os.path.realpath(__file__))
-        self.wr_path = GetPathOrScriptName().get_script_dir()
+        self.wr_path = os.path.dirname(os.path.realpath(__file__))
 
         with open(self.wr_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as main_param_file:
             self.dirty_date = main_param_file.read()
@@ -2656,7 +2653,7 @@ class WriteLastStation(object):
             config = configparser.ConfigParser()
 
             config.read(
-            GetPathOrScriptName('station.ini').get_script_dir(),
+            os.path.dirname(os.path.realpath(__file__))+'/station.ini',
             encoding='utf-8')
 
             leq = config['LastStation']
@@ -2683,7 +2680,7 @@ class WriteLastStation(object):
                     nam = str(key)
             if nam != '':
                 config = configparser.ConfigParser()
-                config.read(GetPathOrScriptName('station.ini').get_script_dir(), encoding = 'utf-8')
+                config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
                 config.set('LastStation', 'addrstation', adr)
                 if args[1][0] == 'PS':
                     config.set('LastStation', 'namestation', 'PS')
@@ -2701,7 +2698,7 @@ class WriteLastStation(object):
                 config = configparser.ConfigParser()
 
                 config.read(
-                GetPathOrScriptName('station.ini').get_script_dir(),
+                os.path.dirname(os.path.realpath(__file__))+'/station.ini',
                 encoding = 'utf-8')
 
                 config.set('LastStation', 'addrstation', ''.join(args[0]))
@@ -2722,7 +2719,7 @@ class WriteLastStation(object):
         elif 'rtmp' in ''.join(args[0]):
             print('RTMP WRITE ', ''.join(args[0]))
             config = configparser.ConfigParser()
-            config.read(GetPathOrScriptName('station.ini').get_script_dir(), encoding = 'utf-8')
+            config.read(os.path.dirname(os.path.realpath(__file__))+'/station.ini', encoding = 'utf-8')
             config.set('LastStation', 'addrstation', ''.join(args[0]))
             if args[1][0] == 'PS':
                 config.set('LastStation', 'namestation', 'PS')
@@ -2787,7 +2784,7 @@ class WriteLastStation(object):
             config = configparser.ConfigParser()
 
             config.read(
-            GetPathOrScriptName('station.ini').get_script_dir(),
+            os.path.dirname(os.path.realpath(__file__))+'/station.ini',
             encoding = 'utf-8')
 
             config.set('BestStation', 'addrstation', adr)
@@ -2812,7 +2809,7 @@ class WriteLastStation(object):
             config = configparser.ConfigParser()
 
             config.read(
-            GetPathOrScriptName('station.ini').get_script_dir(),
+            os.path.dirname(os.path.realpath(__file__))+'/station.ini',
             encoding = 'utf-8')
 
             config.set('BestStation', 'addrstation', str_adr_chanel)
@@ -2836,7 +2833,7 @@ class WriteLastStation(object):
         config = configparser.ConfigParser()
 
         config.read(
-        GetPathOrScriptName('station.ini').get_script_dir(),
+        os.path.dirname(os.path.realpath(__file__))+'/station.ini',
         encoding = 'utf-8')
 
         adr = config['LastStation']
@@ -2847,7 +2844,7 @@ class WriteLastStation(object):
         config = configparser.ConfigParser()
 
         config.read(
-        GetPathOrScriptName('station.ini').get_script_dir(),
+        os.path.dirname(os.path.realpath(__file__))+'/station.ini',
         encoding = 'utf-8')
 
         adr = config['BestStation']
@@ -3087,7 +3084,7 @@ class DialogC_A_L(Gtk.Dialog):
         Gtk.Dialog.__init__(self, "Создание адресного листа для IRC", parent, Gtk.DialogFlags.MODAL)
 
         self.my_args = args
-        self.dial_path = GetPathOrScriptName().get_script_dir()
+        self.dial_path = os.path.dirname(os.path.realpath(__file__))
 
         self.set_default_size(300, 50)
 
@@ -3113,14 +3110,14 @@ class DialogC_A_L(Gtk.Dialog):
 
         # Удаление пустых секций
         fin_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
-        fin_config.read(GetPathOrScriptName('radiointernet.txt').get_script_dir(), encoding = 'utf-8')
+        fin_config.read(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', encoding = 'utf-8')
         all_sections = fin_config.sections()
 
         for x in all_sections:
             if len(fin_config.options(x)) == 0:
                 fin_config.remove_section(x)
 
-        with open(GetPathOrScriptName('radiointernet.txt').get_script_dir(), 'w', encoding='utf-8') as configfile:
+        with open(os.path.dirname(os.path.realpath(__file__))+'/radiointernet.txt', 'w', encoding='utf-8') as configfile:
             fin_config.write(configfile)
 
 # Диалог отображения эквалайзера
@@ -3134,7 +3131,7 @@ class EQWindow(Gtk.Dialog):
              Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
         self.set_default_size(250, 250)
-        self.eq_path = GetPathOrScriptName().get_script_dir()
+        self.eq_path = os.path.dirname(os.path.realpath(__file__))
 
         self.mdict = []
         self.arr_eq = []
@@ -3146,7 +3143,7 @@ class EQWindow(Gtk.Dialog):
         # Установлен эквалайзер или нет
         try:
             test_config = configparser.ConfigParser()
-            test_config.read(GetPathOrScriptName('set-eq.ini').get_script_dir(), encoding='utf-8')
+            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             leq = test_config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.mdict.append(x)
@@ -3158,7 +3155,7 @@ class EQWindow(Gtk.Dialog):
             test_config.set('EQ-Settings','lasteq','0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0')
             with open(self.eq_path + '/set-eq.ini', 'w') as cfgfile:
                 test_config.write(cfgfile)
-            test_config.read(GetPathOrScriptName('set-eq.ini').get_script_dir(), encoding='utf-8')
+            test_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
             for x in test_config.items('EQ-Settings'):
                 self.name_combo.append_text(str(x[0]))
             leq = test_config['EQ-Settings']['lasteq'].split(' ')
@@ -3254,7 +3251,7 @@ class EQWindow(Gtk.Dialog):
     def on_currency_combo_changed(self, combo):
 
         combo_config = configparser.ConfigParser()
-        combo_config.read(GetPathOrScriptName('set-eq.ini').get_script_dir(), encoding='utf-8')
+        combo_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
         self.arr_eq = []
         text = combo.get_active_text()
         if text != None:
@@ -3284,7 +3281,7 @@ class EQWindow(Gtk.Dialog):
     def write_cfg_prs(self, *args):
 
         wr_config = configparser.ConfigParser()
-        wr_config.read(GetPathOrScriptName('set-eq.ini').get_script_dir(), encoding='utf-8')
+        wr_config.read(os.path.dirname(os.path.realpath(__file__))+'/set-eq.ini', encoding='utf-8')
 
         if len(self.arr_eq) != 18:
             if self.name_entry.get_text() != '':
@@ -3391,7 +3388,7 @@ class RecorderBin(Gst.Bin):
         self.rec_vorbisenc.set_property('managed', True)
         self.rec_vorbisenc.set_property('quality', 0.9)
         self.rec_uridecodebin.set_property('uri', location)
-        self.rec_filesink.set_property("location", self.list_files(GetPathOrScriptName().get_script_dir()))
+        self.rec_filesink.set_property("location", self.list_files(os.path.dirname(os.path.realpath(__file__))))
 
         [rec_pipeline.add(k) for k in [self.rec_vorbisenc, self.rec_oggmux,
         self.rec_filesink, self.rec_uridecodebin, self.rec_audioconvert]]
@@ -3408,38 +3405,9 @@ class RecorderBin(Gst.Bin):
             print('End Of Stream for rec_pipeline')
             self.rec_pipeline.set_state(Gst.State.NULL)
 
-
-class GetPathOrScriptName(object):
-
-    def __init__(self, *arg):
-
-        if str(arg) != '()':
-            self.name_dir = arg
-        else:
-            self.name_dir = ['']
-
-    def get_dir_with_name(self):
-
-        return os.path.abspath(inspect.getfile(inspect.currentframe()))
-
-    def get_script_name(self):
-
-        return inspect.getfile(inspect.currentframe())
-
-    def get_script_dir(self):
-
-        if sys.platform.startswith('linux'):
-
-            return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/' + re.sub(r'\\', r'/', self.name_dir[0])
-
-        elif sys.platform.startswith('win'):
-
-            return os.path.abspath(inspect.getfile(inspect.currentframe())) + '\\' + re.sub(r'/', r'\\', self.name_dir[0])
-
-
 def download_up_date():
 
-    #my_path_up = os.path.dirname(os.path.realpath(__file__))
+    my_path_up = os.path.dirname(os.path.realpath(__file__))
 
     update_prog_opener = urllib.request.build_opener()
     update_prog_opener.addheaders = [
@@ -3449,7 +3417,7 @@ def download_up_date():
 
     # Загрузка архива
     with update_prog_opener.open('https://github.com/IvSatel/Player101ru/archive/master.zip') as source_up_zip:
-        with open(GetPathOrScriptName('master.zip').get_script_dir(), 'wb') as myzip:
+        with open(my_path_up + '/master.zip', 'wb') as myzip:
             myzip.write(source_up_zip.read())
 
     # Проверка на существование пути
@@ -3461,7 +3429,7 @@ def download_up_date():
             os.mkdir(s_dir)
 
     # Открыть файл архива
-    with zipfile.ZipFile(GetPathOrScriptName('master.zip').get_script_dir()) as my_z_file:
+    with zipfile.ZipFile(my_path_up + '/master.zip') as my_z_file:
 
         # Итерируем имена в архиве
         for x in my_z_file.namelist():
@@ -3473,7 +3441,7 @@ def download_up_date():
                 f = my_z_file.read(x)
 
                 # Создаем структуру папок
-                dir_mp = re.sub(r'//$', r'/', str(GetPathOrScriptName().get_script_dir() +'/'+ x.replace('Player101ru-master', '')))
+                dir_mp = re.sub(r'//$', r'/', str(my_path_up +'/'+ x.replace('Player101ru-master', '')))
 
                 # Если прочитано 0 то значит это папка
                 if len(f) == 0:
@@ -3484,7 +3452,7 @@ def download_up_date():
                         w_f.write(f)
 
     # Удаляем скаченый файл архива
-    os.remove(GetPathOrScriptName('master.zip').get_script_dir())
+    os.remove(my_path_up + '/master.zip')
 
 def main_funck():
     # Проверка версии
@@ -3499,11 +3467,11 @@ def main_funck():
     with version_opener.open('https://raw.githubusercontent.com/IvSatel/Player101ru/master/version') as fo:
         remote_vers = fo.read().decode()
 
-    if SCRIPT_VERSION < remote_vers or not os.path.exists(GetPathOrScriptName('resource').get_script_dir()):
+    if SCRIPT_VERSION < remote_vers or not os.path.exists(os.path.dirname(os.path.realpath(__file__)) +'/resource'):
 
         download_up_date()
 
-        subprocess.Popen((sys.executable, os.path.abspath(inspect.getfile(inspect.currentframe()))), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
+        subprocess.Popen((sys.executable, os.path.abspath(__file__)), shell=False, stdout=None, stdin=None, stderr=subprocess.STDOUT)
         sys.exit()
 
     else:
