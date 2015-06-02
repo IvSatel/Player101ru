@@ -43,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.55'
+SCRIPT_VERSION = '0.0.0.56'
 
 
 class RadioWin(Gtk.Window):
@@ -1565,7 +1565,7 @@ class RadioWin(Gtk.Window):
         def pos(menu, icon):
             return (Gtk.StatusIcon.position_menu(menu, icon))
 
-        self.main_menu.popup(None, None, pos, self.tray_icon, button, time)
+        self.main_menu.popup(None, None, pos, self.tray_icon, 0, time)
         self.main_menu.show_all()
 
     # Определение источник "файл или http" и создание элемента source
@@ -3182,7 +3182,7 @@ class EQWindow(Gtk.Dialog):
         self.grid_edit.set_border_width(5)
 
         self.sc_l = [Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, 0, 36, 0.1) for x in range(18)]
-        self.label_l = [Gtk.Label.new() for x in range(18)]
+        self.label_l = [Gtk.Label() for x in range(18)]
         self.label_Hz = [Gtk.Label.new(str(self.m_freq[x])) for x in range(18)]
 
         # Создание кнопки Сохранить Установить
