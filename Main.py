@@ -43,7 +43,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.56'
+SCRIPT_VERSION = '0.0.0.57'
 
 
 class RadioWin(Gtk.Window):
@@ -300,11 +300,15 @@ class RadioWin(Gtk.Window):
 
         self.d_fm_dict = dict()
 
+        def read_page(self, xarg):
+            with dinamit_opener.open(xarg) as dinamit_http_source_2:
+                dinamit_http_read = dinamit_http_source_2.read().decode('utf-8', errors='ignor')
+                self.d_fm_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
+
         try:
             for key, val in dinamit_res.items():
-                with dinamit_opener.open(val) as dinamit_http_source_2:
-                    dinamit_http_read = dinamit_http_source_2.read().decode('utf-8', errors='ignor')
-                    self.d_fm_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
+                thread_dinamit = threading.Thread(target=self.read_page(val), daemon=True)
+                thread_dinamit.start()
         except:
             ## Словарь Ди-ФМ
             self.d_fm_dict = {'DFM Динамит': 'http://st16.fmtuner.ru',
@@ -1225,8 +1229,7 @@ class RadioWin(Gtk.Window):
             if len(self.tooltip_now_text) > 0:
                 pass
             else:
-                self.thread_t = threading.Thread(target=m_i)
-                self.thread_t.daemon = True
+                self.thread_t = threading.Thread(target=m_i, daemon=True)
                 self.thread_t.start()
 
             if self.thread_t.is_alive():
@@ -1553,8 +1556,7 @@ class RadioWin(Gtk.Window):
         win.add(box)
         win.show_all()
 
-        thread_3 = threading.Thread(target=example_target)
-        thread_3.daemon = True
+        thread_3 = threading.Thread(target=example_target, daemon=True)
         thread_3.start()
 
     # Создание меню в трее
@@ -2144,8 +2146,10 @@ class RadioWin(Gtk.Window):
             print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ",
             f_name, 'self.real_adress ==> 1 ',
             self.real_adress)
-            thread_1 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
-            thread_1.daemon = True
+            thread_1 = threading.Thread(
+            target=self.wr_station_name_adr.write_last_station(
+            self.real_adress, self.id_chan),
+            daemon=True)
             thread_1.start()
 
             self.file_play = 0
@@ -2205,8 +2209,10 @@ class RadioWin(Gtk.Window):
                 if self.pipeline != 0:
                     self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                     print('self.real_adress ==> 2 ', self.real_adress)
-                    thread_2 = threading.Thread(target=self.wr_station_name_adr.write_last_station(self.real_adress, self.id_chan))
-                    thread_2.daemon = True
+                    thread_2 = threading.Thread(
+                    target=self.wr_station_name_adr.write_last_station(
+                    self.real_adress, self.id_chan),
+                    daemon=True)
                     thread_2.start()
             else:
                 self.on_click_bt5()
@@ -3011,6 +3017,13 @@ class DialogEntryAdr(Gtk.Dialog):
 # Диалог создания адресного листа для IRC
 class DialogC_A_L(Gtk.Dialog):
 
+    def close_status(self, *args):
+
+        self.c_s = True
+        if args[1] == -4:
+            self.destroy()
+        elif args[1] == -7:
+            self.destroy()
 
     def c_a_l(self):
 
@@ -3022,17 +3035,39 @@ class DialogC_A_L(Gtk.Dialog):
             self.part_progress.set_fraction(x[0])
             self.part_progress.set_text(x[1])
 
-        for_short_name = urllib.request.urlopen('http://www.internet-radio.com')
-        page_short_name = for_short_name.read().decode('utf-8', errors='ignore')
-        ptrn = '''<li><a onClick\="ga\('send'\, 'event'\, 'genreclick'\, 'navbar'\, '.+?'\)\;" href\=".+?">(.+?)</a></li>'''
-        short_sum_page = [x for x in re.findall(r''+str(ptrn)+'', page_short_name, re.M)]
+        def read_page_irc(args):
 
-        for_full_name = urllib.request.urlopen('http://www.internet-radio.com/stations/')
-        full_page_name = for_full_name.read().decode('utf-8', errors='ignore')
-        ptrn = '''<dt class="text\-capitalize" style="font\-size\: .+?\;"><a href=".+?">(.+?)</a></dt>'''
-        full_sum_page = [x for x in re.findall(r''+str(ptrn)+'', full_page_name, re.M)]
+            with urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', args[0])+'/page'+str(args[1])) as req:
+                s_page_r = req.read().decode('utf-8', errors='ignore')
 
-        line_to_write = []
+            fr = re.findall(r"mount=(.+?)&amp;title=(.+?)&amp;", s_page_r, re.M)
+            res_dict[x] = fr
+
+            for e in fr:
+                self.line_to_write.append(re.sub(r'\s+$', r'', str(e[1]), re.S)+' = '+re.sub(r'\/live\.m3u', r'/live', re.sub(r'\/listen\.pls', r'/;', re.sub(r'\/listen\.pls\?sid\=1', r'/;', re.sub(r'\.m3u', r'', re.sub(r'^=\s*', r'', str(e[0]), re.M), re.M), re.M), re.M), re.M))
+
+            mm_m = []
+            mm_m.append(float(m_check//(len(choice_page)/100)) / 100)
+            mm_m.append(str(int(m_check//(len(choice_page)/100)))+' %')
+            GLib.idle_add(m_m, mm_m)
+
+            mm_p = []
+            mm_p.append(float(check//(max(sum_page)/100)) / 100)
+            mm_p.append(str(int(check//(max(sum_page)/100)))+' %')
+            GLib.idle_add(m_p, mm_p)
+
+        with urllib.request.urlopen('http://www.internet-radio.com') as for_short_name:
+            page_short_name = for_short_name.read().decode('utf-8', errors='ignore')
+
+        ptrn_s = '''<li><a onClick\="ga\('send'\, 'event'\, 'genreclick'\, 'navbar'\, '.+?'\)\;" href\=".+?">(.+?)</a></li>'''
+        short_sum_page = [x for x in re.findall(r''+str(ptrn_s)+'', page_short_name, re.M)]
+
+        with urllib.request.urlopen('http://www.internet-radio.com/stations/') as for_full_name:
+            full_page_name = for_full_name.read().decode('utf-8', errors='ignore')
+
+        ptrn_f = '''<dt class="text\-capitalize" style="font\-size\: .+?\;"><a href=".+?">(.+?)</a></dt>'''
+        full_sum_page = [x for x in re.findall(r''+str(ptrn_f)+'', full_page_name, re.M)]
+
         res_dict = {}
         pat = ['^\s+', '^\s*\-\s*', ':{2,}', '^\s*\=+\s*', '^\s*\:+\s*']
         if self.my_args[0] == 1:
@@ -3041,38 +3076,31 @@ class DialogC_A_L(Gtk.Dialog):
             choice_page = full_sum_page
         m_check = 1
         with open(self.dial_path + '/radiointernet.txt', 'w', encoding = 'utf-8') as file_d:
+
             for x in choice_page:
-                ar = urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/')
-                page_r = ar.read().decode('utf-8', errors='ignore')
-                sum_page = [int(x) for x in re.findall(r'href="/stations/.+?/page\d+">(\d+)</a>', page_r, re.M)]
+
+                with urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/') as ar:
+                    page_r = ar.read().decode('utf-8', errors='ignore')
+
+                sum_page = [int(j) for j in re.findall(r'href="/stations/.+?/page\d+">(\d+)</a>', page_r, re.M)]
+
                 if m_check == 0:
-                    line_to_write.append('['+x+']\n')
+                    self.line_to_write.append('['+x+']\n')
                 else:
-                    line_to_write.append('\n['+x+']\n')
+                    self.line_to_write.append('\n['+x+']\n')
+
                 if len(sum_page) == 0:
                     sum_page = [1]
+
                 check = 1
+
                 while check <= max(sum_page):
-                    req = urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/page'+str(check))
-                    s_page_r = req.read().decode('utf-8', errors='ignore')
-                    fr = re.findall(r"mount=(.+?)&amp;title=(.+?)&amp;", s_page_r, re.M)
-                    res_dict[x] = fr
-                    for e in fr:
-                        line_to_write.append(re.sub(r'\s+$', r'', str(e[1]), re.S)+' = '+re.sub(r'\/live\.m3u', r'/live', re.sub(r'\/listen\.pls', r'/;', re.sub(r'\/listen\.pls\?sid\=1', r'/;', re.sub(r'\.m3u', r'', re.sub(r'^=\s*', r'', str(e[0]), re.M), re.M), re.M), re.M), re.M))
-
-                    mm_m = []
-                    mm_m.append(float(m_check//(len(choice_page)/100)) / 100)
-                    mm_m.append(str(int(m_check//(len(choice_page)/100)))+' %')
-                    GLib.idle_add(m_m, mm_m)
-
-                    mm_p = []
-                    mm_p.append(float(check//(max(sum_page)/100)) / 100)
-                    mm_p.append(str(int(check//(max(sum_page)/100)))+' %')
-                    GLib.idle_add(m_p, mm_p)
+                    thread_irc = threading.Thread(target=read_page_irc((x, check)), daemon=True)
+                    thread_irc.start()
 
                     check += 1
                 m_check += 1
-            for h in list(OrderedDict.fromkeys(line_to_write)):
+            for h in list(OrderedDict.fromkeys(self.line_to_write)):
                 d_part = h
                 for o_d in range(len(pat)):
                     d_part = re.sub(pat[o_d], r'', d_part, re.S)
@@ -3082,6 +3110,12 @@ class DialogC_A_L(Gtk.Dialog):
     def __init__(self, parent, *args):
 
         Gtk.Dialog.__init__(self, "Создание адресного листа для IRC", parent, Gtk.DialogFlags.MODAL)
+
+        self.connect('response', self.close_status)
+
+        self.c_s = False
+
+        self.line_to_write = []
 
         self.my_args = args
         self.dial_path = os.path.dirname(os.path.realpath(__file__))
@@ -3104,8 +3138,7 @@ class DialogC_A_L(Gtk.Dialog):
         self.box.add(self.dialog_grid)
         self.show_all()
 
-        threadm = threading.Thread(target=self.c_a_l)
-        threadm.daemon = True
+        threadm = threading.Thread(target=self.c_a_l, daemon=True)
         threadm.start()
 
         # Удаление пустых секций
