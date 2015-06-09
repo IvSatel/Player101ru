@@ -16,6 +16,7 @@ import os
 import gi
 import urllib.parse
 import urllib.request
+import concurrent.futures
 from decimal import Decimal
 from collections import OrderedDict
 from urllib.error import URLError, HTTPError
@@ -43,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.57'
+SCRIPT_VERSION = '0.0.0.58'
 
 
 class RadioWin(Gtk.Window):
@@ -300,24 +301,30 @@ class RadioWin(Gtk.Window):
 
         self.d_fm_dict = dict()
 
-        def read_page(self, xarg):
+        #
+        def read_page(xarg, key):
             with dinamit_opener.open(xarg) as dinamit_http_source_2:
                 dinamit_http_read = dinamit_http_source_2.read().decode('utf-8', errors='ignor')
-                self.d_fm_dict[key] = ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M))
+                return (key, ''.join(re.findall(r'station\.player\.Html5Player\("(.+?)"', dinamit_http_read, re.M)))
 
-        try:
-            for key, val in dinamit_res.items():
-                thread_dinamit = threading.Thread(target=self.read_page(val), daemon=True)
-                thread_dinamit.start()
-        except:
-            ## Словарь Ди-ФМ
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_url = {executor.submit(read_page, val, key): val for key, val in dinamit_res.items()}
+            for future in concurrent.futures.as_completed(future_to_url):
+                try:
+                    self.d_fm_dict[future.result()[0]] = future.result()[1]
+                except Exception as exc:
+                    print('%r generated an exception: %s' % (url, exc))
+                else:
+                    pass
+        #
+        '''## Словарь Ди-ФМ
             self.d_fm_dict = {'DFM Динамит': 'http://st16.fmtuner.ru',
             'ДИСКАЧ 90-х': 'http://st07.fmtuner.ru',
             'DFM Спокойной ночи, голыши!': 'http://st05.fmtuner.ru',
             'DFM 101,2': 'http://dfm.fmtuner.ru',
             'DFM  Deep': 'http://st24.fmtuner.ru',
             'DFM Club': 'http://st01.fmtuner.ru',
-            'DFM Russian Dance': 'http://st03.fmtuner.ru'}
+            'DFM Russian Dance': 'http://st03.fmtuner.ru'}'''
 
         self.di_grid = Gtk.Grid()
 
@@ -1485,79 +1492,37 @@ class RadioWin(Gtk.Window):
 
         self.liststore_101.clear()
 
-        def update_progess(fr):
+        #
+        dialog_101_update = Dialog_Update_101(self)
+        response_101_update = dialog_101_update.run()
+        #
 
-            progress.set_fraction(float(fr/100))
-            progress.set_text(str(int(fr))+' %')
-
-            if progress.get_fraction() == 1.0:
-
-                with open(self.prog_full_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
-                    read_adr = file_w.readlines()
-
-                self.read_list_adr = []
-
-                for x in read_adr:
-                    self.read_list_adr.append(re.findall(r'(.+?)\s+=\s(.+?)\n', x, re.S))
-
-                for x in self.read_list_adr:
-                    self.liststore_101.append([str(x[0][0]), False])
-
-                win.destroy()
-
-            return False
-
-        def example_target():
-
-            loc_ad_101_opener = urllib.request.build_opener()
-            loc_ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
-
-            # Запрос всех разделов
-            with loc_ad_101_opener.open('http://101.ru/?an=port_allchannels') as loc_source_101_http:
-                loc_razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', loc_source_101_http.read().decode('utf-8', errors='ignore'), re.M)
-
-            loc_dict_101_ru = []
-
-            percent = len(loc_razdel_101_http)
-            check = 1
-            for x, y in loc_razdel_101_http:
-                a = []
-                with loc_ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as loc_source_101_razdel:
-                    loc_source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', loc_source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
-                    for z, c in loc_source_101_http_razdel:
-                        a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
-                    loc_dict_101_ru.append(a)
-
-                    GLib.idle_add(update_progess, check//(percent/100))
-
-                    check += 1
-
+        if response_101_update == -4 or response_101_update == -7:
+            dialog_101_update.thread_3_stop.set()
+            #
             loc_final_conf = []
-            for x in loc_dict_101_ru:
+            for x in dialog_101_update.loc_dict_101_ru:
                 for d in x:
                     loc_final_conf.append(d+'\n')
 
             with open(self.prog_full_path + '/adres_list.ini', 'w') as loc_adr101file:
                 loc_adr101file.writelines(loc_final_conf)
 
-        def w_d(*args):
-            win.destroy()
+            with open(self.prog_full_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
+                read_adr = file_w.readlines()
 
-        win = Gtk.Window(default_height=50, default_width=300)
-        win.set_modal(True)
-        win.set_transient_for(self)
-        win.connect("delete-event", w_d)
-        win.connect("destroy", w_d)
+            read_list_adr = []
 
-        progress = Gtk.ProgressBar(show_text=True)
+            for x in read_adr:
+                read_list_adr.append(re.findall(r'(.+?)\s+=\s(.+?)\n', x, re.S))
 
-        box = Gtk.Box()
-        box.pack_start(progress, True, True, 0)
-        win.add(box)
-        win.show_all()
+            for x in read_list_adr:
+                self.liststore_101.append([str(x[0][0]), False])
+            #
+            dialog_101_update.destroy()
+            print("Dialog update for 101RU finished")
 
-        thread_3 = threading.Thread(target=example_target, daemon=True)
-        thread_3.start()
+        dialog_101_update.destroy()
 
     # Создание меню в трее
     def create_main_menu(self, icon, button, time):
@@ -1603,7 +1568,7 @@ class RadioWin(Gtk.Window):
                 find_time = urllib.request.urlopen('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel')
                 j_date = json.loads(str(find_time.read().decode('utf-8', errors='ignore')))
                 restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
-                GLib.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
+                GObject.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
                 #
             if location[0].startswith('http'):
                 self.media_location = location[0]
@@ -2030,7 +1995,7 @@ class RadioWin(Gtk.Window):
                     pass
 
             if self.file_play == 0 and not self.timer_title and self.id_chan[0][0].isdigit():
-                self.timer_title = GLib.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
+                self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
     # Обработка сообщений конца потока
     def message_eos(self, bus, message):
@@ -2545,10 +2510,10 @@ class RadioWin(Gtk.Window):
                     print('We failed to reach a server. In get_title_song_personal_station')
                     print('Reason In get_title_song_personal_station: ', e.reason)
                     chek += 1
-            self.timer_title_rtmp = GLib.timeout_add_seconds(t_time_s, self.get_title_song_personal_station, id_ch)
+            self.timer_title_rtmp = GObject.timeout_add_seconds(t_time_s, self.get_title_song_personal_station, id_ch)
         else:
             if self.timer_title_rtmp:
-                GLib.source_remove(self.timer_title_rtmp)
+                GObject.source_remove(self.timer_title_rtmp)
             return False
 
 # Класс получения источника потока 101.RU
@@ -3020,9 +2985,7 @@ class DialogC_A_L(Gtk.Dialog):
     def close_status(self, *args):
 
         self.c_s = True
-        if args[1] == -4:
-            self.destroy()
-        elif args[1] == -7:
+        if args[1] == -4 or args[1] == -7:
             self.destroy()
 
     def c_a_l(self):
@@ -3030,10 +2993,6 @@ class DialogC_A_L(Gtk.Dialog):
         def m_m(x):
             self.main_progress.set_fraction(x[0])
             self.main_progress.set_text(x[1])
-
-        def m_p(x):
-            self.part_progress.set_fraction(x[0])
-            self.part_progress.set_text(x[1])
 
         def read_page_irc(args):
 
@@ -3050,11 +3009,6 @@ class DialogC_A_L(Gtk.Dialog):
             mm_m.append(float(m_check//(len(choice_page)/100)) / 100)
             mm_m.append(str(int(m_check//(len(choice_page)/100)))+' %')
             GLib.idle_add(m_m, mm_m)
-
-            mm_p = []
-            mm_p.append(float(check//(max(sum_page)/100)) / 100)
-            mm_p.append(str(int(check//(max(sum_page)/100)))+' %')
-            GLib.idle_add(m_p, mm_p)
 
         with urllib.request.urlopen('http://www.internet-radio.com') as for_short_name:
             page_short_name = for_short_name.read().decode('utf-8', errors='ignore')
@@ -3092,13 +3046,10 @@ class DialogC_A_L(Gtk.Dialog):
                 if len(sum_page) == 0:
                     sum_page = [1]
 
-                check = 1
-
-                while check <= max(sum_page):
-                    thread_irc = threading.Thread(target=read_page_irc((x, check)), daemon=True)
-                    thread_irc.start()
-
-                    check += 1
+                with concurrent.futures.ThreadPoolExecutor(max_workers=400) as executor:
+                    future_to_url = {executor.submit(read_page_irc, (x, f)): f for f in range(0, max(sum_page))}
+                    for future in concurrent.futures.as_completed(future_to_url):
+                        pass
                 m_check += 1
             for h in list(OrderedDict.fromkeys(self.line_to_write)):
                 d_part = h
@@ -3120,22 +3071,12 @@ class DialogC_A_L(Gtk.Dialog):
         self.my_args = args
         self.dial_path = os.path.dirname(os.path.realpath(__file__))
 
-        self.set_default_size(300, 50)
-
-        self.dialog_grid = Gtk.Grid()
-        self.dialog_grid.set_border_width(5)
-
         self.main_progress = Gtk.ProgressBar(show_text=True)
-        self.part_progress = Gtk.ProgressBar(show_text=True)
-
-        self.dialog_grid.attach(self.main_progress, 1, 1, 1, 1)
-        self.dialog_grid.attach(self.part_progress, 1, 2, 1, 1)
-
-        self.dialog_grid.set_column_homogeneous(True)# Ровнять кнопки
-        self.dialog_grid.set_row_homogeneous(True)
 
         self.box = self.get_content_area()
-        self.box.add(self.dialog_grid)
+        self.box.add(self.main_progress)
+        self.set_border_width(1)
+        self.set_default_size(350, 20)
         self.show_all()
 
         threadm = threading.Thread(target=self.c_a_l, daemon=True)
@@ -3437,6 +3378,63 @@ class RecorderBin(Gst.Bin):
         if message.type == Gst.MessageType.EOS:
             print('End Of Stream for rec_pipeline')
             self.rec_pipeline.set_state(Gst.State.NULL)
+
+
+class Dialog_Update_101(Gtk.Dialog):
+
+    def update_progess(self, fr):
+        self.progress_101_update.set_fraction(float(fr/100))
+        self.progress_101_update.set_text(str(int(fr))+' %')
+        return False
+
+    def example_target(self, args1, stop_event):
+
+        loc_ad_101_opener = urllib.request.build_opener()
+        loc_ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+
+        # Запрос всех разделов
+        with loc_ad_101_opener.open('http://101.ru/?an=port_allchannels') as loc_source_101_http:
+            loc_razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', loc_source_101_http.read().decode('utf-8', errors='ignore'), re.M)
+
+        percent = len(loc_razdel_101_http)
+        check = 1
+        for x, y in loc_razdel_101_http:
+            a = []
+            with loc_ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as loc_source_101_razdel:
+                loc_source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', loc_source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
+                for z, c in loc_source_101_http_razdel:
+                    a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
+                self.loc_dict_101_ru.append(a)
+
+                if not stop_event.is_set():
+                    GLib.idle_add(self.update_progess, check//(percent/100))
+                else:
+                    return False
+
+                check += 1
+
+        self.response(-4)
+
+    def __init__(self, parent):
+
+        Gtk.Dialog.__init__(self,
+        "Обновление адресного листа для 101.RU",
+        parent,
+        Gtk.DialogFlags.MODAL)
+
+        self.loc_dict_101_ru = []
+
+        self.set_default_size(400, 30)
+
+        self.progress_101_update = Gtk.ProgressBar(show_text=True)
+
+        box = self.get_content_area()
+        box.add(self.progress_101_update)
+        self.show_all()
+
+        self.thread_3_stop = threading.Event()
+        self.thread_3 = threading.Thread(target=self.example_target, args=(1, self.thread_3_stop), daemon=True)
+        self.thread_3.start()
 
 def download_up_date():
 
