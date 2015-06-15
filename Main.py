@@ -44,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.58'
+SCRIPT_VERSION = '0.0.0.59'
 
 
 class RadioWin(Gtk.Window):
@@ -1969,6 +1969,35 @@ class RadioWin(Gtk.Window):
                     self.on_click_bt5()
                     self.label_title.set_text('Отсутствует интернет соединение')
                     self.My_ERROR_Mess = 0
+            if 'Could not detect type of contents' in str(mpe):
+                self.label_title.set_text('Ошибка чтения потока...')
+                #
+                if self.file_play == 1:
+                    print('В виду ошибки чтения данных получено сообщение об окончании потока ' + self.get_time_now())
+                    self.level_bar_l.set_fraction(1.0)
+                    self.level_bar_r.set_fraction(1.0)
+                    self.label_time.set_label('00:00:00:00')
+                    self.label_ltime.set_label('00:00:00:00')
+                    self.seek_line.set_value(float(0.01))
+                    self.pipeline.set_state(Gst.State.NULL)
+
+                    Gst.Event.new_flush_stop(True)
+
+                    if len(self.f_name_len) >= 2:
+                        self.f_name_len.pop(0)
+                        self.pipeline.set_state(Gst.State.NULL)
+                        self.pipeline = 0
+                        try:
+                            self.create_pipeline(self.f_name_len[0])
+                            self.pipeline.set_state(Gst.State.PLAYING)
+                        except:
+                            self.pipeline.set_state(Gst.State.NULL)
+                    else:
+                        self.on_click_bt5()
+                elif self.radio_play == 1:
+                    self.pipeline.set_state(Gst.State.NULL)
+                    self.pipeline = 0
+                    self.play_stat_now()
 
     # Обработка сообщений содержащих ТЭГИ
     def message_tag(self, bus, message):
@@ -3046,7 +3075,7 @@ class DialogC_A_L(Gtk.Dialog):
                 if len(sum_page) == 0:
                     sum_page = [1]
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=400) as executor:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
                     future_to_url = {executor.submit(read_page_irc, (x, f)): f for f in range(0, max(sum_page))}
                     for future in concurrent.futures.as_completed(future_to_url):
                         pass
