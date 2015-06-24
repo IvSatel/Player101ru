@@ -44,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.59'
+SCRIPT_VERSION = '0.0.0.60'
 
 
 class RadioWin(Gtk.Window):
@@ -204,7 +204,7 @@ class RadioWin(Gtk.Window):
         self.uri = []# Список хранящий адреса на поток вещания
         self.My_ERROR_Mess = False# Чекер ошибок
 
-        # Маркер установка маркеров на линии воспроизведения
+        # Поиск cue файла
         self.cue_file_find = 0
 
         # Инфо ТАГ
@@ -926,6 +926,29 @@ class RadioWin(Gtk.Window):
         self.seek_line.connect('button-release-event', self.new_seek_pos_set)
         self.seek_line.connect('button-press-event', self.popup_for_cue_on_seek_line)
 
+        # Создание плейлиста
+        #
+        self.playlist_liststore = Gtk.ListStore(str, str)
+
+        self.playlist_liststore.append([None, None])
+
+        self.playlist_treeview = Gtk.TreeView(model=self.playlist_liststore)
+        self.playlist_treeview.connect('row_activated', self.click_to_row_pl)
+
+        self.playlist_renderer_pixbuf = Gtk.CellRendererPixbuf()
+        self.playlist_column_pixbuf = Gtk.TreeViewColumn('♫', self.playlist_renderer_pixbuf, stock_id=0)
+        self.playlist_treeview.append_column(self.playlist_column_pixbuf)
+
+        self.playlist_renderer_text = Gtk.CellRendererText()
+        self.playlist_column_text = Gtk.TreeViewColumn('Title', self.playlist_renderer_text, text=1)
+        self.playlist_treeview.append_column(self.playlist_column_text)
+
+        self.playlist_scrolled_window = Gtk.ScrolledWindow()
+        self.playlist_scrolled_window.set_min_content_height(150)
+        self.playlist_scrolled_window.set_min_content_width(300)
+        self.playlist_scrolled_window.add(self.playlist_treeview)
+        #
+
         # Первая (основная сетка размещения)
         self.grid = Gtk.Grid()
         self.grid.set_border_width(5)
@@ -963,6 +986,8 @@ class RadioWin(Gtk.Window):
         self.grid.attach(self.label_ltime, 5, 6, 1, 1)# Лейбл времени
         self.grid.attach(self.label_title, 1, 7, 5, 1)# Лейбл названия
 
+        self.grid.attach(self.playlist_scrolled_window, 0, 10, 7, 1)# Плейлист
+
         self.grid_button.set_column_homogeneous(True)# Ровнять кнопки
         self.grid_button.set_row_homogeneous(False)
         self.grid_button.set_column_spacing(1)
@@ -984,6 +1009,30 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
         ###################################################
+
+    # Обработка событий плейлиста
+    def click_to_row_pl(self, tree_view, path, column):
+
+        if self.pipeline:
+            self.pipeline.set_state(Gst.State.NULL)
+            self.pipeline = 0
+
+        file_name_from_pl = ''
+
+        #c = self.playlist_liststore.get_iter(path)
+        i = path.get_indices()[0]
+
+        for x in range(len(self.playlist_liststore)):
+            self.playlist_liststore.set_value(self.playlist_liststore.get_iter(x), 0, None)
+
+        for x in range(len(self.playlist_liststore)):
+            if i == x:
+                self.playlist_liststore.set_value(self.playlist_liststore.get_iter(x), 0, Gtk.STOCK_MEDIA_PLAY)
+                file_name_from_pl = self.playlist_liststore.get_value(self.playlist_liststore.get_iter(x), 1)
+                for x in range(x, len(self.playlist_liststore)):
+                    self.f_name_len.append(self.playlist_file[x])
+        self.id_chan = ['file', 0]
+        self.play_stat_now(self.playlist_dict[file_name_from_pl])
 
     # Возвращение реального времени
     def get_time_now(self):
@@ -1847,10 +1896,10 @@ class RadioWin(Gtk.Window):
     # Создание Pop-Up Menu для CUE файлов на полосе воспроизведения
     def popup_for_cue_on_seek_line(self, widget, event):
 
-        try:
-            cue_file_name = [x for x in os.listdir(self.cue_file_find[1]) if x == str(self.cue_file_find[0] + '.cue')]
-        except:
+        if self.cue_file_find == 0:
             return False
+
+        cue_file_name = [x for x in os.listdir(self.cue_file_find[1]) if x == str(self.cue_file_find[0] + '.cue')]
 
         if event.button == 3:
 
@@ -2044,6 +2093,22 @@ class RadioWin(Gtk.Window):
                 Gst.Event.new_flush_stop(True)
 
                 if len(self.f_name_len) >= 2:
+                    #
+                    for x in range(len(self.playlist_liststore)):
+                        self.playlist_liststore.set_value(self.playlist_liststore.get_iter(x), 0, None)
+
+                    for x in range(len(self.playlist_liststore)):
+
+                        d_check = x + 1
+                        try:
+                            g_iter = self.playlist_liststore.get_iter(d_check)
+                        except:
+                            g_iter = self.playlist_liststore.get_iter(x)
+
+                        if str(os.path.basename(self.f_name_len[0])) == str(self.playlist_liststore.get_value(self.playlist_liststore.get_iter(x), 1)):
+                            self.playlist_liststore.set_value(self.playlist_liststore.get_iter(x), 0, None)
+                            self.playlist_liststore.set_value(g_iter, 0, Gtk.STOCK_MEDIA_PLAY)
+                    #
                     print('len(self.f_name_len) ==> ', len(self.f_name_len))
                     self.f_name_len.pop(0)
                     print('eos2 self.pipeline.set_state(Gst.State.NULL)')
@@ -2157,6 +2222,7 @@ class RadioWin(Gtk.Window):
                 for x in range(3):
                     self.button_array[x].hide()
                 self.seek_line.hide()#SeekLine
+                self.playlist_scrolled_window.hide()
                 self.label_title.set_label('')
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
@@ -2198,6 +2264,7 @@ class RadioWin(Gtk.Window):
                 for x in range(3):
                     self.button_array[x].hide()
                 self.seek_line.hide()#SeekLine
+                self.playlist_scrolled_window.hide()
                 self.label_title.set_label('')
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
@@ -2222,17 +2289,15 @@ class RadioWin(Gtk.Window):
 
             print('Включение проигрывания файла ' + self.get_time_now())
 
-            self.f_name_len = []
+            #self.f_name_len = []
 
             for x in range(3):
                 self.button_array[x].hide()
 
-            # Notebook
-            self.main_note_for_cont.hide()
-
-            if "<class 'list'>" == str(type(f_name)):
-                for x in f_name:
-                    self.f_name_len.append(x)
+            if 'list' in str(type(f_name)):
+                #for x in f_name:
+                #for k, v in self.playlist_dict.items():
+                    #self.f_name_len.append(k)
                 self.create_pipeline(self.f_name_len[0])
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
@@ -2290,7 +2355,22 @@ class RadioWin(Gtk.Window):
             filename = dialog.get_filename()
             self.cue_file_find = [re.sub(r'(.+\/)(.+?)\.\w+$', r'\2', filename), dialog.get_current_folder()]
             self.id_chan[0] = 'file'
-            self.play_stat_now(filename)
+            # Notebook HIDE
+            self.main_note_for_cont.hide()
+            # PlayList SHOW
+            self.playlist_scrolled_window.show()
+
+            #self.play_stat_now(filename)
+
+            print('filename', filename)
+            self.playlist_liststore.clear()
+            self.playlist_dict = {}
+            self.playlist_dict = {os.path.basename(filename): filename}
+            self.playlist_file = filename
+            print('self.playlist_dict', self.playlist_dict)
+
+            self.playlist_liststore.append([None, os.path.basename(filename)])
+
         elif response == Gtk.ResponseType.CANCEL:
             dialog.destroy()
         dialog.destroy()
@@ -2318,7 +2398,24 @@ class RadioWin(Gtk.Window):
                     if z in dirname[0]+'/'+x:
                         filename.append(dirname[0]+'/'+x)
             self.id_chan[0] = 'file'
-            self.play_stat_now(filename)
+
+            self.playlist_liststore.clear()
+            self.playlist_dict = {os.path.basename(a): a for a in filename}
+            self.playlist_file = [a for a in filename]
+
+            for x in filename:
+                self.playlist_liststore.append([None, os.path.basename(x)])
+
+            if os.path.isfile(re.sub(r'(.+?)(\.\w+)$', r'\1', filename[0]) + '.cue'):
+                self.cue_file_find = [re.sub(r'(.+?)(\.\w+)$', r'\1', os.path.basename(filename[0])), dialog.get_current_folder()]
+            else:
+                self.cue_file_find = 0
+
+            # Notebook HIDE
+            self.main_note_for_cont.hide()
+            # PlayList SHOW
+            self.playlist_scrolled_window.show()
+
         elif response == Gtk.ResponseType.CANCEL:
             dialog.destroy()
         dialog.destroy()
@@ -2339,6 +2436,15 @@ class RadioWin(Gtk.Window):
     def on_click_bt5(self, *b5):
 
         print('Нажата кнопка Stop')
+
+        if self.file_play == 1:
+            # Notebook HIDE
+            self.main_note_for_cont.show()
+            # PlayList SHOW
+            self.playlist_scrolled_window.show()
+
+        for x in range(len(self.playlist_liststore)):
+            self.playlist_liststore.set_value(self.playlist_liststore.get_iter(x), 0, None)
 
         for x in range(6):
             if x == 5:
@@ -2390,7 +2496,7 @@ class RadioWin(Gtk.Window):
 
         self.seek_line.hide()#SeekLine
         self.seek_line.set_value(0.01)
-        self.main_note_for_cont.show()#Table
+        #self.main_note_for_cont.show()#Table
         self.label_title.set_label('')
         self.label_ldb.set_label('')
         self.label_rdb.set_label('')
@@ -3465,6 +3571,7 @@ class Dialog_Update_101(Gtk.Dialog):
         self.thread_3 = threading.Thread(target=self.example_target, args=(1, self.thread_3_stop), daemon=True)
         self.thread_3.start()
 
+
 def download_up_date():
 
     my_path_up = os.path.dirname(os.path.realpath(__file__))
@@ -3540,6 +3647,7 @@ def main_funck():
         Radio_for_101.connect("delete-event", Gtk.main_quit)
         Radio_for_101.show_all()
         Radio_for_101.seek_line.hide()
+        Radio_for_101.playlist_scrolled_window.hide()
 
         for x in range(6):
             if x == 5:
