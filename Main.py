@@ -44,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.62'
+SCRIPT_VERSION = '0.0.0.63'
 
 
 class RadioWin(Gtk.Window):
@@ -1085,13 +1085,12 @@ class RadioWin(Gtk.Window):
                 if self.file_play == 1:
                     # Отобразить SeekLine
                     self.seek_line.show()
-                    self.self.grid_playlist.show()
+                    self.grid_playlist.show()
                     # Скрыть Notebook
                     self.main_note_for_cont.hide()
-                else:
+                if self.radio_play == 1 or self.radio_rtmp_play == 1:
                     self.seek_line.hide()
-                    self.self.grid_playlist.hide()
-                    self.playlist_scrolled_window.hide()
+                    self.grid_playlist.hide()
                 for x in range(6):
                     if x != 3 and x != 4 and x != 5:
                         self.button_array[x].hide()
@@ -1101,7 +1100,6 @@ class RadioWin(Gtk.Window):
                 if self.file_play == 0:
                     self.seek_line.hide()
                     self.grid_playlist.hide()
-                    self.playlist_scrolled_window.hide()
                 for x in range(6):
                     if x == 5:
                         self.button_array[x].hide()
