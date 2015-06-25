@@ -44,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.61'
+SCRIPT_VERSION = '0.0.0.62'
 
 
 class RadioWin(Gtk.Window):
@@ -824,9 +824,9 @@ class RadioWin(Gtk.Window):
 
         # Создание сетки для левого и правого эквалайзеров
         self.grid_for_left_eq = Gtk.Grid()
-        self.grid_for_left_eq.set_border_width(5)
+        self.grid_for_left_eq.set_border_width(1)
         self.grid_for_riht_eq = Gtk.Grid()
-        self.grid_for_riht_eq.set_border_width(5)
+        self.grid_for_riht_eq.set_border_width(1)
 
         self.grid_for_left_eq.attach(self.level_bar_l, 1, 1, 1, 1)
         self.grid_for_riht_eq.attach(self.level_bar_r, 1, 1, 1, 1)
@@ -961,6 +961,16 @@ class RadioWin(Gtk.Window):
         self.grid_seek = Gtk.Grid()
         self.grid_seek.set_border_width(5)
 
+        # Четвертая сетка для размещения плейлиста
+        self.grid_playlist = Gtk.Grid()
+        self.grid_playlist.set_border_width(5)
+
+        self.grid_playlist.attach(self.playlist_scrolled_window, 0, 1, 7, 1)
+
+        self.grid_playlist.set_column_homogeneous(True)# Ровнять кнопки
+        self.grid_playlist.set_row_homogeneous(False)
+        self.grid_playlist.set_column_spacing(1)
+
         # Создание сетки с кнопками
         self.grid_button.attach(self.button_array[0], 1, 1, 1, 1)
         for x in range(1, 6):
@@ -972,12 +982,12 @@ class RadioWin(Gtk.Window):
         self.grid_seek.attach(self.seek_line, 0, 2, 7, 1)# Лейбл прогресса звучания
 
         # Помещение сетки с кнопками в основную сетку
-        self.grid.attach(self.grid_button, 1, 1, 5, 1)# Разиестить сетку с кнопками
-        self.grid.attach(self.grid_seek, 1, 8, 5, 2)# Разиестить сетку с полосой
+        self.grid.attach(self.grid_button, 1, 1, 5, 1)# Разместить сетку с кнопками
+        self.grid.attach(self.grid_seek, 0, 8, 7, 2)# Разместить сетку с полосой
 
         # Помещение сетки с левым и правым эквал-ми в основную сетку
-        self.grid.attach(self.grid_for_left_eq, 0, 1, 1, 7)# Шкала громкости
-        self.grid.attach(self.grid_for_riht_eq, 6, 1, 1, 7)# Шкала громкости
+        self.grid.attach(self.grid_for_left_eq, 0, 1, 1, 5)# Шкала громкости
+        self.grid.attach(self.grid_for_riht_eq, 6, 1, 1, 5)# Шкала громкости
 
         # Помещение табов в основную сетку
         self.grid.attach(self.main_note_for_cont, 1, 2, 5, 4)# Окно со станциями
@@ -986,7 +996,8 @@ class RadioWin(Gtk.Window):
         self.grid.attach(self.label_ltime, 5, 6, 1, 1)# Лейбл времени
         self.grid.attach(self.label_title, 1, 7, 5, 1)# Лейбл названия
 
-        self.grid.attach(self.playlist_scrolled_window, 0, 10, 7, 1)# Плейлист
+        #self.grid.attach(self.playlist_scrolled_window, 0, 10, 7, 1)# Плейлист
+        self.grid.attach(self.grid_playlist, 1, 10, 5, 1)# Плейлист
 
         self.grid_button.set_column_homogeneous(True)# Ровнять кнопки
         self.grid_button.set_row_homogeneous(False)
@@ -1074,11 +1085,12 @@ class RadioWin(Gtk.Window):
                 if self.file_play == 1:
                     # Отобразить SeekLine
                     self.seek_line.show()
-                    self.playlist_scrolled_window.show()
+                    self.self.grid_playlist.show()
                     # Скрыть Notebook
                     self.main_note_for_cont.hide()
                 else:
                     self.seek_line.hide()
+                    self.self.grid_playlist.hide()
                     self.playlist_scrolled_window.hide()
                 for x in range(6):
                     if x != 3 and x != 4 and x != 5:
@@ -1088,6 +1100,8 @@ class RadioWin(Gtk.Window):
             if self.radio_play != 1 and self.radio_rtmp_play != 1 and self.file_play != 1:
                 if self.file_play == 0:
                     self.seek_line.hide()
+                    self.grid_playlist.hide()
+                    self.playlist_scrolled_window.hide()
                 for x in range(6):
                     if x == 5:
                         self.button_array[x].hide()
@@ -2360,7 +2374,7 @@ class RadioWin(Gtk.Window):
             # Notebook HIDE
             self.main_note_for_cont.hide()
             # PlayList SHOW
-            self.playlist_scrolled_window.show()
+            self.self.grid_playlist.show()
 
             #self.play_stat_now(filename)
 
