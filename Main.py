@@ -44,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.63'
+SCRIPT_VERSION = '0.0.0.64'
 
 
 class RadioWin(Gtk.Window):
@@ -822,22 +822,6 @@ class RadioWin(Gtk.Window):
         self.level_bar_r.set_inverted(True)
         self.level_bar_r.set_orientation(Gtk.Orientation.VERTICAL)
 
-        # Создание сетки для левого и правого эквалайзеров
-        self.grid_for_left_eq = Gtk.Grid()
-        self.grid_for_left_eq.set_border_width(1)
-        self.grid_for_riht_eq = Gtk.Grid()
-        self.grid_for_riht_eq.set_border_width(1)
-
-        self.grid_for_left_eq.attach(self.level_bar_l, 1, 1, 1, 1)
-        self.grid_for_riht_eq.attach(self.level_bar_r, 1, 1, 1, 1)
-
-        self.grid_for_left_eq.set_column_homogeneous(False)# Ровнять кнопки
-        self.grid_for_left_eq.set_row_homogeneous(True)
-        self.grid_for_left_eq.set_column_spacing(1)
-        self.grid_for_riht_eq.set_column_homogeneous(False)# Ровнять кнопки
-        self.grid_for_riht_eq.set_row_homogeneous(True)
-        self.grid_for_riht_eq.set_column_spacing(1)
-
         # Создание кнопок (воспроизведение, открыть файл, открыть папку, пауза, стоп)
         self.button_array = []
         self.button_tooltip = [
@@ -957,55 +941,36 @@ class RadioWin(Gtk.Window):
         self.grid_button = Gtk.Grid()
         self.grid_button.set_border_width(5)
 
-        # Третья сетка для ползунка продолжительности
-        self.grid_seek = Gtk.Grid()
-        self.grid_seek.set_border_width(5)
-
-        # Четвертая сетка для размещения плейлиста
-        self.grid_playlist = Gtk.Grid()
-        self.grid_playlist.set_border_width(5)
-
-        self.grid_playlist.attach(self.playlist_scrolled_window, 0, 1, 7, 1)
-
-        self.grid_playlist.set_column_homogeneous(True)# Ровнять кнопки
-        self.grid_playlist.set_row_homogeneous(False)
-        self.grid_playlist.set_column_spacing(1)
-
         # Создание сетки с кнопками
         self.grid_button.attach(self.button_array[0], 1, 1, 1, 1)
         for x in range(1, 6):
             self.grid_button.attach_next_to(self.button_array[x], self.button_array[x-1], Gtk.PositionType.RIGHT, 1, 1)
 
-        self.grid_seek.attach(self.label_ldb, 0, 1, 2, 1)# Лейбл децебел
-        self.grid_seek.attach_next_to(self.label_mon_st, self.label_ldb, Gtk.PositionType.RIGHT, 3, 1)# Лейбл моно или стерео
-        self.grid_seek.attach_next_to(self.label_rdb, self.label_mon_st, Gtk.PositionType.RIGHT, 2, 1)# Лейбл децебел
-        self.grid_seek.attach(self.seek_line, 0, 2, 7, 1)# Лейбл прогресса звучания
-
         # Помещение сетки с кнопками в основную сетку
         self.grid.attach(self.grid_button, 1, 1, 5, 1)# Разместить сетку с кнопками
-        self.grid.attach(self.grid_seek, 0, 8, 7, 2)# Разместить сетку с полосой
-
-        # Помещение сетки с левым и правым эквал-ми в основную сетку
-        self.grid.attach(self.grid_for_left_eq, 0, 1, 1, 5)# Шкала громкости
-        self.grid.attach(self.grid_for_riht_eq, 6, 1, 1, 5)# Шкала громкости
 
         # Помещение табов в основную сетку
         self.grid.attach(self.main_note_for_cont, 1, 2, 5, 4)# Окно со станциями
-        self.grid.attach(self.scal_sl, 2, 6, 3, 1)# Регулятор громкости
-        self.grid.attach(self.label_time, 1, 6, 1, 1)# Лейбл времени
-        self.grid.attach(self.label_ltime, 5, 6, 1, 1)# Лейбл времени
+        self.grid.attach(self.label_time,  1, 6, 1, 1)# Лейбл времени L
         self.grid.attach(self.label_title, 1, 7, 5, 1)# Лейбл названия
+        self.grid.attach(self.scal_sl,     2, 6, 3, 1)# Регулятор громкости
+        self.grid.attach(self.label_ltime, 5, 6, 1, 1)# Лейбл времени R
 
-        #self.grid.attach(self.playlist_scrolled_window, 0, 10, 7, 1)# Плейлист
-        self.grid.attach(self.grid_playlist, 1, 10, 5, 1)# Плейлист
+        self.grid.attach(self.label_ldb,    0, 8, 1, 1)# Лейбл децебел
+        self.grid.attach(self.label_mon_st, 1, 8, 5, 1)# Лейбл медиаинфо
+        self.grid.attach(self.label_rdb,    6, 8, 1, 1)# Лейбл децебел
+
+        self.grid.attach(self.seek_line, 0, 9, 7, 1)# Лейбл прогресса звучания
+
+        # Помещение эквалайзеров в основную сетку
+        self.grid.attach(self.level_bar_l, 0, 1, 1, 5)# Шкала громкости
+        self.grid.attach(self.level_bar_r, 6, 1, 1, 5)# Шкала громкости
+
+        self.grid.attach(self.playlist_scrolled_window, 1, 10, 5, 1)# Плейлист
 
         self.grid_button.set_column_homogeneous(True)# Ровнять кнопки
         self.grid_button.set_row_homogeneous(False)
         self.grid_button.set_column_spacing(1)
-
-        self.grid_seek.set_column_homogeneous(True)# Ровнять полосу воспроизведения
-        self.grid_seek.set_row_homogeneous(False)
-        self.grid_seek.set_column_spacing(1)
 
         self.grid.set_column_homogeneous(False)# Не ровнять основную сетку
         self.grid.set_row_homogeneous(False)
@@ -1077,29 +1042,34 @@ class RadioWin(Gtk.Window):
         if self.window_state_on_desctop:
             self.hide()
             self.window_state_on_desctop = 0
+            return True
         else:
             self.window_state_on_desctop = 1
-            self.hide()
-            self.show_all()
-            if self.radio_play == 1 or self.radio_rtmp_play == 1 or self.file_play == 1:
-                if self.file_play == 1:
-                    # Отобразить SeekLine
-                    self.seek_line.show()
-                    self.grid_playlist.show()
-                    # Скрыть Notebook
-                    self.main_note_for_cont.hide()
-                if self.radio_play == 1 or self.radio_rtmp_play == 1:
-                    self.seek_line.hide()
-                    self.grid_playlist.hide()
-                for x in range(6):
-                    if x != 3 and x != 4 and x != 5:
-                        self.button_array[x].hide()
-                    else:
-                        self.button_array[x].show()
-            if self.radio_play != 1 and self.radio_rtmp_play != 1 and self.file_play != 1:
-                if self.file_play == 0:
-                    self.seek_line.hide()
-                    self.grid_playlist.hide()
+            self.show()
+
+        if self.file_play == 1:
+            # Отобразить SeekLine
+            self.seek_line.show()
+            self.playlist_scrolled_window.show()
+            # Скрыть Notebook
+            self.main_note_for_cont.hide()
+            for x in range(6):
+                if x != 3 and x != 4 and x != 5:
+                    self.button_array[x].hide()
+                else:
+                    self.button_array[x].show()
+        if self.radio_play == 1 or self.radio_rtmp_play == 1:
+            self.seek_line.hide()
+            self.playlist_scrolled_window.hide()
+            for x in range(6):
+                if x != 3 and x != 4 and x != 5:
+                    self.button_array[x].hide()
+                else:
+                    self.button_array[x].show()
+        if self.radio_play != 1 and self.radio_rtmp_play != 1 and self.file_play != 1:
+            if self.file_play == 0:
+                self.seek_line.hide()
+                self.playlist_scrolled_window.hide()
                 for x in range(6):
                     if x == 5:
                         self.button_array[x].hide()
@@ -1294,7 +1264,7 @@ class RadioWin(Gtk.Window):
             for x in media_info:
                 self.tooltip_now_text += x
 
-        if self.file_play == 1 or self.radio_rtmp_play == 1 or self.radio_play == 1:
+        if self.pipeline:
 
             if len(self.tooltip_now_text) > 0:
                 pass
@@ -1508,7 +1478,6 @@ class RadioWin(Gtk.Window):
     def on_write_best_st(self, *args):
 
         if self.radio_play == 1 or self.radio_rtmp_play == 1:
-            print(type(args), args)
             if args[1] == 0 and self.real_adress != '':
                 print('111 ****************************', self.real_adress, self.id_chan)
                 param_send = [self.real_adress,self.id_chan[0]]
@@ -2309,6 +2278,7 @@ class RadioWin(Gtk.Window):
                 self.button_array[x].hide()
 
             if 'list' in str(type(f_name)):
+                self.playlist_scrolled_window.show()
                 #for x in f_name:
                 #for k, v in self.playlist_dict.items():
                     #self.f_name_len.append(k)
@@ -2316,6 +2286,7 @@ class RadioWin(Gtk.Window):
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
             else:
+                self.playlist_scrolled_window.show()
                 self.create_pipeline(f_name)
                 self.timer = GObject.timeout_add(500, self.update_seek_line, None)
                 self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
@@ -2372,16 +2343,13 @@ class RadioWin(Gtk.Window):
             # Notebook HIDE
             self.main_note_for_cont.hide()
             # PlayList SHOW
-            self.self.grid_playlist.show()
+            self.playlist_scrolled_window.show()
+            self.file_play = 1
 
-            #self.play_stat_now(filename)
-
-            print('filename', filename)
             self.playlist_liststore.clear()
             self.playlist_dict = {}
             self.playlist_dict = {os.path.basename(filename): filename}
             self.playlist_file = filename
-            print('self.playlist_dict', self.playlist_dict)
 
             self.playlist_liststore.append([None, os.path.basename(filename)])
 
@@ -2420,15 +2388,19 @@ class RadioWin(Gtk.Window):
             for x in filename:
                 self.playlist_liststore.append([None, os.path.basename(x)])
 
-            if os.path.isfile(re.sub(r'(.+?)(\.\w+)$', r'\1', filename[0]) + '.cue'):
-                self.cue_file_find = [re.sub(r'(.+?)(\.\w+)$', r'\1', os.path.basename(filename[0])), dialog.get_current_folder()]
-            else:
+            try:
+                if os.path.isfile(re.sub(r'(.+?)(\.\w+)$', r'\1', filename[0]) + '.cue'):
+                    self.cue_file_find = [re.sub(r'(.+?)(\.\w+)$', r'\1', os.path.basename(filename[0])), dialog.get_current_folder()]
+                else:
+                    self.cue_file_find = 0
+            except:
                 self.cue_file_find = 0
 
             # Notebook HIDE
             self.main_note_for_cont.hide()
             # PlayList SHOW
             self.playlist_scrolled_window.show()
+            self.file_play = 1
 
         elif response == Gtk.ResponseType.CANCEL:
             dialog.destroy()
@@ -3064,7 +3036,6 @@ class DialogFindPersonalStation(Gtk.Dialog):
 
     def s_on_cell_radio_toggled(self, widget, path):
 
-        print('self.hide()')
         self.hide()
         selected_path = Gtk.TreePath(path)
         c = self.s_liststore.get_iter(path)
@@ -3413,7 +3384,6 @@ class EQWindow(Gtk.Dialog):
                 wr_config.set('EQ-Settings', lasteq, ' '.join(self.mdict))
                 with open(self.eq_path + '/set-eq.ini', 'w', encoding = 'utf-8', errors='ignore') as configfile:
                     wr_config.write(configfile)
-                print('Zap2')
             elif self.name_entry.get_text() == '':
                 print('Нет текста в интри')
                 lasteq = 'lasteq'
