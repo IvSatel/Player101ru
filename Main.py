@@ -44,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.65'
+SCRIPT_VERSION = '0.0.0.66'
 
 
 class RadioWin(Gtk.Window):
@@ -156,7 +156,7 @@ class RadioWin(Gtk.Window):
         self.rec_obj = 0
 
         # Аббревиатуры каналов
-        self.id_name_station = ['PS', 'My', 'DI', 'IRC', 'RREC']
+        self.id_name_station = ['PS', 'My', 'DI', 'IRC', 'RREC', 'RTUN']
 
         # Статус Записи
         self.rec_status = False
@@ -286,6 +286,74 @@ class RadioWin(Gtk.Window):
         'EQ Drums': [2, 1, 0, 0, 0, -2, 0, -2, 0, 0, 0, 0, 2, 0, 0, 3, 0, 0],
         'EQ Clear 2': [0, -12, -7, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 7, 20],
         'EQ Classical': [3, 2, 1, 0, 2, 1, 2, 1, 2, 3, 1, 1, 1, 2, 4, 3, 2, 1]}
+
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        # Словарь для http://www.radiotunes.com/
+        self.rtun_res_dict_name_and_adr = {}
+
+        rtun_urls = []
+
+        rtun_dict_real_adr = {}
+
+        self.rtun_opener = urllib.request.build_opener()
+        self.rtun_opener.addheaders = [('Referer', 'http://www.radiotunes.com/')]
+
+        with self.rtun_opener.open('http://www.radiotunes.com/') as f:
+            rtun_urls = re.findall(r'data\-tunein\-url\="(.+?)".+?<span>(.+?)</span>', re.sub(r'&#x\d+;|amp;', r'', f.read().decode('utf-8')))
+
+        for x in rtun_urls:
+            rtun_dict_real_adr[x[1]] = x[0]
+
+        def load_url(url, key):
+            l_key = key
+            req = 'http://listen.radiotunes.com/webplayer/'+re.sub(r'(http\:\/\/www\.radiotunes\.com)\/(.+?)', r'\2', url)+'.jsonp?callback=_API_Playlists_getChannel'
+            with self.rtun_opener.open(req) as conn:
+                ans = re.findall(r'"(.+?)"', re.sub(r'\\', r'', conn.read().decode('utf-8')))
+                return ans[0], l_key
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=85) as executor:
+            rtun_future_to_url = {executor.submit(load_url, val, key): val for key, val in rtun_dict_real_adr.items()}
+            for future in concurrent.futures.as_completed(rtun_future_to_url):
+                try:
+                    self.rtun_res_dict_name_and_adr[future.result()[1]] = future.result()[0]
+                except Exception as exc:
+                    pass
+
+        self.rtun_liststore = Gtk.ListStore(str, bool)
+
+        for x in sorted(self.rtun_res_dict_name_and_adr):
+            self.rtun_liststore.append([x, False])
+
+        self.rtun_treeview = Gtk.TreeView(model=self.rtun_liststore)
+        self.rtun_treeview.set_enable_search(True)
+        self.rtun_treeview.set_show_expanders(False)
+
+        rtun_renderer_text = Gtk.CellRendererText()
+        rtun_column_text = Gtk.TreeViewColumn("Станция", rtun_renderer_text, text=0)
+        rtun_column_text.set_alignment(0.5)
+        rtun_column_text.set_max_width(270)
+        rtun_column_text.set_min_width(50)
+        rtun_column_text.set_fixed_width(270)
+        rtun_column_text.set_resizable(False)
+        rtun_column_text.set_expand(False)
+        self.rtun_treeview.append_column(rtun_column_text)
+
+        rtun_renderer_radio = Gtk.CellRendererToggle()
+        rtun_renderer_radio.set_radio(True)
+        rtun_renderer_radio.connect("toggled", self.rtun_on_cell_radio_toggled)
+
+        rtun_column_radio = Gtk.TreeViewColumn("Выбор", rtun_renderer_radio, active=1)
+        rtun_column_radio.set_alignment(0.5)
+        rtun_column_radio.set_resizable(False)
+        rtun_column_radio.set_expand(False)
+        self.rtun_treeview.append_column(rtun_column_radio)
+
+        # Создание окна с прокруткой для размещения в нем List RadioTuns
+        self.scrolled_window_rtun = Gtk.ScrolledWindow()
+        self.scrolled_window_rtun.set_min_content_height(150)
+        self.scrolled_window_rtun.set_min_content_width(340)
+        self.scrolled_window_rtun.add(self.rtun_treeview)
 
         #'''# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         dinamit_opener = urllib.request.build_opener()
@@ -648,19 +716,19 @@ class RadioWin(Gtk.Window):
         # Создание окна с прокруткой для размещения в нем List 101
         self.scrolled_window_101 = Gtk.ScrolledWindow()
         self.scrolled_window_101.set_min_content_height(150)
-        self.scrolled_window_101.set_min_content_width(300)
+        self.scrolled_window_101.set_min_content_width(340)
         self.scrolled_window_101.add(self.treeview_101)
 
         # Создание окна с прокруткой для размещения в нем List Di-FM
         self.di_scrolled_window = Gtk.ScrolledWindow()
         self.di_scrolled_window.set_min_content_height(150)
-        self.di_scrolled_window.set_min_content_width(300)
+        self.di_scrolled_window.set_min_content_width(340)
         self.di_scrolled_window.add(self.di_grid)
 
         # Создание окна с прокруткой для размещения в нем Radio Internet
         self.top_window = Gtk.ScrolledWindow()
         self.top_window.set_min_content_height(150)
-        self.top_window.set_min_content_width(300)
+        self.top_window.set_min_content_width(340)
         if len(self.c_s) == 0:
             self.top_window.add(self.w_grid)
         else:
@@ -669,7 +737,7 @@ class RadioWin(Gtk.Window):
         # Создание окна с прокруткой для размещения в нем Radio Internet
         self.sub_window = Gtk.ScrolledWindow()
         self.sub_window.set_min_content_height(150)
-        self.sub_window.set_min_content_width(300)
+        self.sub_window.set_min_content_width(340)
         self.sub_window.add(self.sub_treeview)
 
         self.grid_for_IRC.attach(self.top_window, 1, 1, 10, 6)
@@ -745,7 +813,7 @@ class RadioWin(Gtk.Window):
 
         self.record_scrolled_window = Gtk.ScrolledWindow()
         self.record_scrolled_window.set_min_content_height(150)
-        self.record_scrolled_window.set_min_content_width(300)
+        self.record_scrolled_window.set_min_content_width(340)
         self.record_scrolled_window.add(self.record_treeview)
 
         # My Play List
@@ -786,7 +854,7 @@ class RadioWin(Gtk.Window):
         self.my_pls_scrolled_window = Gtk.ScrolledWindow()
         self.my_pls_scrolled_window.add(self.my_pls_treeview)
         self.my_pls_scrolled_window.set_min_content_height(300)
-        self.my_pls_scrolled_window.set_min_content_width(300)
+        self.my_pls_scrolled_window.set_min_content_width(340)
         self.my_pls_scrolled_window.set_size_request(300, 300)
 
         # Создание табов для порталов
@@ -802,6 +870,7 @@ class RadioWin(Gtk.Window):
         self.main_note_for_cont.append_page(self.di_scrolled_window, Gtk.Label('Radio Di-FM'))
         self.main_note_for_cont.append_page(self.grid_for_IRC, Gtk.Label('Internet Radio'))
         self.main_note_for_cont.append_page(self.record_scrolled_window, Gtk.Label('Radio Record'))
+        self.main_note_for_cont.append_page(self.scrolled_window_rtun, Gtk.Label('RadioTuns'))
         self.main_note_for_cont.append_page(self.my_pls_scrolled_window, Gtk.Label('My Play List'))
 
         # Создание кнопки громкости
@@ -917,7 +986,7 @@ class RadioWin(Gtk.Window):
 
         self.playlist_scrolled_window = Gtk.ScrolledWindow()
         self.playlist_scrolled_window.set_min_content_height(150)
-        self.playlist_scrolled_window.set_min_content_width(300)
+        self.playlist_scrolled_window.set_min_content_width(340)
         self.playlist_scrolled_window.add(self.playlist_treeview)
         #
 
@@ -971,6 +1040,18 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
         ###################################################
+
+    # Обработка событий RadioTuns
+    def rtun_on_cell_radio_toggled(self, widget, path):
+        selected_path = Gtk.TreePath(path)
+        source_cell = self.rtun_liststore.get_iter(path)
+        for x in self.rtun_res_dict_name_and_adr.keys():
+            if x == self.rtun_liststore.get_value(source_cell, 0):
+                print(self.rtun_res_dict_name_and_adr[x])
+                self.id_chan = ['RTUN', self.rtun_res_dict_name_and_adr[x]]
+                self.real_adress = self.rtun_res_dict_name_and_adr[x]
+        for row in self.rtun_liststore:
+            row[1] = (row.path == selected_path)
 
     # Обработка событий плейлиста
     def click_to_row_pl(self, tree_view, path, column):
@@ -1227,8 +1308,10 @@ class RadioWin(Gtk.Window):
             discoverer = GstPbutils.Discoverer()
             info = discoverer.discover_uri(self.media_location)# Create = GstPbutils.DiscovererInfo
 
-            name_command_info = ['caps', 'misc', 'next', 'type', 'toc',
-            'bitrate', 'chanels', 'depth', 'language', 'max bitrate', 'sample rate', 'seekable']
+            name_command_info = ['формат','разное', 'следующее', 'тип',
+            'токен', 'битность', 'каналы', 'глубина', 'язык',
+            'максимальная битность', 'частота дискретизации',
+            'продолжительность']
 
             for ainfo in info.get_audio_streams():# Create = GstPbutils.DiscovererStreamInfo
 
@@ -1321,7 +1404,7 @@ class RadioWin(Gtk.Window):
 
             self.top_window = Gtk.ScrolledWindow()
             self.top_window.set_min_content_height(150)
-            self.top_window.set_min_content_width(300)
+            self.top_window.set_min_content_width(340)
             self.top_window.add(self.top_treeview)
 
             self.grid_for_IRC.attach(self.top_window, 1, 1, 10, 6)
@@ -1408,6 +1491,9 @@ class RadioWin(Gtk.Window):
             elif 'Radio-Record' == last_adr[1]:
                 print('Select Radio-Record')
                 self.id_chan[0] = 'RREC'
+            elif 'RadioTun' == last_adr[1]:
+                print('Select RadioTun')
+                self.id_chan[0] = 'RTUN'
             elif 'My' == last_adr[1]:
                 print('Select My')
                 self.id_chan[0] = 'My'
@@ -1446,6 +1532,10 @@ class RadioWin(Gtk.Window):
             elif 'Radio-Record' in str(best_adr):
                 print('OK => Radio-Record')
                 self.id_chan[0] = 'RREC'
+                self.play_stat_now(best_adr)
+            elif 'RadioTun' in str(best_adr):
+                print('OK => RadioTun')
+                self.id_chan[0] = 'RTUN'
                 self.play_stat_now(best_adr)
             elif 'D-FM' in str(best_adr):
                 print('OK => D-FM')
@@ -1581,13 +1671,12 @@ class RadioWin(Gtk.Window):
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('uri', location[0])
                 print("************* ==> Источник HTTP *.flv "+self.get_time_now())
-                #
-                get_id_chanel = re.sub(r'(.+?\=)(\d+)$', r'\2', self.real_adress, re.M)
-                find_time = urllib.request.urlopen('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel')
-                j_date = json.loads(str(find_time.read().decode('utf-8', errors='ignore')))
-                restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
-                GObject.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
-                #
+                if '101.ru' in location[0]:
+                    get_id_chanel = re.sub(r'(.+?\=)(\d+)$', r'\2', self.real_adress, re.M)
+                    find_time = urllib.request.urlopen('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel')
+                    j_date = json.loads(str(find_time.read().decode('utf-8', errors='ignore')))
+                    restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
+                    GObject.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
             if location[0].startswith('http'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
@@ -2157,6 +2246,7 @@ class RadioWin(Gtk.Window):
         # Если пусто то http
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
         if (self.id_chan[0] == 'RREC' \
+        or self.id_chan[0] == 'RTUN' \
         or self.id_chan[0] == 'DI' \
         or self.id_chan[0] == 'IRC' \
         or self.id_chan[0] == 'My' \
@@ -2756,6 +2846,8 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'PS')
                 elif args[1][0] == 'RREC':
                     config.set('LastStation', 'namestation', 'Radio-Record')
+                elif args[1][0] == 'RTUN':
+                    config.set('LastStation', 'namestation', 'RadioTun')
                 elif args[1][0] == 'My':
                     config.set('LastStation', 'namestation', 'My')
                 elif args[1][0] == 'DI':
@@ -2778,6 +2870,8 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'My')
                 elif args[1][0] == 'RREC':
                     config.set('LastStation', 'namestation', 'Radio-Record')
+                elif args[1][0] == 'RTUN':
+                    config.set('LastStation', 'namestation', 'RadioTun')
                 elif args[1][0] == 'DI':
                     config.set('LastStation', 'namestation', 'D-FM')
                 elif args[1][0] == 'IRC':
@@ -2867,6 +2961,8 @@ class WriteLastStation(object):
                     config.set('BestStation', 'namestation', 'My')
                 elif take_param_adr in 'RREC':
                     config.set('BestStation', 'namestation', 'Radio-Record')
+                elif take_param_adr in 'RTUN':
+                    config.set('BestStation', 'namestation', 'RadioTun')
                 elif take_param_adr in 'DI':
                     config.set('BestStation', 'namestation', 'D-FM')
                 elif take_param_adr in 'IRC':
@@ -2889,6 +2985,8 @@ class WriteLastStation(object):
                 config.set('BestStation', 'namestation', 'My')
             elif take_param_adr in 'RREC':
                 config.set('BestStation', 'namestation', 'Radio-Record')
+            elif take_param_adr in 'RTUN':
+                config.set('BestStation', 'namestation', 'RadioTun')
             elif take_param_adr in 'DI':
                 config.set('BestStation', 'namestation', 'D-FM')
             elif take_param_adr in 'IRC':
@@ -2986,7 +3084,7 @@ class DialogFindPersonalStation(Gtk.Dialog):
         # Создание окна с прокруткой для размещения в нем List
         self.s_scrolled_window = Gtk.ScrolledWindow()
         self.s_scrolled_window.set_min_content_height(200)
-        self.s_scrolled_window.set_min_content_width(300)
+        self.s_scrolled_window.set_min_content_width(340)
         self.s_scrolled_window.add(self.s_treeview)
 
         self.s_grid.attach(self.s_scrolled_window, 0, 2, 8, 10)
