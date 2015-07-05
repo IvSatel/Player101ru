@@ -44,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.64'
+SCRIPT_VERSION = '0.0.0.65'
 
 
 class RadioWin(Gtk.Window):
@@ -881,18 +881,6 @@ class RadioWin(Gtk.Window):
         self.label_ltime.set_justify(Gtk.Justification.LEFT)
         self.label_ltime.modify_font(Pango.FontDescription("10"))
 
-        # Создание лейбла для отображения db
-        self.label_ldb = Gtk.Label('l')
-        self.label_ldb.set_justify(Gtk.Justification.LEFT)
-        self.label_ldb.modify_font(Pango.FontDescription("7"))
-        self.label_ldb.set_max_width_chars(3)
-
-        # Создание лейбла для отображения db
-        self.label_rdb = Gtk.Label('r')
-        self.label_rdb.set_justify(Gtk.Justification.RIGHT)
-        self.label_rdb.modify_font(Pango.FontDescription("7"))
-        self.label_rdb.set_max_width_chars(3)
-
         # Создание лейбла для отображения состояния моно или стерео
         self.label_mon_st = Gtk.Label('MediaInfo')
         self.label_mon_st.set_has_tooltip(True)
@@ -956,9 +944,7 @@ class RadioWin(Gtk.Window):
         self.grid.attach(self.scal_sl,     2, 6, 3, 1)# Регулятор громкости
         self.grid.attach(self.label_ltime, 5, 6, 1, 1)# Лейбл времени R
 
-        self.grid.attach(self.label_ldb,    0, 8, 1, 1)# Лейбл децебел
-        self.grid.attach(self.label_mon_st, 1, 8, 5, 1)# Лейбл медиаинфо
-        self.grid.attach(self.label_rdb,    6, 8, 1, 1)# Лейбл децебел
+        self.grid.attach(self.label_mon_st, 0, 8, 7, 1)# Лейбл медиаинфо
 
         self.grid.attach(self.seek_line, 0, 9, 7, 1)# Лейбл прогресса звучания
 
@@ -1943,8 +1929,6 @@ class RadioWin(Gtk.Window):
                         if sum(self.s_rms_chek) < -2000:
                             print('if sum(self.s_rms_chek) < -2000: ==> self.pipeline.set_state(Gst.State.NULL)')
                             self.pipeline.set_state(Gst.State.NULL)
-                            self.label_ldb.set_label('')
-                            self.label_rdb.set_label('')
                             self.s_rms_chek = [0]
                             self.pipeline = 0
                             self.play_stat_now()
@@ -1954,9 +1938,6 @@ class RadioWin(Gtk.Window):
 
                         if self.HURL.check_stream_adress != 0:
                             self.HURL.check_stream_adress = 0
-
-                        GLib.idle_add(self.label_ldb.set_label, str(round(v_rms_0)))
-                        GLib.idle_add(self.label_rdb.set_label, str(round(v_rms_1)))
 
                         rms0 = abs(v_rms_0)
                         rmsdb = 10 * math.log(rms0 / 32768 )
@@ -2482,10 +2463,7 @@ class RadioWin(Gtk.Window):
 
         self.seek_line.hide()#SeekLine
         self.seek_line.set_value(0.01)
-        #self.main_note_for_cont.show()#Table
         self.label_title.set_label('')
-        self.label_ldb.set_label('')
-        self.label_rdb.set_label('')
 
         if self.pipeline:
             self.main_note_for_cont.set_show_tabs(True)
