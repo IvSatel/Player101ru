@@ -16,6 +16,7 @@ import os
 import gi
 import urllib.parse
 import urllib.request
+import http.cookiejar
 import concurrent.futures
 from decimal import Decimal
 from collections import OrderedDict
@@ -44,8 +45,22 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.66'
+SCRIPT_VERSION = '0.0.0.67'
 
+####################################################################
+####################################################################
+
+# Обнаружение PROXISERVER
+IF_PROXI = urllib.request.ProxyHandler(urllib.request.getproxies())
+AUTHHANDLER = urllib.request.HTTPBasicAuthHandler()
+MY_COOKIE = urllib.request.HTTPCookieProcessor(
+http.cookiejar.CookieJar(
+http.cookiejar.DefaultCookiePolicy(
+rfc2965=True,
+strict_ns_domain=http.cookiejar.DefaultCookiePolicy.DomainStrict,
+blocked_domains=["ads.net", ".ads.net"])))
+####################################################################
+####################################################################
 
 class RadioWin(Gtk.Window):
 
@@ -82,11 +97,11 @@ class RadioWin(Gtk.Window):
         else:  # Если файл с адресами станций отсутствует то получаем его
             print('Файл с адресами создается ' + self.get_time_now())
 
-            ad_101_opener = urllib.request.build_opener()
+            ad_101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
             ad_101_opener.addheaders = [
                 ('Host', '101.ru'),
                 ('User-agent',
-                'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+                'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
 
             # Запрос всех разделов
             with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
@@ -185,6 +200,7 @@ class RadioWin(Gtk.Window):
         self.timer_title = 0
         self.timer_title_rtmp = 0
         self.timer_time = 0
+        self.timer_rtun_title = 0
 
         # Контейнер для Gst.Pipeline
         self.pipeline = 0
@@ -288,41 +304,36 @@ class RadioWin(Gtk.Window):
         'EQ Classical': [3, 2, 1, 0, 2, 1, 2, 1, 2, 3, 1, 1, 1, 2, 4, 3, 2, 1]}
 
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # RADIOTUNS
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        # Словарь для http://www.radiotunes.com/
-        self.rtun_res_dict_name_and_adr = {}
+        print('Получение адресов для RADIOTUNES ' + self.get_time_now())
 
         rtun_urls = []
 
-        rtun_dict_real_adr = {}
+        # Словарь для http://www.radiotunes.com/
+        '''
+        0   =   ID
+        1   =   href
+        2   =   name href
+        3   =   name chanel
+        '''
+        self.rtun_dict_real_adr = {}
 
-        self.rtun_opener = urllib.request.build_opener()
-        self.rtun_opener.addheaders = [('Referer', 'http://www.radiotunes.com/')]
+        self.rtun_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        self.rtun_opener.addheaders = [
+        ('Host', 'www.radiotunes.com'),
+        ('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
 
-        with self.rtun_opener.open('http://www.radiotunes.com/') as f:
-            rtun_urls = re.findall(r'data\-tunein\-url\="(.+?)".+?<span>(.+?)</span>', re.sub(r'&#x\d+;|amp;', r'', f.read().decode('utf-8')))
+        with self.rtun_opener.open('http://www.radiotunes.com') as f:
+            rtun_urls = re.findall(r'<li data\-channel\-id="(.+?)"> <span data\-event=".+?" data\-tunein\-url="(.+?)" class="play ui\-icon\-mini\_play"></span> <a href="/(.+?)"> <div class="channel\-icon\-\d+ channel\-icon.+?"></div> <span>(.+?)</span> </a> </li>', re.sub(r'&#x\d+;|amp;', r'', f.read().decode('utf-8')))
 
         for x in rtun_urls:
-            rtun_dict_real_adr[x[1]] = x[0]
-
-        def load_url(url, key):
-            l_key = key
-            req = 'http://listen.radiotunes.com/webplayer/'+re.sub(r'(http\:\/\/www\.radiotunes\.com)\/(.+?)', r'\2', url)+'.jsonp?callback=_API_Playlists_getChannel'
-            with self.rtun_opener.open(req) as conn:
-                ans = re.findall(r'"(.+?)"', re.sub(r'\\', r'', conn.read().decode('utf-8')))
-                return ans[0], l_key
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=85) as executor:
-            rtun_future_to_url = {executor.submit(load_url, val, key): val for key, val in rtun_dict_real_adr.items()}
-            for future in concurrent.futures.as_completed(rtun_future_to_url):
-                try:
-                    self.rtun_res_dict_name_and_adr[future.result()[1]] = future.result()[0]
-                except Exception as exc:
-                    pass
+            self.rtun_dict_real_adr[x[3]] = x[0], x[1], x[2]
 
         self.rtun_liststore = Gtk.ListStore(str, bool)
 
-        for x in sorted(self.rtun_res_dict_name_and_adr):
+        for x in sorted(self.rtun_dict_real_adr.keys()):
             self.rtun_liststore.append([x, False])
 
         self.rtun_treeview = Gtk.TreeView(model=self.rtun_liststore)
@@ -356,10 +367,10 @@ class RadioWin(Gtk.Window):
         self.scrolled_window_rtun.add(self.rtun_treeview)
 
         #'''# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        dinamit_opener = urllib.request.build_opener()
+        dinamit_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         dinamit_opener.addheaders = [
         ('Host', 'www.dfm.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
         ]
 
         with dinamit_opener.open('http://www.dfm.ru/listen/dfmonline/') as dinamit_http_source:
@@ -748,10 +759,10 @@ class RadioWin(Gtk.Window):
         self.grid_for_IRC.set_column_spacing(1)
 
         # Радио рекорд
-        record_opener = urllib.request.build_opener()
+        record_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         record_opener.addheaders = [
         ('Host', 'www.radiorecord.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
         ]
 
         try:
@@ -1041,15 +1052,59 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
+    # Получение информации о композиции для RADIOTUNES
+    def set_title_for_rtun(self, *args):
+        if self.radio_play:
+            title_rtun_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+            title_rtun_opener.addheaders = [
+                    ('Host', 'api.audioaddict.com'),
+                    ('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
+
+            with title_rtun_opener.open('http://api.audioaddict.com/v1/radiotunes/track_history/channel/' + str(args[0][0]) + '.json') as f:
+                title_rtun_urls = re.findall(r'"started":(\d+),"title":"(.+?)","track":"(.+?)","track_id".+?"seed":(\d+)', f.read().decode('utf-8'))
+
+            for x in title_rtun_urls:
+                if self.label_title.get_text() != str(x[2]):
+                    self.label_title.set_label(str(x[2]))
+                break
+            return True
+        else:
+            if self.timer_rtun_title:
+                GObject.source_remove(self.timer_rtun_title)
+            return False
+
+    # Возвращение адреса на поток RADIOTUNES
+    def rtunes_stream_url(self, key):
+
+        r_key = key
+        req = 'http://listen.radiotunes.com/webplayer/' + r_key + '.jsonp?callback=_API_Playlists_getChannel'
+        try:
+            self.rtun_opener.addheaders = [('Host', 'listen.radiotunes.com')]
+            with self.rtun_opener.open(req) as conn:
+                ans = re.findall(r'"(.+?)"', re.sub(r'\\', r'', conn.read().decode('utf-8')))
+                return ans[0]
+        except HTTPError as e:
+            print('HTTPError The server ' + r_key + ' couldn\'t fulfill the request.', e.code)
+            return False
+        except URLError as e:
+            print('URLError We failed to reach a ' + r_key + ' server.', e.reason)
+            return False
+    #
+
     # Обработка событий RadioTuns
     def rtun_on_cell_radio_toggled(self, widget, path):
         selected_path = Gtk.TreePath(path)
         source_cell = self.rtun_liststore.get_iter(path)
-        for x in self.rtun_res_dict_name_and_adr.keys():
+        for x in self.rtun_dict_real_adr.keys():
             if x == self.rtun_liststore.get_value(source_cell, 0):
-                print(self.rtun_res_dict_name_and_adr[x])
-                self.id_chan = ['RTUN', self.rtun_res_dict_name_and_adr[x]]
-                self.real_adress = self.rtun_res_dict_name_and_adr[x]
+                self.id_chan = ['RTUN', self.rtun_dict_real_adr[x]]
+                get_adr_rtunes = self.rtunes_stream_url(self.rtun_dict_real_adr[x][2])
+                print(get_adr_rtunes, self.rtun_dict_real_adr[x])
+                if get_adr_rtunes != False:
+                    self.real_adress = get_adr_rtunes
+                else:
+                    return False
+
         for row in self.rtun_liststore:
             row[1] = (row.path == selected_path)
 
@@ -1673,14 +1728,21 @@ class RadioWin(Gtk.Window):
                 print("************* ==> Источник HTTP *.flv "+self.get_time_now())
                 if '101.ru' in location[0]:
                     get_id_chanel = re.sub(r'(.+?\=)(\d+)$', r'\2', self.real_adress, re.M)
-                    find_time = urllib.request.urlopen('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel')
-                    j_date = json.loads(str(find_time.read().decode('utf-8', errors='ignore')))
-                    restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
-                    GObject.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
+                    #
+                    find_time_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+                    find_time_opener.addheaders = [
+                    ('Host', '101.ru'),
+                    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
+                    ]
+
+                    with find_time_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel') as http_source:
+                        j_date = json.loads(str(http_source.read().decode('utf-8', errors='ignore')))
+                        restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
+                        GObject.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
             if location[0].startswith('http'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
-                source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
+                source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник HTTP "+self.get_time_now())
@@ -1873,10 +1935,10 @@ class RadioWin(Gtk.Window):
                 return False
 
         id_chan_req  = adres[0]
-        title_opener = urllib.request.build_opener()
+        title_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         title_opener.addheaders = [
         ('Host', '101.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
 
         try:
             with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
@@ -2060,17 +2122,33 @@ class RadioWin(Gtk.Window):
             print('Получено ERROR сообщение с ошибкой ' + self.get_time_now(), '\n', type(mpe), '\n', mpe)
             if 'Redirect to: (NULL)' in str(mpe):
                 print('if Redirect to: (NULL) in str(mpe): ==> self.pipeline.set_state(Gst.State.NULL) ' + self.get_time_now())
+                #
+                #
                 try:
-                    socket.gethostbyaddr('www.yandex.ru')
-                    self.pipeline.set_state(Gst.State.NULL)
-                    self.pipeline = 0
-                    self.play_stat_now()
-                except socket.gaierror:
+                    #
+                    test_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+                    test_opener.addheaders = [
+                    ('Host', 'www.google.ru'),
+                    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
+
+                    with test_opener.open('http://www.google.ru/') as test_req_http:
+                        self.pipeline.set_state(Gst.State.NULL)
+                        self.pipeline = 0
+                        self.play_stat_now()
+                except HTTPError as e:
                     self.pipeline.set_state(Gst.State.NULL)
                     self.pipeline = 0
                     self.on_click_bt5()
                     self.label_title.set_text('Отсутствует интернет соединение')
                     self.My_ERROR_Mess = 0
+                except URLError as e:
+                    self.pipeline.set_state(Gst.State.NULL)
+                    self.pipeline = 0
+                    self.on_click_bt5()
+                    self.label_title.set_text('Отсутствует интернет соединение')
+                    self.My_ERROR_Mess = 0
+                #
+                #
             if 'Could not detect type of contents' in str(mpe):
                 self.label_title.set_text('Ошибка чтения потока...')
                 #
@@ -2256,6 +2334,9 @@ class RadioWin(Gtk.Window):
                 if x == 5:
                     self.button_array[x].show()
 
+            if self.id_chan[0] == 'RTUN':
+                self.timer_rtun_title = GObject.timeout_add_seconds(2, self.set_title_for_rtun, self.id_chan[1])
+                #self.set_title_for_rtun(self.id_chan[1])
             print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ",
             f_name, 'self.real_adress ==> 1 ',
             self.real_adress)
@@ -2548,6 +2629,9 @@ class RadioWin(Gtk.Window):
         self.timer = 0
         self.cue_file_find = 0
 
+        if self.timer_rtun_title:
+            self.timer_rtun_title = 0
+
         if self.timer_title_rtmp:
             self.timer_title_rtmp = 0
 
@@ -2653,10 +2737,10 @@ class RadioWin(Gtk.Window):
             id_ch = idch
             print('id_ch ==> ', id_ch)
 
-            person_opener = urllib.request.build_opener()
+            person_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
             person_opener.addheaders = [
             ('Host', '101.ru'),
-            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
 
             chek = 0
             while chek < 3:
@@ -2723,8 +2807,11 @@ class HackURL(object):
         else:
             person = 0
 
-        r101_opener = urllib.request.build_opener()
-        r101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+        r101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        r101_opener.addheaders = [
+        ('Host', '101.ru'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
+        ]
 
         try:
             print('Отправка запроса')
@@ -2757,11 +2844,10 @@ class HackURL(object):
                 print('*********************************')
                 len_adr_list = 0
                 for x in find_url_stream2:
-                    req = urllib.request.Request(x)
                     print('req = urllib.request.Request(x)', x)
                     try:
-                        response = urllib.request.urlopen(req, None, 5)
-                        print('response = urllib.request.urlopen(req)')
+                        with r101_opener.open(x, timeout=5) as req:
+                            response = req
                     except:
                         print('ERROR : ', x)
                         len_adr_list += 1
@@ -3129,6 +3215,13 @@ class DialogFindPersonalStation(Gtk.Dialog):
 
     def find_icon_press(self, *args):
 
+        #
+        find_pers_101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        find_pers_101_opener.addheaders = [
+        ('Host', '101.ru'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
+        ]
+        #
         self.s_find_dict = {}
         self.s_liststore.clear()
         self.s_treeview.remove_column(self.s_column_text)
@@ -3137,11 +3230,12 @@ class DialogFindPersonalStation(Gtk.Dialog):
         self.s_treeview.append_column(self.s_column_radio)
         zapros = urllib.parse.quote(self.s_entry.get_text(), encoding='utf-8', errors=None)
         adr_req = 'http://101.ru/?an=port_search_pers&search='+str(zapros)
-        f = urllib.request.urlopen(adr_req)
-        sourse = re.sub(r'(&#\d+;)', r'', f.read().decode('utf-8', errors='ignore'), re.S)
-        res_error = re.findall(r'<h3 class="full">(.+?)</h3>', sourse)
-        self.s_res_find_name = re.findall(r'<h2 class="title"><a href=".+?">(.+?)</a></h2>', re.sub(r'&amp;|&quot;|&#\d+?;', r'&', sourse, re.S), re.S)
-        res_find_adr = re.findall(r'<h2 class="title"><a href="(.+?)">.+?</a></h2>', sourse, re.S)
+        #
+        with find_pers_101_opener.open(adr_req) as pers_101:
+            sourse = re.sub(r'(&#\d+;)', r'', pers_101.read().decode('utf-8', errors='ignore'), re.S)
+            res_error = re.findall(r'<h3 class="full">(.+?)</h3>', sourse)
+            self.s_res_find_name = re.findall(r'<h2 class="title"><a href=".+?">(.+?)</a></h2>', re.sub(r'&amp;|&quot;|&#\d+?;', r'&', sourse, re.S), re.S)
+            res_find_adr = re.findall(r'<h2 class="title"><a href="(.+?)">.+?</a></h2>', sourse, re.S)
         if not res_error:
             c = 0
             for x in sorted(self.s_res_find_name):
@@ -3185,6 +3279,13 @@ class DialogC_A_L(Gtk.Dialog):
             self.destroy()
 
     def c_a_l(self):
+        #
+        self.IRC_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        self.IRC_opener.addheaders = [
+        ('Host', 'www.internet-radio.com'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
+        ]
+        #
 
         def m_m(x):
             self.main_progress.set_fraction(x[0])
@@ -3192,11 +3293,10 @@ class DialogC_A_L(Gtk.Dialog):
 
         def read_page_irc(args):
 
-            with urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', args[0])+'/page'+str(args[1])) as req:
+            with self.IRC_opener.open('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', args[0])+'/page'+str(args[1])) as req:
                 s_page_r = req.read().decode('utf-8', errors='ignore')
-
-            fr = re.findall(r"mount=(.+?)&amp;title=(.+?)&amp;", s_page_r, re.M)
-            res_dict[x] = fr
+                fr = re.findall(r"mount=(.+?)&amp;title=(.+?)&amp;", s_page_r, re.M)
+                res_dict[x] = fr
 
             for e in fr:
                 self.line_to_write.append(re.sub(r'\s+$', r'', str(e[1]), re.S)+' = '+re.sub(r'\/live\.m3u', r'/live', re.sub(r'\/listen\.pls', r'/;', re.sub(r'\/listen\.pls\?sid\=1', r'/;', re.sub(r'\.m3u', r'', re.sub(r'^=\s*', r'', str(e[0]), re.M), re.M), re.M), re.M), re.M))
@@ -3206,30 +3306,26 @@ class DialogC_A_L(Gtk.Dialog):
             mm_m.append(str(int(m_check//(len(choice_page)/100)))+' %')
             GLib.idle_add(m_m, mm_m)
 
-        with urllib.request.urlopen('http://www.internet-radio.com') as for_short_name:
-            page_short_name = for_short_name.read().decode('utf-8', errors='ignore')
-
-        ptrn_s = '''<li><a onClick\="ga\('send'\, 'event'\, 'genreclick'\, 'navbar'\, '.+?'\)\;" href\=".+?">(.+?)</a></li>'''
-        short_sum_page = [x for x in re.findall(r''+str(ptrn_s)+'', page_short_name, re.M)]
-
-        with urllib.request.urlopen('http://www.internet-radio.com/stations/') as for_full_name:
-            full_page_name = for_full_name.read().decode('utf-8', errors='ignore')
-
-        ptrn_f = '''<dt class="text\-capitalize" style="font\-size\: .+?\;"><a href=".+?">(.+?)</a></dt>'''
-        full_sum_page = [x for x in re.findall(r''+str(ptrn_f)+'', full_page_name, re.M)]
-
         res_dict = {}
         pat = ['^\s+', '^\s*\-\s*', ':{2,}', '^\s*\=+\s*', '^\s*\:+\s*']
         if self.my_args[0] == 1:
-            choice_page = short_sum_page
+            with self.IRC_opener.open('http://www.internet-radio.com') as for_short_name:
+                page_short_name = for_short_name.read().decode('utf-8', errors='ignore')
+                ptrn_s = '''<li><a onClick\="ga\('send'\, 'event'\, 'genreclick'\, 'navbar'\, '.+?'\)\;" href\=".+?">(.+?)</a></li>'''
+                short_sum_page = [x for x in re.findall(r''+str(ptrn_s)+'', page_short_name, re.M)]
+                choice_page = short_sum_page
         elif self.my_args[0] == 2:
-            choice_page = full_sum_page
+            with self.IRC_opener.open('http://www.internet-radio.com/stations/') as for_full_name:
+                full_page_name = for_full_name.read().decode('utf-8', errors='ignore')
+                ptrn_f = '''<dt class="text\-capitalize" style="font\-size\: .+?\;"><a href=".+?">(.+?)</a></dt>'''
+                full_sum_page = [x for x in re.findall(r''+str(ptrn_f)+'', full_page_name, re.M)]
+                choice_page = full_sum_page
         m_check = 1
         with open(self.dial_path + '/radiointernet.txt', 'w', encoding = 'utf-8') as file_d:
 
             for x in choice_page:
 
-                with urllib.request.urlopen('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/') as ar:
+                with self.IRC_opener.open('http://www.internet-radio.com/stations/'+re.sub(r' ', r'%20', x)+'/') as ar:
                     page_r = ar.read().decode('utf-8', errors='ignore')
 
                 sum_page = [int(j) for j in re.findall(r'href="/stations/.+?/page\d+">(\d+)</a>', page_r, re.M)]
@@ -3584,8 +3680,11 @@ class Dialog_Update_101(Gtk.Dialog):
 
     def example_target(self, args1, stop_event):
 
-        loc_ad_101_opener = urllib.request.build_opener()
-        loc_ad_101_opener.addheaders = [('Host', '101.ru'),('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')]
+        loc_ad_101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        loc_ad_101_opener.addheaders = [
+        ('Host', '101.ru'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
+        ]
 
         # Запрос всех разделов
         with loc_ad_101_opener.open('http://101.ru/?an=port_allchannels') as loc_source_101_http:
@@ -3636,10 +3735,10 @@ def download_up_date():
 
     my_path_up = os.path.dirname(os.path.realpath(__file__))
 
-    update_prog_opener = urllib.request.build_opener()
+    update_prog_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
     update_prog_opener.addheaders = [
     ('Host', 'github.com'),
-    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0')
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')
     ]
 
     # Загрузка архива
@@ -3683,10 +3782,10 @@ def download_up_date():
 
 def main_funck():
     # Проверка версии
-    version_opener = urllib.request.build_opener()
+    version_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
     version_opener.addheaders = [(
     'User-agent',
-    'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:37.0) Gecko/20100101 Firefox/37.0'
+    'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0'
     )]
 
     remote_vers = ''
@@ -3728,8 +3827,21 @@ def check_internet_connection(*args):
 
 # Проверка наличия интернет соединения
 try:
-    socket.gethostbyaddr('www.yandex.ru')
-    main_funck()
-except socket.gaierror:
+    #
+    #
+    ftest_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+    ftest_opener.addheaders = [
+    ('Host', 'www.google.ru'),
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
+    #
+    with ftest_opener.open('http://www.python.org/', timeout=5) as check_connection:
+        print('Соединение с интернет обнаружено ' + str(datetime.datetime.now().strftime('%H:%M:%S')))
+        main_funck()
+except HTTPError as e:
+    print('HTTPError The server couldn\'t fulfill the request.', e.code)
+    check_internet_connection()
+    sys.exit(0)
+except URLError as e:
+    print('URLError We failed to reach a server.', e.reason)
     check_internet_connection()
     sys.exit(0)
