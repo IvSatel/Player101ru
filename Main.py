@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.69'
+SCRIPT_VERSION = '0.0.0.70'
 
 ####################################################################
 ####################################################################
@@ -1076,11 +1076,11 @@ class RadioWin(Gtk.Window):
         source_cell = self.rtun_liststore.get_iter(path)
         for x in self.rtun_dict_real_adr.keys():
             if x == self.rtun_liststore.get_value(source_cell, 0):
-                self.id_chan = ['RTUN', re.sub(r'\.flv', r'', str(self.rtun_dict_real_adr[x]))]
+                self.id_chan = ['RTUN', re.sub(r'\_aacplus\.flv', r'', str(self.rtun_dict_real_adr[x]))]
                 get_adr_rtunes = self.rtunes_stream_url(self.rtun_dict_real_adr[x][2])
                 print(get_adr_rtunes, self.rtun_dict_real_adr[x])
                 if get_adr_rtunes != False:
-                    self.real_adress = re.sub(r'\.flv', r'', get_adr_rtunes)
+                    self.real_adress = re.sub(r'\_aacplus\.flv', r'', get_adr_rtunes)
                 else:
                     return False
 
@@ -2129,7 +2129,7 @@ class RadioWin(Gtk.Window):
                     self.My_ERROR_Mess = 0
                 #
                 #
-            if 'Could not detect type of contents' in str(mpe):
+            if 'Could not detect type of contents' in str(mpe) or 'No such file' in str(mpe):
                 self.label_title.set_text('Ошибка чтения потока...')
                 #
                 if self.file_play == 1:
