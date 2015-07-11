@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.67'
+SCRIPT_VERSION = '0.0.0.68'
 
 ####################################################################
 ####################################################################
@@ -597,7 +597,7 @@ class RadioWin(Gtk.Window):
             self.tray_icon.set_menu(self.main_menu)
         else:
             self.tray_icon = Gtk.StatusIcon()
-            self.tray_icon.connect('popup-menu', self.create_main_menu)
+            self.tray_icon.connect('button-release-event', self.create_main_menu)
             self.tray_icon.set_tooltip_text("Radio Player")
             self.tray_icon.set_from_file(self.prog_full_path + '/resource/Radio32.png')
             self.tray_icon.set_visible(True)
@@ -1140,7 +1140,8 @@ class RadioWin(Gtk.Window):
     # Установка галочки на меню громкости
     def on_togled_menu_it(self, check_menu_item, args):
 
-        if self.pipeline and args == 'B':
+        #if self.pipeline and args == 'B':
+        if args == 'B':
             c = 0
             for x in self.vol_menu:
                 if x.get_active():
@@ -1668,7 +1669,7 @@ class RadioWin(Gtk.Window):
                 for d in x:
                     loc_final_conf.append(d+'\n')
 
-            with open(self.prog_full_path + '/adres_list.ini', 'w') as loc_adr101file:
+            with open(self.prog_full_path + '/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as loc_adr101file:
                 loc_adr101file.writelines(loc_final_conf)
 
             with open(self.prog_full_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
@@ -1688,14 +1689,14 @@ class RadioWin(Gtk.Window):
         dialog_101_update.destroy()
 
     # Создание меню в трее
-    def create_main_menu(self, icon, button, time):
+    def create_main_menu(self, *args):
 
         print('Создание StatusIcon ' + self.get_time_now())
 
         def pos(menu, icon):
-            return (Gtk.StatusIcon.position_menu(menu, icon))
+            return (Gtk.StatusIcon.position_menu(menu, args[0]))
 
-        self.main_menu.popup(None, None, pos, self.tray_icon, 0, time)
+        self.main_menu.popup(None, None, pos, self.tray_icon, 0, Gtk.get_current_event_time())
         self.main_menu.show_all()
 
     # Определение источник "файл или http" и создание элемента source
@@ -2335,8 +2336,7 @@ class RadioWin(Gtk.Window):
                     self.button_array[x].show()
 
             if self.id_chan[0] == 'RTUN':
-                self.timer_rtun_title = GObject.timeout_add_seconds(2, self.set_title_for_rtun, self.id_chan[1])
-                #self.set_title_for_rtun(self.id_chan[1])
+                self.timer_rtun_title = GObject.timeout_add_seconds(5, self.set_title_for_rtun, self.id_chan[1])
             print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ",
             f_name, 'self.real_adress ==> 1 ',
             self.real_adress)
@@ -2697,6 +2697,9 @@ class RadioWin(Gtk.Window):
                     x.set_active(True)
 
         r_value = round(Decimal.from_float(value), 2)
+
+        if 'CheckMenuItem' in str(obj_send):
+            self.scal_sl.set_value(r_value)
 
         if self.pipeline != 0 and r_value != self.real_vol_save:
 
