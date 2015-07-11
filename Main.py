@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.68'
+SCRIPT_VERSION = '0.0.0.69'
 
 ####################################################################
 ####################################################################
@@ -1052,27 +1052,6 @@ class RadioWin(Gtk.Window):
         ###################################################
         ###################################################
 
-    # Получение информации о композиции для RADIOTUNES
-    def set_title_for_rtun(self, *args):
-        if self.radio_play:
-            title_rtun_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
-            title_rtun_opener.addheaders = [
-                    ('Host', 'api.audioaddict.com'),
-                    ('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:38.0) Gecko/20100101 Firefox/38.0')]
-
-            with title_rtun_opener.open('http://api.audioaddict.com/v1/radiotunes/track_history/channel/' + str(args[0][0]) + '.json') as f:
-                title_rtun_urls = re.findall(r'"started":(\d+),"title":"(.+?)","track":"(.+?)","track_id".+?"seed":(\d+)', f.read().decode('utf-8'))
-
-            for x in title_rtun_urls:
-                if self.label_title.get_text() != str(x[2]):
-                    self.label_title.set_label(str(x[2]))
-                break
-            return True
-        else:
-            if self.timer_rtun_title:
-                GObject.source_remove(self.timer_rtun_title)
-            return False
-
     # Возвращение адреса на поток RADIOTUNES
     def rtunes_stream_url(self, key):
 
@@ -1097,11 +1076,11 @@ class RadioWin(Gtk.Window):
         source_cell = self.rtun_liststore.get_iter(path)
         for x in self.rtun_dict_real_adr.keys():
             if x == self.rtun_liststore.get_value(source_cell, 0):
-                self.id_chan = ['RTUN', self.rtun_dict_real_adr[x]]
+                self.id_chan = ['RTUN', re.sub(r'\.flv', r'', str(self.rtun_dict_real_adr[x]))]
                 get_adr_rtunes = self.rtunes_stream_url(self.rtun_dict_real_adr[x][2])
                 print(get_adr_rtunes, self.rtun_dict_real_adr[x])
                 if get_adr_rtunes != False:
-                    self.real_adress = get_adr_rtunes
+                    self.real_adress = re.sub(r'\.flv', r'', get_adr_rtunes)
                 else:
                     return False
 
@@ -2335,8 +2314,6 @@ class RadioWin(Gtk.Window):
                 if x == 5:
                     self.button_array[x].show()
 
-            if self.id_chan[0] == 'RTUN':
-                self.timer_rtun_title = GObject.timeout_add_seconds(5, self.set_title_for_rtun, self.id_chan[1])
             print("if 'http' in str(f_name) or 'rtmp' in str(f_name):  ",
             f_name, 'self.real_adress ==> 1 ',
             self.real_adress)
