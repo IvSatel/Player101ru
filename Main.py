@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+'''
+http://www.1.fm/jsonfm/allstUpcomingSng
+'''
 import configparser
 import subprocess
 import threading
@@ -45,7 +47,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.71'
+SCRIPT_VERSION = '0.0.0.72'
 
 ####################################################################
 ####################################################################
@@ -171,7 +173,7 @@ class RadioWin(Gtk.Window):
         self.rec_obj = 0
 
         # Аббревиатуры каналов
-        self.id_name_station = ['PS', 'My', 'DI', 'IRC', 'RREC', 'RTUN']
+        self.id_name_station = ['PS', 'My', 'DI', 'IRC', 'RREC', 'RTUN', '1.FM']
 
         # Статус Записи
         self.rec_status = False
@@ -443,6 +445,69 @@ class RadioWin(Gtk.Window):
         self.di_grid.set_column_homogeneous(True)# Ровнять кнопки
         self.di_grid.set_row_homogeneous(False)
         self.di_grid.set_column_spacing(1)
+
+        ###
+        ### 1FM
+
+        print('Получение адресов для 1.FM ' + self.get_time_now())
+
+        self.fm1_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        self.fm1_opener.addheaders = [
+        ('Host', 'www.1.fm'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:39.0) Gecko/20100101 Firefox/39.0')
+        ]
+
+        '''
+
+        self.fm1_station_list = []
+
+        [0] = 'Nmae station'
+        [1] = 'url station'
+        [2] = 'port station'
+        '''
+
+        self.fm1_station_list = []
+
+
+        with self.fm1_opener.open('http://www.1.fm/jsonfm/allstUpcomingSng') as fm1_http_source:
+            self.fm1_station_list = re.findall(r'\{"StationIdentity"\:".+?"\,{0,1}"ArtistName"\:".+?"\,{0,1}"SongName"\:".+?"\,{0,1}"StationName"\:"(.+?)"\,{0,1}"artistImage"\:".+?"\,{0,1}"StationStreamSrv"\:"(.+?)"\,{0,1}"StationHiPort"\:*"(.+?)"\,{0,1}"StationLoPort"\:"\d+"\}', fm1_http_source.read().decode('utf-8', errors='ignore'))
+
+        self.fm1_liststore = Gtk.ListStore(str, bool)
+
+        for x in sorted(self.fm1_station_list):
+            self.fm1_liststore.append([x[0], False])
+
+        self.fm1_treeview = Gtk.TreeView(model=self.fm1_liststore)
+        self.fm1_treeview.set_enable_search(True)
+        self.fm1_treeview.set_show_expanders(False)
+
+        fm1_renderer_text = Gtk.CellRendererText()
+        fm1_column_text = Gtk.TreeViewColumn("Станция", fm1_renderer_text, text=0)
+        fm1_column_text.set_alignment(0.5)
+        fm1_column_text.set_max_width(270)
+        fm1_column_text.set_min_width(50)
+        fm1_column_text.set_fixed_width(270)
+        fm1_column_text.set_resizable(False)
+        fm1_column_text.set_expand(False)
+        self.fm1_treeview.append_column(fm1_column_text)
+
+        fm1_renderer_radio = Gtk.CellRendererToggle()
+        fm1_renderer_radio.set_radio(True)
+        fm1_renderer_radio.connect("toggled", self.fm1_on_cell_radio_toggled)
+
+        fm1_column_radio = Gtk.TreeViewColumn("Выбор", fm1_renderer_radio, active=1)
+        fm1_column_radio.set_alignment(0.5)
+        fm1_column_radio.set_resizable(False)
+        fm1_column_radio.set_expand(False)
+        self.fm1_treeview.append_column(fm1_column_radio)
+
+        # Создание окна с прокруткой для размещения в нем List 1.FM
+        self.scrolled_window_fm1 = Gtk.ScrolledWindow()
+        self.scrolled_window_fm1.set_min_content_height(150)
+        self.scrolled_window_fm1.set_min_content_width(340)
+        self.scrolled_window_fm1.add(self.fm1_treeview)
+        ### 1FM
+        ###
 
         # Создание меню в трее
         self.main_menu = Gtk.Menu()
@@ -883,6 +948,7 @@ class RadioWin(Gtk.Window):
         self.main_note_for_cont.append_page(self.grid_for_IRC, Gtk.Label('Internet Radio'))
         self.main_note_for_cont.append_page(self.record_scrolled_window, Gtk.Label('Radio Record'))
         self.main_note_for_cont.append_page(self.scrolled_window_rtun, Gtk.Label('RadioTuns'))
+        self.main_note_for_cont.append_page(self.scrolled_window_fm1, Gtk.Label('1.FM'))
         self.main_note_for_cont.append_page(self.my_pls_scrolled_window, Gtk.Label('My Play List'))
 
         # Создание кнопки громкости
@@ -1070,6 +1136,17 @@ class RadioWin(Gtk.Window):
             print('URLError We failed to reach a ' + r_key + ' server.', e.reason)
             return False
     #
+    def fm1_on_cell_radio_toggled(self, widget, path):
+        if self.file_play == 0 and self.radio_play == 0 and self.radio_rtmp_play == 0:
+            selected_path = Gtk.TreePath(path)
+            source_cell = self.fm1_liststore.get_iter(path)
+            for x in self.fm1_station_list:
+                if x[0] == self.fm1_liststore.get_value(source_cell, 0):
+                    print(x[0], ' ==> ', 'http://' + x[1] + ':' + x[2])
+                    self.id_chan = ['1.FM', 'http://' + x[1] + ':' + x[2]]
+                    self.real_adress = 'http://' + x[1] + ':' + x[2]
+            for row in self.fm1_liststore:
+                row[1] = (row.path == selected_path)
 
     # Обработка событий RadioTuns
     def rtun_on_cell_radio_toggled(self, widget, path):
@@ -1532,6 +1609,9 @@ class RadioWin(Gtk.Window):
             elif 'RadioTun' == last_adr[1]:
                 print('Select RadioTun')
                 self.id_chan[0] = 'RTUN'
+            elif '1.FM' == last_adr[1]:
+                print('Select 1.FM')
+                self.id_chan[0] = '1.FM'
             elif 'My' == last_adr[1]:
                 print('Select My')
                 self.id_chan[0] = 'My'
@@ -1574,6 +1654,10 @@ class RadioWin(Gtk.Window):
             elif 'RadioTun' in str(best_adr):
                 print('OK => RadioTun')
                 self.id_chan[0] = 'RTUN'
+                self.play_stat_now(best_adr)
+            elif '1.FM' in str(best_adr):
+                print('OK => 1.FM')
+                self.id_chan[0] = '1.FM'
                 self.play_stat_now(best_adr)
             elif 'D-FM' in str(best_adr):
                 print('OK => D-FM')
@@ -1726,14 +1810,14 @@ class RadioWin(Gtk.Window):
             if location[0].startswith('http'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
-                source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:39.0) Gecko/20100101 Firefox/39.0')
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник HTTP "+self.get_time_now())
             elif location[0].startswith('rtmp'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('rtmpsrc', 'source')
-                self.HURL.used_stream_adress.append(location[0])
+                if '101.ru' in location[0]:
+                    self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
                 print("************* ==> Источник RTMP "+self.get_time_now())
             elif not location[0].startswith('http') or not location[0].startswith('rtmp') and not location[0].endswith('.flv'):
@@ -2138,7 +2222,7 @@ class RadioWin(Gtk.Window):
                     self.My_ERROR_Mess = 0
                 #
                 #
-            if 'Could not detect type of contents' in str(mpe) or 'No such file' in str(mpe):
+            if 'Could not detect type of contents' in str(mpe) or 'No such file' in str(mpe) or 'suitable plugins found' in str(mpe):
                 self.label_title.set_text('Ошибка чтения потока...')
                 #
                 if self.file_play == 1:
@@ -2192,7 +2276,8 @@ class RadioWin(Gtk.Window):
                 except:
                     pass
 
-            if self.file_play == 0 and not self.timer_title and self.id_chan[0][0].isdigit():
+            #if self.file_play == 0 and not self.timer_title and self.id_chan[0][0].isdigit():
+            if (self.file_play == 0 and not self.timer_title) and not self.id_chan[0] in self.id_name_station:
                 self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
     # Обработка сообщений конца потока
@@ -2314,6 +2399,7 @@ class RadioWin(Gtk.Window):
         print('self.id_chan => ', self.id_chan, type(self.id_chan[0]))
         if (self.id_chan[0] == 'RREC' \
         or self.id_chan[0] == 'RTUN' \
+        or self.id_chan[0] == '1.FM' \
         or self.id_chan[0] == 'DI' \
         or self.id_chan[0] == 'IRC' \
         or self.id_chan[0] == 'My' \
@@ -2342,7 +2428,7 @@ class RadioWin(Gtk.Window):
             if not self.pipeline:
                 for x in range(3):
                     self.button_array[x].hide()
-                self.seek_line.hide()#SeekLine
+                self.seek_line.hide() #SeekLine
                 self.playlist_scrolled_window.hide()
                 self.label_title.set_label('')
                 self.create_pipeline(self.uri)
@@ -2353,9 +2439,10 @@ class RadioWin(Gtk.Window):
                     self.radio_play = 0
                     self.radio_rtmp_play = 1
                     print('f_name', f_name)
-                    self.get_title_song_personal_station(re.sub(r'(rtmp:\/\/wz7\.101\.ru\/pradio22\/)(.+?)(\?setst\=\&uid\=\-1\/main)', r'\2', f_name))
                 elif not 'rtmp' in str(f_name):
                     self.radio_rtmp_play = 0
+                if '101.ru' in str(f_name):
+                    self.get_title_song_personal_station(re.sub(r'(.+?\/pradio22\/)(.+?)(\?.+?)$', r'\2', f_name))
             else:
                 self.on_click_bt5()
                 self.label_title.set_label('Нет рабочих потоков')
@@ -2579,6 +2666,12 @@ class RadioWin(Gtk.Window):
         # Снять чекбоксы с плейлистов DI-FM
         for x in self.di_liststore:
             x[1] = False
+        # Снять чекбоксы с плейлистов RTUN
+        for x in self.rtun_liststore:
+            x[1] = False
+        # Снять чекбоксы с плейлистов 1.FM
+        for x in self.fm1_liststore:
+            x[1] = False
         # Снять чекбоксы с плейлистов 101
         for x in self.liststore_101:
             x[1] = False
@@ -2736,8 +2829,7 @@ class RadioWin(Gtk.Window):
                 try:
                     # Запрос
                     with person_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal') as source_person:
-                        html = source_person.read().decode('utf-8', errors='ignore')
-                    find_pars = json.loads(html)
+                        find_pars = json.loads(source_person.read().decode('utf-8', errors='ignore'))
 
                     find_title_song_from_stream = find_pars['result']['title']
                     find_start_song_stream = int(find_pars['result']['start_time'])
@@ -2923,6 +3015,8 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'Radio-Record')
                 elif args[1][0] == 'RTUN':
                     config.set('LastStation', 'namestation', 'RadioTun')
+                elif args[1][0] == '1.FM':
+                    config.set('LastStation', 'namestation', '1.FM')
                 elif args[1][0] == 'My':
                     config.set('LastStation', 'namestation', 'My')
                 elif args[1][0] == 'DI':
@@ -2947,6 +3041,8 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'Radio-Record')
                 elif args[1][0] == 'RTUN':
                     config.set('LastStation', 'namestation', 'RadioTun')
+                elif args[1][0] == '1.FM':
+                    config.set('LastStation', 'namestation', '1.FM')
                 elif args[1][0] == 'DI':
                     config.set('LastStation', 'namestation', 'D-FM')
                 elif args[1][0] == 'IRC':
@@ -3036,8 +3132,12 @@ class WriteLastStation(object):
                     config.set('BestStation', 'namestation', 'My')
                 elif take_param_adr in 'RREC':
                     config.set('BestStation', 'namestation', 'Radio-Record')
+                elif take_param_adr in '1.FM':
+                    config.set('BestStation', 'namestation', '1.FM')
                 elif take_param_adr in 'RTUN':
                     config.set('BestStation', 'namestation', 'RadioTun')
+                elif take_param_adr in '1.FM':
+                    config.set('BestStation', 'namestation', '1.FM')
                 elif take_param_adr in 'DI':
                     config.set('BestStation', 'namestation', 'D-FM')
                 elif take_param_adr in 'IRC':
@@ -3062,6 +3162,8 @@ class WriteLastStation(object):
                 config.set('BestStation', 'namestation', 'Radio-Record')
             elif take_param_adr in 'RTUN':
                 config.set('BestStation', 'namestation', 'RadioTun')
+            elif take_param_adr in '1.FM':
+                config.set('BestStation', 'namestation', '1.FM')
             elif take_param_adr in 'DI':
                 config.set('BestStation', 'namestation', 'D-FM')
             elif take_param_adr in 'IRC':
