@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.73'
+SCRIPT_VERSION = '0.0.0.74'
 
 ####################################################################
 ####################################################################
@@ -2440,7 +2440,7 @@ class RadioWin(Gtk.Window):
         print('Нажата кнопка Play')
 
         try:
-            if sum(int(self.id_chan[0][0])) == 0:
+            if sum(self.id_chan) == 0:
                 return False
         except TypeError:
 
