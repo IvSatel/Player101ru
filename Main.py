@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.74'
+SCRIPT_VERSION = '0.0.0.75'
 
 ####################################################################
 ####################################################################
@@ -2807,13 +2807,11 @@ class HackURL(object):
                 html = r101_http_source.read().decode('utf-8', errors='ignore')
             if person == 0:
                 #find_url_stream = re.findall(r"'st'\:'/design/images/.+?\.st'\,'\w+'\:'(.+?)'\,'wheel'\:\d+", html, re.M)
-                # 'st':'/design/images/101main_player.st', 'file':'http://ic1.101.ru:8000/match10.aa?type=.flv','wheel':1,'metatitle':0
                 find_url_stream = re.findall(r"'st'\:'\/design\/images\/101main\_player\.st'\,.+?'\:'(.+?)'\,'wheel.+?", re.sub(r"aa\?type\=\.flv", r"aac?type=.flv", html), re.M)
-
-                print(person)
-                print(find_url_stream)
-                print('http://ic1.101.ru:8000/match7.aac?type=.flv')
-                # http://ic1.101.ru:8000/match7.aac?type=.flv
+                if len(find_url_stream) == 0:
+                    find_url_stream = re.findall(r"'st'\:'/design/images/.+?\.st'\,'\w+'\:'(.+?)'\,'wheel'\:\d+", html, re.M)
+                print('person', person)
+                print('find_url_stream', find_url_stream)
             elif person == 1:
                 find_url_stream = re.findall(r"(rtmp://.+?)///main", html, re.S)
                 try:
