@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.76'
+SCRIPT_VERSION = '0.0.0.77'
 
 ####################################################################
 ####################################################################
@@ -53,7 +53,9 @@ SCRIPT_VERSION = '0.0.0.76'
 # Обнаружение PROXISERVER
 IF_PROXI = urllib.request.ProxyHandler(urllib.request.getproxies())
 AUTHHANDLER = urllib.request.HTTPBasicAuthHandler()
-MY_COOKIE = urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(rfc2965=True,strict_ns_domain=http.cookiejar.DefaultCookiePolicy.DomainStrict,blocked_domains=["ads.net", ".ads.net"])))
+MY_COOKIE = urllib.request.HTTPCookieProcessor(
+http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(
+rfc2965=True,strict_ns_domain=http.cookiejar.DefaultCookiePolicy.DomainStrict,blocked_domains=["ads.net", ".ads.net"])))
 ####################################################################
 ####################################################################
 
@@ -191,10 +193,9 @@ class RadioWin(Gtk.Window):
         self.s_rms_chek = [0]
 
         # Таймеры
-        self.timer = 0
+        #self.timer = 0
         self.timer_title = 0
         self.timer_title_rtmp = 0
-        self.timer_time = 0
 
         # Контейнер для Gst.Pipeline
         self.pipeline = 0
@@ -362,6 +363,7 @@ class RadioWin(Gtk.Window):
         di_column_radio = Gtk.TreeViewColumn("Выбор", di_renderer_radio, active=1)
         di_column_radio.set_alignment(0.5)
         di_column_radio.set_resizable(False)
+        di_column_radio.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         di_column_radio.set_expand(False)
 
         self.di_treeview.append_column(di_column_radio)
@@ -442,6 +444,12 @@ class RadioWin(Gtk.Window):
         self.main_menu_separator_items_3 = Gtk.SeparatorMenuItem.new()
         self.main_menu.append(self.main_menu_separator_items_3)
         self.main_menu_separator_items_3.show()
+
+        # Поиск на MIXCLOUD
+        self.main_menu_items_find_mxc = Gtk.MenuItem.new_with_label("Поиск на MIXCLOUD")
+        self.main_menu.append(self.main_menu_items_find_mxc)
+        self.main_menu_items_find_mxc.connect("activate", self.search_in_mxc)
+        self.main_menu_items_find_mxc.show()
 
         # Поиск персональных станций
         self.main_menu_items_play_person = Gtk.MenuItem.new_with_label("Поиск персональных станций 101.ru")
@@ -560,6 +568,7 @@ class RadioWin(Gtk.Window):
         column_radio_101 = Gtk.TreeViewColumn("Выбор", renderer_radio_101, active=1)
         column_radio_101.set_alignment(0.5)
         column_radio_101.set_resizable(False)
+        column_radio_101.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         column_radio_101.set_expand(False)
         self.treeview_101.append_column(column_radio_101)
 
@@ -616,6 +625,7 @@ class RadioWin(Gtk.Window):
             self.top_column_radio.set_alignment(0.5)
             self.top_column_radio.set_expand(False)
             self.top_column_radio.set_resizable(False)
+            self.top_column_radio.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
             self.top_treeview.append_column(self.top_column_radio)
 
         self.liststore_sub = Gtk.ListStore(str, bool)
@@ -648,6 +658,7 @@ class RadioWin(Gtk.Window):
         sub_column_radio = Gtk.TreeViewColumn("Выбор", sub_renderer_radio, active=1)
         sub_column_radio.set_alignment(0.5)
         sub_column_radio.set_resizable(False)
+        sub_column_radio.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         sub_column_radio.set_expand(False)
 
         self.sub_treeview.append_column(sub_column_radio)
@@ -747,6 +758,7 @@ class RadioWin(Gtk.Window):
         self.record_column_radio = Gtk.TreeViewColumn("Выбор", self.record_renderer_radio, active=1)
         self.record_column_radio.set_alignment(0.5)
         self.record_column_radio.set_resizable(False)
+        self.record_column_radio.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         self.record_column_radio.set_expand(False)
         self.record_treeview.append_column(self.record_column_radio)
 
@@ -787,6 +799,7 @@ class RadioWin(Gtk.Window):
         self.my_pls_column_radio = Gtk.TreeViewColumn("Выбор", self.my_pls_renderer_radio, active=1)
         self.my_pls_column_radio.set_alignment(0.5)
         self.my_pls_column_radio.set_resizable(False)
+        self.my_pls_column_radio.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         self.my_pls_column_radio.set_expand(False)
         self.my_pls_treeview.append_column(self.my_pls_column_radio)
 
@@ -873,17 +886,17 @@ class RadioWin(Gtk.Window):
         self.label_title.set_justify(Gtk.Justification.CENTER)
         self.label_title.modify_font(Pango.FontDescription("9"))
 
-        # Создание лейбла для отображения продолжительности
-        self.label_time = Gtk.Label('00:00:00:00')
-        self.label_time.set_selectable(True)
-        self.label_time.set_justify(Gtk.Justification.LEFT)
-        self.label_time.modify_font(Pango.FontDescription("10"))
+        ## Создание лейбла для отображения продолжительности
+        #self.label_time = Gtk.Label('00:00:00:00')
+        #self.label_time.set_selectable(True)
+        #self.label_time.set_justify(Gtk.Justification.LEFT)
+        #self.label_time.modify_font(Pango.FontDescription("10"))
 
-        # Создание лейбла для отображения общей длительности
-        self.label_ltime = Gtk.Label('00:00:00:00')
-        self.label_ltime.set_selectable(True)
-        self.label_ltime.set_justify(Gtk.Justification.LEFT)
-        self.label_ltime.modify_font(Pango.FontDescription("10"))
+        ## Создание лейбла для отображения общей длительности
+        #self.label_ltime = Gtk.Label('00:00:00:00')
+        #self.label_ltime.set_selectable(True)
+        #self.label_ltime.set_justify(Gtk.Justification.LEFT)
+        #self.label_ltime.modify_font(Pango.FontDescription("10"))
 
         # Создание лейбла для отображения состояния моно или стерео
         self.label_mon_st = Gtk.Label('MediaInfo')
@@ -912,10 +925,8 @@ class RadioWin(Gtk.Window):
 
         # Помещение табов в основную сетку
         self.grid.attach(self.main_note_for_cont, 1, 2, 5, 4)# Окно со станциями
-        self.grid.attach(self.label_time,  1, 6, 1, 1)# Лейбл времени L
         self.grid.attach(self.label_title, 1, 7, 5, 1)# Лейбл названия
         self.grid.attach(self.scal_sl,     2, 6, 3, 1)# Регулятор громкости
-        self.grid.attach(self.label_ltime, 5, 6, 1, 1)# Лейбл времени R
 
         self.grid.attach(self.label_mon_st, 0, 8, 7, 1)# Лейбл медиаинфо
 
@@ -1235,6 +1246,7 @@ class RadioWin(Gtk.Window):
             self.top_column_radio = Gtk.TreeViewColumn("Выбор", self.top_renderer_radio, active=1)
             self.top_column_radio.set_alignment(0.5)
             self.top_column_radio.set_expand(False)
+            self.top_column_radio.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
             self.top_column_radio.set_resizable(False)
 
             self.top_treeview.append_column(self.top_column_radio)
@@ -1332,6 +1344,8 @@ class RadioWin(Gtk.Window):
                 self.id_chan[0] = 'RREC'
             elif 'My' == last_adr[1]:
                 print('Select My')
+            elif 'MX' == last_adr[1]:
+                print('Select MX')
                 self.id_chan[0] = 'My'
             elif 'Internet Radio COM' == last_adr[1]:
                 print('Select Internet Radio COM')
@@ -1365,13 +1379,17 @@ class RadioWin(Gtk.Window):
                 print('OK => Internet Radio COM')
                 self.id_chan[0] = 'IRC'
                 self.play_stat_now(best_adr)
+            elif 'MIXCLOUD' in str(best_adr):
+                print('OK => MIXCLOUD')
+                self.id_chan[0] = 'MX'
+                self.play_stat_now(best_adr)
             elif 'Radio-Record' in str(best_adr):
                 print('OK => Radio-Record')
                 self.id_chan[0] = 'RREC'
                 self.play_stat_now(best_adr)
             elif 'D-FM' in str(best_adr):
                 print('OK => D-FM')
-                self.id_chan[0] = 'IRC'
+                self.id_chan[0] = 'D-FM'
                 self.play_stat_now(best_adr)
             elif 'pradio22' in str(best_adr):
                 self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(best_adr), re.S)
@@ -1402,6 +1420,26 @@ class RadioWin(Gtk.Window):
                     print('res &&&&&&&&&&&>>>> ', type(res), res)
                     if res != 0:
                         self.play_stat_now(res)
+
+    # Диалоговое окно поиска на MIXCLOUD
+    def search_in_mxc(self, widget):
+
+        def w_c_l(self, *args):
+            dialog.destroy()
+
+        dialog = DialogFindMXC(self)
+        dialog.connect('delete-event', w_c_l)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.real_adress = dialog.return_adres
+            name_mxc = dialog.return_name
+            print('self.real_adress ==> ', self.real_adress)
+            self.id_chan = ['MX', self.real_adress]
+            self.label_title.set_text(name_mxc)
+            self.play_stat_now(self.real_adress)
+            dialog.destroy()
+        elif response == Gtk.ResponseType.CLOSE:
+            dialog.destroy()
 
     # Диалоговое окно поиска персональных станций
     def search_in_personal_station(self, widget):
@@ -1517,11 +1555,11 @@ class RadioWin(Gtk.Window):
                         restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
                         GObject.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
             if location[0].startswith('http'):
-                self.media_location = location[0]
+                self.media_location = re.sub(r'https.*?', r'http', location[0])
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
                 #source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:39.0) Gecko/20100101 Firefox/39.0')
-                self.HURL.used_stream_adress.append(location[0])
-                source.set_property('location', location[0])
+                self.HURL.used_stream_adress.append(re.sub(r'https://.*?', r'http://', location[0]))
+                source.set_property('location', re.sub(r'https://.*?', r'http://', location[0]))
                 print("************* ==> Источник HTTP "+self.get_time_now())
             elif location[0].startswith('rtmp'):
                 self.media_location = location[0]
@@ -1663,36 +1701,6 @@ class RadioWin(Gtk.Window):
             end_res = x
         return end_res
 
-    # Установка времени/продолжительности звучания
-    def set_time_from_stream(self, *user_date):
-
-        if (self.radio_play or self.radio_rtmp_play) and self.pipeline != 0:
-
-            play_position = self.pipeline.query_position(Gst.Format.TIME)[1]
-            total_length = self.pipeline.query_duration(Gst.Format.TIME)[1]
-
-            if play_position != 0 and total_length != 0 and self.pipeline.query_duration(Gst.Format.TIME)[0] == True:
-
-                if total_length != -1 and play_position < total_length:
-
-                    self.label_time.set_label(self.convert_time(play_position))
-                    self.label_ltime.set_label(self.convert_time(total_length-play_position))
-
-                elif total_length == -1:
-
-                    self.label_time.set_label(self.convert_time(play_position))
-                    self.label_ltime.set_label('00:00:00:00')
-
-            return True
-
-        else:
-
-            if self.timer_time:
-
-                GObject.source_remove(self.timer_time)
-
-            return False
-
     # Получение названия
     def get_title_from_url(self, adres):
 
@@ -1732,7 +1740,7 @@ class RadioWin(Gtk.Window):
                     GObject.source_remove(self.timer_title)
         except IndexError:
             if str(self.label_title.get_text()) == '':
-                self.label_title.set_label('')
+                #self.label_title.set_label('')
                 if self.timer_title:
                     GObject.source_remove(self.timer_title)
 
@@ -1784,8 +1792,8 @@ class RadioWin(Gtk.Window):
                     if (v_rms_0 < -80 or v_rms_1 < -80) and self.radio_play:
                         self.s_rms_chek.append(v_rms_0)
                         self.s_rms_chek.append(v_rms_1)
-                    if sum(self.s_rms_chek) < -2000:
-                        print('if sum(self.s_rms_chek) < -2000: ==> self.pipeline.set_state(Gst.State.NULL)')
+                    if sum(self.s_rms_chek) < -15000:
+                        print('if sum(self.s_rms_chek) < -15000: ==> self.pipeline.set_state(Gst.State.NULL)')
                         self.pipeline.set_state(Gst.State.NULL)
                         self.s_rms_chek = [0]
                         self.pipeline = 0
@@ -1821,7 +1829,7 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.DURATION_CHANGED:
             print('message.type == Gst.MessageType.DURATION_CHANGED')
             s = Gst.Message.get_structure(message)
-            if self.radio_play:
+            if self.radio_play or self.radio_rtmp_play:
                 self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
     # Обработка сообщений ошибок
@@ -1870,6 +1878,7 @@ class RadioWin(Gtk.Window):
             s_tag_l = []
             for h in self.get_info_tag:
                 if tag_l.get_string(h)[0] == True:
+
                     if h == 'organization':
                         self.tag_organization = tag_l.get_string(h)[1]
                     if '101.ru' in str(tag_l.get_string(h)):
@@ -1885,7 +1894,6 @@ class RadioWin(Gtk.Window):
                 except:
                     pass
 
-            #if self.file_play == 0 and not self.timer_title and self.id_chan[0][0].isdigit():
             if not self.timer_title and self.id_chan[0][0].isdigit():
                 self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
@@ -1894,11 +1902,12 @@ class RadioWin(Gtk.Window):
 
         if message.type == Gst.MessageType.EOS:
             print('Получено сообщение об окончании потока ' + self.get_time_now())
-            if self.radio_play == 1:
+            if self.radio_play == 1 or self.radio_rtmp_play == 1:
                 print('Gst.MessageType.EOS self.My_ERROR_Mess = ' + self.get_time_now(), self.My_ERROR_Mess)
                 self.pipeline.set_state(Gst.State.NULL)
                 self.pipeline = 0
-                self.play_stat_now()
+                if '101.ru' in self.real_adress:
+                    self.play_stat_now()
 
     # Buffering
     def message_buffering(self, bus, message):
@@ -1907,9 +1916,6 @@ class RadioWin(Gtk.Window):
             if message.parse_buffering() == 100:
                 print('Buffering is done = ', message.parse_buffering())
                 self.pipeline.set_state(Gst.State.PLAYING)
-            #else:
-                #print(message.parse_buffering())
-                #self.label_title.set_label(str(message.parse_buffering())+' %')
 
         ####################### ###########################
         ###################### # ##########################
@@ -1970,6 +1976,7 @@ class RadioWin(Gtk.Window):
         or self.id_chan[0] == 'DI' \
         or self.id_chan[0] == 'IRC' \
         or self.id_chan[0] == 'My' \
+        or self.id_chan[0] == 'MX' \
         or self.id_chan[0] == 'PS') and not '101.ru' in str(self.id_chan[1]):
 
             for x in range(4):
@@ -1985,7 +1992,6 @@ class RadioWin(Gtk.Window):
             daemon=True)
             thread_1.start()
 
-            #self.file_play = 0
             self.radio_play = 1
             print('Включение радио 1 ' + self.get_time_now())
             if f_name:
@@ -1993,10 +1999,8 @@ class RadioWin(Gtk.Window):
             else:
                 self.uri = self.id_chan[1]
             if not self.pipeline:
-                self.label_title.set_label('')
+                #self.label_title.set_label('')
                 self.create_pipeline(self.uri)
-                if self.pipeline != 0:
-                    self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                 if 'rtmp' in str(f_name):
                     self.radio_play = 0
                     self.radio_rtmp_play = 1
@@ -2028,10 +2032,9 @@ class RadioWin(Gtk.Window):
             else:
                 self.uri = self.HURL.hack_url_adres(re.sub(r'&amp;', r'&', f_name))
             if not self.pipeline and self.uri != 0:
-                self.label_title.set_label('')
+                #self.label_title.set_label('')
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
-                    self.timer_time = GObject.timeout_add(250, self.set_time_from_stream, None)
                     print('self.real_adress ==> 2 ', self.real_adress)
                     thread_2 = threading.Thread(
                     target=self.wr_station_name_adr.write_last_station(
@@ -2130,7 +2133,7 @@ class RadioWin(Gtk.Window):
         self.radio_play = 0
         self.radio_rtmp_play = 0
         self.timer_title = 0
-        self.timer = 0
+        #self.timer = 0
 
         if self.timer_title_rtmp:
             self.timer_title_rtmp = 0
@@ -2146,8 +2149,6 @@ class RadioWin(Gtk.Window):
         self.pipeline = 0
         self.level_bar_l.set_fraction(0.0)
         self.level_bar_r.set_fraction(0.0)
-        self.label_time.set_label('00:00:00:00')
-        self.label_ltime.set_label('00:00:00:00')
 
     # Кнопка записи
     def on_click_bt4(self, *b6):
@@ -2360,13 +2361,13 @@ class HackURL(object):
                         print('ERROR : ', x)
                         len_adr_list += 1
                     else:
-                        print('OK Response ==> \n', response.info())
+                        print('OK Response ==>\n', response.info())
                         if 'Content-Length' in response.info():
-                            print('Content-Length in response.info()\n')
+                            print('Content-Length in response.info()')
                             pass
                         else:
                             if 'Content-Type' in response.info():
-                                print('OK ==> Content-Type in response.info()\n')
+                                print('OK ==> Content-Type in response.info()')
                             if not x in self.used_stream_adress and self.check_stream_adress <= len(find_url_stream2):
                                 print('self.check_stream_adress ==> ', self.check_stream_adress)
                                 self.check_stream_adress += 1
@@ -2448,6 +2449,8 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'Radio-Record')
                 elif args[1][0] == 'My':
                     config.set('LastStation', 'namestation', 'My')
+                elif args[1][0] == 'MX':
+                    config.set('LastStation', 'namestation', 'MX')
                 elif args[1][0] == 'DI':
                     config.set('LastStation', 'namestation', 'D-FM')
                 elif args[1][0] == 'IRC':
@@ -2466,6 +2469,8 @@ class WriteLastStation(object):
                     config.set('LastStation', 'namestation', 'PS')
                 elif args[1][0] == 'My':
                     config.set('LastStation', 'namestation', 'My')
+                elif args[1][0] == 'MX':
+                    config.set('LastStation', 'namestation', 'MX')
                 elif args[1][0] == 'RREC':
                     config.set('LastStation', 'namestation', 'Radio-Record')
                 elif args[1][0] == 'DI':
@@ -2485,6 +2490,8 @@ class WriteLastStation(object):
                 config.set('LastStation', 'namestation', 'PS')
             elif args[1][0] == 'My':
                 config.set('LastStation', 'namestation', 'My')
+            elif args[1][0] == 'MX':
+                config.set('LastStation', 'namestation', 'MX')
             elif args[1][0] == 'DI':
                 config.set('LastStation', 'namestation', 'D-FM')
             elif args[1][0] == 'IRC':
@@ -2555,6 +2562,8 @@ class WriteLastStation(object):
                     config.set('BestStation', 'namestation', 'PS')
                 elif take_param_adr in 'My':
                     config.set('BestStation', 'namestation', 'My')
+                elif take_param_adr in 'MX':
+                    config.set('BestStation', 'namestation', 'MX')
                 elif take_param_adr in 'RREC':
                     config.set('BestStation', 'namestation', 'Radio-Record')
                 elif take_param_adr in 'DI':
@@ -2577,6 +2586,8 @@ class WriteLastStation(object):
                 config.set('BestStation', 'namestation', 'PS')
             elif take_param_adr in 'My':
                 config.set('BestStation', 'namestation', 'My')
+            elif take_param_adr in 'MX':
+                config.set('BestStation', 'namestation', 'MX')
             elif take_param_adr in 'RREC':
                 config.set('BestStation', 'namestation', 'Radio-Record')
             elif take_param_adr in 'DI':
@@ -2609,6 +2620,146 @@ class WriteLastStation(object):
 
         adr = config['BestStation']
         return adr.get('addrstation'), adr.get('namestation')
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# Диалог поиска на MIXCLOUD
+class DialogFindMXC(Gtk.Dialog):
+
+    def __init__(self, parent):
+
+        Gtk.Dialog.__init__(self,
+        "Поиск в MIXCLOUD", parent, Gtk.DialogFlags.MODAL)
+
+        self.connect('close', self.close_dial_win)
+        self.connect('destroy', self.close_dial_win)
+        self.connect('destroy-event', self.close_dial_win)
+
+        self.set_default_size(500, 100)
+        self.set_resize_mode(Gtk.ResizeMode.PARENT)
+
+        self.return_adres = ''
+        self.return_name = ''
+
+        # Первая (основная сетка размещения)
+        box = self.get_content_area()
+
+        self.mxc_grid = Gtk.Grid()
+        self.mxc_grid.set_border_width(5)
+
+        self.mxc_entry = Gtk.Entry()
+        self.mxc_entry.set_icon_from_stock(Gtk.EntryIconPosition.SECONDARY, Gtk.STOCK_FIND)
+
+        self.mxc_entry.connect('icon-press', self.key_icon_press)
+        self.mxc_entry.connect('key-release-event', self.key_icon_press)
+
+        self.mxc_grid.attach(self.mxc_entry, 0, 1, 8, 1)
+
+        self.mxc_liststore = Gtk.ListStore(str, bool)
+
+        self.mxc_treeview = Gtk.TreeView(model=self.mxc_liststore)
+        self.mxc_treeview.set_enable_search(True)
+        self.mxc_treeview.set_show_expanders(False)
+
+        mxc_renderer_text = Gtk.CellRendererText()
+        self.mxc_column_text = Gtk.TreeViewColumn("Станция", mxc_renderer_text, text=0)
+        self.mxc_column_text.set_alignment(0.5)
+        self.mxc_column_text.set_max_width(370)
+        self.mxc_column_text.set_min_width(250)
+        self.mxc_column_text.set_resizable(True)
+        self.mxc_column_text.set_expand(True)
+
+        self.mxc_treeview.append_column(self.mxc_column_text)
+
+        mxc_renderer_radio = Gtk.CellRendererToggle()
+        mxc_renderer_radio.set_radio(True)
+        mxc_renderer_radio.connect("toggled", self.mxc_on_cell_radio_toggled)
+
+        self.mxc_column_radio = Gtk.TreeViewColumn("Выбор", mxc_renderer_radio, active=1)
+        self.mxc_column_radio.set_alignment(0.5)
+        self.mxc_column_radio.set_fixed_width(100)
+        self.mxc_column_radio.set_resizable(False)
+        self.mxc_column_radio.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.mxc_column_radio.set_expand(False)
+
+        self.mxc_treeview.append_column(self.mxc_column_radio)
+
+        # Создание окна с прокруткой для размещения в нем ListStore
+        self.mxc_scrolled_window = Gtk.ScrolledWindow()
+        self.mxc_scrolled_window.set_min_content_height(200)
+        self.mxc_scrolled_window.set_min_content_width(440)
+        self.mxc_scrolled_window.add(self.mxc_treeview)
+
+        self.mxc_grid.attach(self.mxc_scrolled_window, 0, 2, 8, 10)
+        self.mxc_grid.set_column_homogeneous(True)# Ровнять
+        self.mxc_grid.set_row_homogeneous(True)
+        self.mxc_grid.set_column_spacing(5)
+
+        box.add(self.mxc_grid)
+        self.show_all()
+
+    def key_icon_press(self, *args):
+
+        try:
+            k_val = args[1].keyval
+        except AttributeError:
+            k_val = 65293
+        if k_val == 65293 and self.mxc_entry.get_text() != '':
+            self.find_icon_press()
+            return True
+
+    def close_dial_win(self, *args):
+
+        self.response(-7)
+        self.destroy()
+
+    def mxc_on_cell_radio_toggled(self, widget, path):
+
+        self.hide()
+        selected_path = Gtk.TreePath(path)
+        c = self.mxc_liststore.get_iter(path)
+        for x in self.mxc_find_dict:
+            if str(x) == str(self.mxc_liststore.get_value(c, 0)):
+                self.return_adres = self.mxc_find_dict.get(str(x))
+                self.return_name = self.mxc_liststore.get_value(c, 0)
+                print('MXC----------------------------------------')
+                print(self.mxc_liststore.get_value(c, 0))
+                print(self.mxc_find_dict.get(str(x)))
+                print('MXC----------------------------------------')
+        for row in self.mxc_liststore:
+            row[1] = (row.path == selected_path)
+        self.response(-5)
+
+
+    def find_icon_press(self, *args):
+
+        #
+        find_in_MXC_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        find_in_MXC_opener.addheaders = [
+        ('Host', 'www.mixcloud.com'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ]
+        #
+        self.mxc_find_dict = {}
+        self.mxc_liststore.clear()
+        self.mxc_treeview.remove_column(self.mxc_column_text)
+        self.mxc_treeview.remove_column(self.mxc_column_radio)
+        self.mxc_treeview.append_column(self.mxc_column_text)
+        self.mxc_treeview.append_column(self.mxc_column_radio)
+        zapros = urllib.parse.quote(self.mxc_entry.get_text(), encoding='utf-8', errors=None)
+        adr_req = 'https://www.mixcloud.com/search/results/?mixcloud_query='+str(zapros)
+        #
+        with find_in_MXC_opener.open(adr_req) as f_mxc:
+            sourse = re.sub(r'(&#\d+;)', r'', f_mxc.read().decode('utf-8', errors='ignore'), re.S)
+
+        res = re.findall(r'm-preview="(.*?)".*?m-title="(.*?)"', sourse, re.M)
+
+        for x in res:
+            self.mxc_find_dict[re.sub(r'amp;|#\d+;', '', x[1])] = re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0])
+            self.mxc_liststore.append([str(re.sub(r'amp;|#\d+;', '', x[1])), False])
+
+#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 
 # Диалог поиска персональных станций
 class DialogFindPersonalStation(Gtk.Dialog):
