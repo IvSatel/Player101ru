@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.78'
+SCRIPT_VERSION = '0.0.0.79'
 
 ####################################################################
 ####################################################################
@@ -842,7 +842,7 @@ class RadioWin(Gtk.Window):
         self.level_bar_r.set_inverted(True)
         self.level_bar_r.set_orientation(Gtk.Orientation.VERTICAL)
 
-        # Создание кнопок (воспроизведение, открыть файл, открыть папку, пауза, стоп)
+        # Создание кнопок (воспроизведение, пауза, стоп, запись)
         self.button_array = []
 
         self.button_tooltip = [
@@ -1066,7 +1066,7 @@ class RadioWin(Gtk.Window):
         about.set_transient_for(self)
         about.set_program_name("Internet Radio Player")
         about.set_version(SCRIPT_VERSION)
-        about.set_copyright("(c) IvSatel 2015")
+        about.set_copyright("(c) IvSatel 2015 - 2016")
         about.set_comments("Internet Radio Player")
         about.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(self.prog_full_path + '/resource/Radio256.png', 256, 256))
         about.run()
@@ -1077,9 +1077,14 @@ class RadioWin(Gtk.Window):
 
         self.my_pls_config = configparser.ConfigParser(delimiters=('='), allow_no_value=True, strict=False)
         self.my_pls_config.read(self.prog_full_path + '/my_pls.ini')
-        print('Запись адреса в мой плейлист ==> ', self.tag_organization, self.real_adress)
-        self.my_pls_config.add_section(self.tag_organization)
-        self.my_pls_config.set(self.tag_organization, 'addrstation', self.real_adress)
+
+        try:
+            self.my_pls_config.add_section(self.tag_organization)
+            self.my_pls_config.set(self.tag_organization, 'addrstation', self.real_adress)
+            print('Запись адреса в мой плейлист ==> ', self.tag_organization, self.real_adress)
+        except:
+            print('Запись адреса уже существует')
+            return False
         with open(self.prog_full_path + '/my_pls.ini', 'w') as configfile:
             self.my_pls_config.write(configfile)
 
@@ -1928,15 +1933,20 @@ class RadioWin(Gtk.Window):
             response = dialog.run()
 
             if response == Gtk.ResponseType.OK:
-                self.real_adress = dialog.entry.get_text()
-                print("The OK button was clicked", self.real_adress)
-                self.id_chan = ['My', self.real_adress]
-                self.play_stat_now(self.real_adress)
+                if not dialog.entry.get_text():
+                    print('not dialog.entry.get_text()')
+                    return False
+                else:
+                    self.real_adress = dialog.entry.get_text()
+                    print("The OK button was clicked", self.real_adress)
+                    self.id_chan = ['My', self.real_adress]
+                    self.play_stat_now(self.real_adress)
+                    dialog.destroy()
             elif response == Gtk.ResponseType.CANCEL:
                 print("The Cancel button was clicked")
                 dialog.destroy()
 
-            dialog.destroy()
+        print('END on_dialog_choice')
 
     # Реакция на нажатие радиобаттон в модели 101
     def on_cell_radio_toggled(self, widget, path):
@@ -2741,7 +2751,7 @@ class DialogFindMXC(Gtk.Dialog):
         self.mxc_treeview.remove_column(self.mxc_column_radio)
         self.mxc_treeview.append_column(self.mxc_column_text)
         self.mxc_treeview.append_column(self.mxc_column_radio)
-        adr_req_mxc = re.sub(r'\s?\&\s?', r'-', args[1])
+        adr_req_mxc = re.sub(r'\s?\&\s?|\s+', r'-', args[1])
         print(adr_req_mxc)
         #
         with self.find_in_MXC_opener.open('https://www.mixcloud.com/discover/' + adr_req_mxc + '/?expand=1') as f_mxc:
@@ -2970,7 +2980,7 @@ class DialogEntryAdr(Gtk.Dialog):
         (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
         Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
-        self.set_default_size(350, 100)
+        self.set_default_size(450, 100)
 
         label = Gtk.Label("Введите адрес...")
 
