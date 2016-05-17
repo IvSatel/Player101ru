@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.77'
+SCRIPT_VERSION = '0.0.0.78'
 
 ####################################################################
 ####################################################################
@@ -886,18 +886,6 @@ class RadioWin(Gtk.Window):
         self.label_title.set_justify(Gtk.Justification.CENTER)
         self.label_title.modify_font(Pango.FontDescription("9"))
 
-        ## Создание лейбла для отображения продолжительности
-        #self.label_time = Gtk.Label('00:00:00:00')
-        #self.label_time.set_selectable(True)
-        #self.label_time.set_justify(Gtk.Justification.LEFT)
-        #self.label_time.modify_font(Pango.FontDescription("10"))
-
-        ## Создание лейбла для отображения общей длительности
-        #self.label_ltime = Gtk.Label('00:00:00:00')
-        #self.label_ltime.set_selectable(True)
-        #self.label_ltime.set_justify(Gtk.Justification.LEFT)
-        #self.label_ltime.modify_font(Pango.FontDescription("10"))
-
         # Создание лейбла для отображения состояния моно или стерео
         self.label_mon_st = Gtk.Label('MediaInfo')
         self.label_mon_st.set_has_tooltip(True)
@@ -1424,6 +1412,9 @@ class RadioWin(Gtk.Window):
     # Диалоговое окно поиска на MIXCLOUD
     def search_in_mxc(self, widget):
 
+        if self.radio_play == 1:
+            return False
+
         def w_c_l(self, *args):
             dialog.destroy()
 
@@ -1792,8 +1783,8 @@ class RadioWin(Gtk.Window):
                     if (v_rms_0 < -80 or v_rms_1 < -80) and self.radio_play:
                         self.s_rms_chek.append(v_rms_0)
                         self.s_rms_chek.append(v_rms_1)
-                    if sum(self.s_rms_chek) < -15000:
-                        print('if sum(self.s_rms_chek) < -15000: ==> self.pipeline.set_state(Gst.State.NULL)')
+                    if sum(self.s_rms_chek) < -20000:
+                        print('if sum(self.s_rms_chek) < -20000: ==> self.pipeline.set_state(Gst.State.NULL)')
                         self.pipeline.set_state(Gst.State.NULL)
                         self.s_rms_chek = [0]
                         self.pipeline = 0
@@ -1906,6 +1897,7 @@ class RadioWin(Gtk.Window):
                 print('Gst.MessageType.EOS self.My_ERROR_Mess = ' + self.get_time_now(), self.My_ERROR_Mess)
                 self.pipeline.set_state(Gst.State.NULL)
                 self.pipeline = 0
+                self.on_click_bt3()
                 if '101.ru' in self.real_adress:
                     self.play_stat_now()
 
@@ -2627,8 +2619,7 @@ class DialogFindMXC(Gtk.Dialog):
 
     def __init__(self, parent):
 
-        Gtk.Dialog.__init__(self,
-        "Поиск в MIXCLOUD", parent, Gtk.DialogFlags.MODAL)
+        Gtk.Dialog.__init__(self, "Поиск в MIXCLOUD", parent, Gtk.DialogFlags.MODAL)
 
         self.connect('close', self.close_dial_win)
         self.connect('destroy', self.close_dial_win)
@@ -2637,14 +2628,58 @@ class DialogFindMXC(Gtk.Dialog):
         self.set_default_size(500, 100)
         self.set_resize_mode(Gtk.ResizeMode.PARENT)
 
+        self.find_in_MXC_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+        self.find_in_MXC_opener.addheaders = [
+        ('Host', 'www.mixcloud.com'),
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ]
+
+        self.mxc_find_name_station = []
         self.return_adres = ''
         self.return_name = ''
 
-        # Первая (основная сетка размещения)
+        # Первый (основной контейнер)
         box = self.get_content_area()
 
         self.mxc_grid = Gtk.Grid()
         self.mxc_grid.set_border_width(5)
+
+        self.button = Gtk.Button()
+        self.button_list = []
+
+        # Запрос всех разделов
+        with self.find_in_MXC_opener.open('https://www.mixcloud.com/discover/') as mxc_http:
+            mxc_source = mxc_http.read().decode('utf-8-sig', errors='ignore')
+
+
+        mxc_res = re.findall(r'class\="genre\-title"\>(.*?)\<', mxc_source, re.S)
+
+        mxc_find_dict = []
+
+        for x in mxc_res:
+            mxc_find_dict.append(x)
+
+
+        for x in mxc_find_dict:
+            self.button_list.append(self.button.new_with_label(re.sub(r'amp;', r'', x)))
+
+        for x in range(0, len(self.button_list)):
+            self.button_list[x].connect("clicked", self.button_req, self.button_list[x].get_label())
+
+        # Создание окна с прокруткой для размещения в нем Кнопок
+
+        self.mxc_1scrolled_window = Gtk.ScrolledWindow()
+
+        self.button_box = Gtk.Box(spacing=6)
+
+        for x in self.button_list:
+            self.button_box.add(x)
+
+        self.mxc_1scrolled_window.add(self.button_box)
+
+        self.mxc_grid.attach(self.mxc_1scrolled_window, 0, 1, 8, 1)
+
+        #####
 
         self.mxc_entry = Gtk.Entry()
         self.mxc_entry.set_icon_from_stock(Gtk.EntryIconPosition.SECONDARY, Gtk.STOCK_FIND)
@@ -2652,7 +2687,7 @@ class DialogFindMXC(Gtk.Dialog):
         self.mxc_entry.connect('icon-press', self.key_icon_press)
         self.mxc_entry.connect('key-release-event', self.key_icon_press)
 
-        self.mxc_grid.attach(self.mxc_entry, 0, 1, 8, 1)
+        self.mxc_grid.attach(self.mxc_entry, 0, 2, 8, 1)
 
         self.mxc_liststore = Gtk.ListStore(str, bool)
 
@@ -2689,7 +2724,7 @@ class DialogFindMXC(Gtk.Dialog):
         self.mxc_scrolled_window.set_min_content_width(440)
         self.mxc_scrolled_window.add(self.mxc_treeview)
 
-        self.mxc_grid.attach(self.mxc_scrolled_window, 0, 2, 8, 10)
+        self.mxc_grid.attach(self.mxc_scrolled_window, 0, 3, 8, 10)
         self.mxc_grid.set_column_homogeneous(True)# Ровнять
         self.mxc_grid.set_row_homogeneous(True)
         self.mxc_grid.set_column_spacing(5)
@@ -2697,6 +2732,30 @@ class DialogFindMXC(Gtk.Dialog):
         box.add(self.mxc_grid)
         self.show_all()
 
+    # Реакция на нажатие кнопки
+    # Получение топа раздела
+    def button_req(self, *args):
+        #
+        self.mxc_liststore.clear()
+        self.mxc_treeview.remove_column(self.mxc_column_text)
+        self.mxc_treeview.remove_column(self.mxc_column_radio)
+        self.mxc_treeview.append_column(self.mxc_column_text)
+        self.mxc_treeview.append_column(self.mxc_column_radio)
+        adr_req_mxc = re.sub(r'\s?\&\s?', r'-', args[1])
+        print(adr_req_mxc)
+        #
+        with self.find_in_MXC_opener.open('https://www.mixcloud.com/discover/' + adr_req_mxc + '/?expand=1') as f_mxc:
+            sourse = re.sub(r'(&#\d+;|amp;)', r'', f_mxc.read().decode('utf-8', errors='ignore'), re.S)
+
+        res = re.findall(r'm-preview="(.*?)".*?m-title="(.*?)"', sourse, re.M)
+
+        self.mxc_find_name_station = []
+
+        for x in res:
+            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;', '', x[1]),re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0])])
+            self.mxc_liststore.append([str(re.sub(r'amp;|#\d+;', '', x[1])), False])
+
+    # Реакция на нажатие по иконке
     def key_icon_press(self, *args):
 
         try:
@@ -2712,18 +2771,19 @@ class DialogFindMXC(Gtk.Dialog):
         self.response(-7)
         self.destroy()
 
+    # Реакция на нажатие точки в таблице
     def mxc_on_cell_radio_toggled(self, widget, path):
 
         self.hide()
         selected_path = Gtk.TreePath(path)
         c = self.mxc_liststore.get_iter(path)
-        for x in self.mxc_find_dict:
-            if str(x) == str(self.mxc_liststore.get_value(c, 0)):
-                self.return_adres = self.mxc_find_dict.get(str(x))
+        for x in self.mxc_find_name_station:
+            if str(x[0]) == str(self.mxc_liststore.get_value(c, 0)):
+                self.return_adres = x[1]
                 self.return_name = self.mxc_liststore.get_value(c, 0)
                 print('MXC----------------------------------------')
                 print(self.mxc_liststore.get_value(c, 0))
-                print(self.mxc_find_dict.get(str(x)))
+                print(x[1], x[0])
                 print('MXC----------------------------------------')
         for row in self.mxc_liststore:
             row[1] = (row.path == selected_path)
@@ -2733,13 +2793,8 @@ class DialogFindMXC(Gtk.Dialog):
     def find_icon_press(self, *args):
 
         #
-        find_in_MXC_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
-        find_in_MXC_opener.addheaders = [
-        ('Host', 'www.mixcloud.com'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
-        ]
+
         #
-        self.mxc_find_dict = {}
         self.mxc_liststore.clear()
         self.mxc_treeview.remove_column(self.mxc_column_text)
         self.mxc_treeview.remove_column(self.mxc_column_radio)
@@ -2748,13 +2803,13 @@ class DialogFindMXC(Gtk.Dialog):
         zapros = urllib.parse.quote(self.mxc_entry.get_text(), encoding='utf-8', errors=None)
         adr_req = 'https://www.mixcloud.com/search/results/?mixcloud_query='+str(zapros)
         #
-        with find_in_MXC_opener.open(adr_req) as f_mxc:
+        with self.find_in_MXC_opener.open(adr_req) as f_mxc:
             sourse = re.sub(r'(&#\d+;)', r'', f_mxc.read().decode('utf-8', errors='ignore'), re.S)
 
         res = re.findall(r'm-preview="(.*?)".*?m-title="(.*?)"', sourse, re.M)
 
         for x in res:
-            self.mxc_find_dict[re.sub(r'amp;|#\d+;', '', x[1])] = re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0])
+            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;', '', x[1]),re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0])])
             self.mxc_liststore.append([str(re.sub(r'amp;|#\d+;', '', x[1])), False])
 
 #
