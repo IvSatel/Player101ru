@@ -6,7 +6,6 @@ import subprocess
 import threading
 import datetime
 import zipfile
-import socket
 import math
 import json
 import time
@@ -45,7 +44,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.80'
+SCRIPT_VERSION = '0.0.0.81'
 
 ####################################################################
 ####################################################################
@@ -706,30 +705,30 @@ class RadioWin(Gtk.Window):
         try:
             with record_opener.open('http://www.radiorecord.ru/player/') as http_source:
                 http_read = http_source.read().decode('utf-8', errors='ignore')
-            record_res = re.findall(r'<div class="station".+?class="station-name">(.+?)</div><div class="station-track">.+?itemprop="url">(.+?)</div></div>', http_read, re.M)
+            record_res = re.findall(r'class\=\"station\-name\"\>(.*?)\<\/div\>.*?url\"\>(.*?)\<\/div\>', http_read, re.S)
 
             self.record_dict = {x[0]:x[1] for x in record_res}
         except:
             print('Ошибка получения адресов для Радио рекорд')
             self.record_dict = {
-            "Pump'n'Klubb": 'http://air.radiorecord.ru:8102/pump_320',
-            'Rock Radio': 'http://air.radiorecord.ru:8102/rock_320',
-            'Супердискотека 90-х': 'http://air.radiorecord.ru:8102/sd90_320',
-            'Radio Record': 'http://air.radiorecord.ru:8101/rr_320',
-            'Record Chill-Out': 'http://air.radiorecord.ru:8102/chil_320',
-            'Record Dubstep': 'http://air.radiorecord.ru:8102/dub_320',
-            'Pirate Station': 'http://air.radiorecord.ru:8102/ps_320',
-            'Vip Mix': 'http://air.radiorecord.ru:8102/vip_320',
-            'Record Club': 'http://air.radiorecord.ru:8102/club_320',
-            'Record Breaks': 'http://air.radiorecord.ru:8102/brks_320',
-            'Russian Mix': 'http://air.radiorecord.ru:8102/rus_320',
-            'Record Trap': 'http://air.radiorecord.ru:8102/trap_320',
-            'Record Hardstyle': 'http://air.radiorecord.ru:8102/teo_320',
-            'Record Deep': 'http://air.radiorecord.ru:8102/deep_320',
-            'Медляк FM': 'http://air.radiorecord.ru:8102/mdl_320',
-            'Record Dancecore': 'http://air.radiorecord.ru:8102/dc_320',
-            'Trancemission': 'http://air.radiorecord.ru:8102/tm_320',
-            'Гоп FM': 'http://air.radiorecord.ru:8102/gop_320'}
+            "Pump'n'Klubb": 'http://air2.radiorecord.ru:805/pump_320',
+            'Rock Radio': 'http://air2.radiorecord.ru:805/rock_320',
+            'Супердискотека 90-х': 'http://air2.radiorecord.ru:805/sd90_320',
+            'Radio Record': 'http://air2.radiorecord.ru:8101/rr_320',
+            'Record Chill-Out': 'http://air2.radiorecord.ru:805/chil_320',
+            'Record Dubstep': 'http://air2.radiorecord.ru:805/dub_320',
+            'Pirate Station': 'http://air2.radiorecord.ru:805/ps_320',
+            'Vip Mix': 'http://air2.radiorecord.ru:805/vip_320',
+            'Record Club': 'http://air2.radiorecord.ru:805/club_320',
+            'Record Breaks': 'http://air2.radiorecord.ru:805/brks_320',
+            'Russian Mix': 'http://air2.radiorecord.ru:805/rus_320',
+            'Record Trap': 'http://air2.radiorecord.ru:805/trap_320',
+            'Record Hardstyle': 'http://air2.radiorecord.ru:805/teo_320',
+            'Record Deep': 'http://air2.radiorecord.ru:805/deep_320',
+            'Медляк FM': 'http://air2.radiorecord.ru:805/mdl_320',
+            'Record Dancecore': 'http://air2.radiorecord.ru:805/dc_320',
+            'Trancemission': 'http://air2.radiorecord.ru:805/tm_320',
+            'Гоп FM': 'http://air2.radiorecord.ru:805/gop_320'}
 
         self.record_liststore = Gtk.ListStore(str, bool, bool)
         for x in sorted(self.record_dict):
@@ -1432,7 +1431,7 @@ class RadioWin(Gtk.Window):
             self.Mixcloud_lists = dialog.return_list
             self.id_chan = ['MX', self.real_adress]
             print('self.id_chan & self.real_adress ==> ', self.id_chan)
-            self.label_title.set_text(dialog.return_name)
+            self.label_title.set_text(dialog.return_name + ' By ' + self.Mixcloud_lists[0][2])
             self.play_stat_now(self.real_adress)
             self.Mixcloud_lists.pop(0)
             dialog.destroy()
@@ -1912,7 +1911,7 @@ class RadioWin(Gtk.Window):
                     print(' 2 len(self.Mixcloud_lists) ==> ', len(self.Mixcloud_lists))
                     self.id_chan = ['MX', self.Mixcloud_lists[0][1]]
                     self.real_adress = self.Mixcloud_lists[0][1]
-                    self.label_title.set_text(self.Mixcloud_lists[0][0])
+                    self.label_title.set_text(self.Mixcloud_lists[0][0] + ' By ' + self.Mixcloud_lists[0][2])
                     self.play_stat_now(self.real_adress)
                     self.Mixcloud_lists.pop(0)
 
@@ -2761,12 +2760,14 @@ class DialogFindMXC(Gtk.Dialog):
         with self.find_in_MXC_opener.open('https://www.mixcloud.com/discover/' + adr_req_mxc + '/?expand=1') as f_mxc:
             sourse = re.sub(r'(&#\d+;|amp;)', r'', f_mxc.read().decode('utf-8', errors='ignore'), re.S)
 
-        res = re.findall(r'm-preview="(.*?)".*?m-title="(.*?)"', sourse, re.M)
+        #res = re.findall(r'm-preview="(.*?)".*?m-title="(.*?)"', sourse, re.M)
+        res = re.findall(r'm\-preview\="(.*?)" m\-preview\-light m\-title\="(.*?)" m\-owner\-name\="(.*?)"', sourse, re.M)
 
         self.mxc_find_name_station = []
 
         for x in res:
-            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;', '', x[1]),re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0])])
+            # Название[0] = адрес[1] = Имя[2]
+            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;', '', x[1]),re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0]), x[2]])
             self.mxc_liststore.append([str(re.sub(r'amp;|#\d+;', '', x[1])), False])
 
     # Реакция на нажатие по иконке
@@ -3207,7 +3208,7 @@ class EQWindow(Gtk.Dialog):
         self.button_save.connect("clicked", self.ret_md)
 
         # Создание иконок из стока для кнопки
-        self.button_to_null = Gtk.Button('Обноулить')
+        self.button_to_null = Gtk.Button('Обнулить')
         self.button_to_null.set_relief(Gtk.ReliefStyle.HALF)
         self.button_to_null.set_resize_mode(Gtk.ResizeMode.PARENT)
         self.button_to_null.set_alignment(0.5, 0.5)
@@ -3384,7 +3385,7 @@ class RecorderBin(Gst.Bin):
 
         rec_pipeline = Gst.Pipeline()
         '''
-        uridecodebin uri=http://air.radiorecord.ru:8102/club_320 !
+        uridecodebin uri=http://air2.radiorecord.ru:805/club_320 !
         audioconvert !
         vorbisenc !
         oggmux !
