@@ -47,7 +47,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.83'
+SCRIPT_VERSION = '0.0.0.84'
 
 ####################################################################
 ####################################################################
@@ -100,36 +100,29 @@ class RadioWin(Gtk.Window):
             ad_101_opener.addheaders = [
                 ('Host', '101.ru'),
                 ('User-agent',
-                'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')]
+                'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
             # Запрос всех разделов
-            with ad_101_opener.open('http://101.ru/?an=port_allchannels') as source_101_http:
-                razdel_101_http = re.findall(
-                r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>',
-                source_101_http.read().decode('utf-8', errors='ignore'), re.M)
 
-            dict_101_ru = []
-
-            ## x = adr razdel, y = name razdel
-            percent = len(razdel_101_http)
+            adr_and_name_101 = []
+            percent = 20
             check = 1
-            for x, y in razdel_101_http:
-                a = []
-                with ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as source_101_razdel:
-                    source_101_http_razdel = re.findall(
-                    r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>',
-                    source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
-                    for z, c in source_101_http_razdel:
-                        a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
-                    dict_101_ru.append(a)
-                    sys.stdout.write("\r%d %%" % int(check//(percent/100)))
-                    sys.stdout.flush()
-                    check += 1
+            for x in range(1, 21):
+                with ad_101_opener.open('http://101.ru/radio-group/group/'+str(x)) as f:
+                    adr_and_name_101 += (re.findall(r'\<a href\="\/radio\/channel\/(.*?)" class="noajax" data.*?\<h3 class\="caps htitle"\>(.*?)\<\/h3\>', f.read().decode('utf-8'), re.S))
+                sys.stdout.write("\r%d %%" % int(check//(percent/100)))
+                sys.stdout.flush()
+                check += 1
+
+            print('\n')
+
+            dict_101_ru = [['http://101.ru/radio/channel/'+x[0], x[1]] for x in adr_and_name_101]
 
             final_conf = []
+
             for x in dict_101_ru:
-                for d in x:
-                    final_conf.append(d+'\n')
+                str_creat = str(x[1] + ' = ' + x[0] +'\n')
+                final_conf.append(str_creat)
 
             with open(self.prog_full_path + '/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as adr101file:
                 adr101file.writelines(final_conf)
@@ -223,6 +216,7 @@ class RadioWin(Gtk.Window):
         # Инфо ТАГ
         self.get_info_tag = [
         'organization',
+        'bitrate',
         'header',
         'title',
         'artist',
@@ -303,7 +297,7 @@ class RadioWin(Gtk.Window):
         dinamit_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         dinamit_opener.addheaders = [
         ('Host', 'www.dfm.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
 
         print('Получение адресов для DFM ' + self.get_time_now())
@@ -702,7 +696,7 @@ class RadioWin(Gtk.Window):
         record_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         record_opener.addheaders = [
         ('Host', 'www.radiorecord.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
 
         try:
@@ -1526,7 +1520,7 @@ class RadioWin(Gtk.Window):
         self.main_menu.popup(None, None, pos, self.tray_icon, 0, Gtk.get_current_event_time())
         self.main_menu.show_all()
 
-    # Определение источник "файл или http" и создание элемента source
+    # Определение источника и создание элемента source
     def create_source(self, location):
 
         if location == 0:
@@ -1548,7 +1542,6 @@ class RadioWin(Gtk.Window):
                     raise IOError("Источник %s не найден" % location)
                     self.My_ERROR_Mess = 0
 
-            media_for_location = location[0]
             if location[0].endswith('.flv'):
                 self.media_location = location[0]
                 source = Gst.ElementFactory.make('uridecodebin', 'source')
@@ -1561,7 +1554,7 @@ class RadioWin(Gtk.Window):
                     find_time_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
                     find_time_opener.addheaders = [
                     ('Host', '101.ru'),
-                    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+                    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
                     ]
                     with find_time_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel') as http_source:
                         j_date = json.loads(str(http_source.read().decode('utf-8', errors='ignore')))
@@ -1571,10 +1564,10 @@ class RadioWin(Gtk.Window):
             if location[0].startswith('http'):
                 self.media_location = re.sub(r'https.*?', r'http', location[0])
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
-                #source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+                #source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
                 self.HURL.used_stream_adress.append(re.sub(r'https://.*?', r'http://', location[0]))
                 source.set_property('location', re.sub(r'https://.*?', r'http://', location[0]))
-                print("************* ==> Источник HTTP "+self.get_time_now())
+                print("************* ==> Источник HTTP "+self.get_time_now(), location[0])
                 print('----------------------------------------\n')
             elif location[0].startswith('rtmp'):
                 self.media_location = location[0]
@@ -1734,7 +1727,7 @@ class RadioWin(Gtk.Window):
         title_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         title_opener.addheaders = [
         ('Host', '101.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')]
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
         try:
             with title_opener.open('http://101.ru/?an=channel_playlist&channel='+str(id_chan_req)) as source_title_http:
@@ -1804,9 +1797,11 @@ class RadioWin(Gtk.Window):
                     try:
                         v_rms_0 = int(s.get_value('rms')[0])
                         v_rms_1 = int(s.get_value('rms')[1])
+                        #print('-1-', v_rms_0, v_rms_1, sum(self.s_rms_chek))
                     except:
                         v_rms_0 = int(s.get_value('rms')[0])
                         v_rms_1 = int(s.get_value('rms')[0])
+                        #print('-2-', v_rms_0, v_rms_1, sum(self.s_rms_chek))
                     if (v_rms_0 < -80 or v_rms_1 < -80) and self.radio_play:
                         self.s_rms_chek.append(v_rms_0)
                         self.s_rms_chek.append(v_rms_1)
@@ -1857,64 +1852,68 @@ class RadioWin(Gtk.Window):
             self.My_ERROR_Mess = True
             mpe = message.parse_error()
             print('Получено ERROR сообщение об ошибке ' + self.get_time_now(), '\n\n', mpe)
-            if 'Redirect to: (NULL)' in str(mpe):
-                print('\nif Redirect to: (NULL) in str(mpe): ==> self.pipeline.set_state(Gst.State.NULL) ' + self.get_time_now())
-                #
-                #
-                try:
+            if 'Authentication Required' in str(mpe):
+                return 0
+            else:
+                if 'Redirect to: (NULL)' in str(mpe):
+                    print('\nif Redirect to: (NULL) in str(mpe): ==> self.pipeline.set_state(Gst.State.NULL) ' + self.get_time_now())
                     #
-                    test_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
-                    test_opener.addheaders = [
-                    ('Host', 'www.google.ru'),
-                    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')]
+                    #
+                    try:
+                        #
+                        test_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+                        test_opener.addheaders = [
+                        ('Host', 'www.google.ru'),
+                        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
-                    with test_opener.open('http://www.google.ru/') as test_req_http:
+                        with test_opener.open('http://www.google.ru/') as test_req_http:
+                            self.pipeline.set_state(Gst.State.NULL)
+                            self.pipeline = 0
+                            if not 'File Not Found (404)' in str(mpe):
+                                self.play_stat_now()
+                            else:
+                                self.on_click_bt3()
+                                self.label_title.set_text('Ошибочный адрес на поток')
+                                self.My_ERROR_Mess = 0
+                                print('Ошибочный адрес на поток\n')
+                    except HTTPError as e:
                         self.pipeline.set_state(Gst.State.NULL)
                         self.pipeline = 0
-                        if not 'File Not Found (404)' in str(mpe):
-                            self.play_stat_now()
-                        else:
-                            self.on_click_bt3()
-                            self.label_title.set_text('Ошибочный адрес на поток')
-                            self.My_ERROR_Mess = 0
-                            print('Ошибочный адрес на поток\n')
-                except HTTPError as e:
-                    self.pipeline.set_state(Gst.State.NULL)
-                    self.pipeline = 0
-                    self.on_click_bt3()
-                    self.label_title.set_text('Отсутствует интернет соединение')
-                    self.My_ERROR_Mess = 0
-                except URLError as e:
-                    self.pipeline.set_state(Gst.State.NULL)
-                    self.pipeline = 0
-                    self.on_click_bt3()
-                    self.label_title.set_text('Отсутствует интернет соединение')
-                    self.My_ERROR_Mess = 0
-            if 'Could not detect type of contents' in str(mpe) or 'No such file' in str(mpe) or 'suitable plugins found' in str(mpe):
-                self.label_title.set_text('Ошибка чтения потока...')
+                        self.on_click_bt3()
+                        self.label_title.set_text('Отсутствует интернет соединение')
+                        self.My_ERROR_Mess = 0
+                    except URLError as e:
+                        self.pipeline.set_state(Gst.State.NULL)
+                        self.pipeline = 0
+                        self.on_click_bt3()
+                        self.label_title.set_text('Отсутствует интернет соединение')
+                        self.My_ERROR_Mess = 0
+                if 'Could not detect type of contents' in str(mpe) or 'No such file' in str(mpe) or 'suitable plugins found' in str(mpe):
+                    self.label_title.set_text('Ошибка чтения потока...')
 
     # Обработка сообщений содержащих ТЭГИ
     def message_tag(self, bus, message):
 
         if message.type == Gst.MessageType.TAG:
+            if self.radio_rtmp_play == 1:
+                return 0
+
             tag_l = message.parse_tag()
 
             s_tag_l = []
+
             for h in self.get_info_tag:
-                if tag_l.get_string(h)[0] == True:
+
+                if not tag_l.is_empty():
 
                     if h == 'organization':
                         self.tag_organization = tag_l.get_string(h)[1]
-                    if '101.ru' in str(tag_l.get_string(h)):
-                        s_tag_l.append(re.sub(r'(101\.ru\:\s?)(.+?)$', r'\2 ', str(tag_l.get_string(h)[1]), re.M))
-                    else:
-                        s_tag_l.append(re.sub(r'/', r' ', tag_l.get_string(h)[1]))
+                    if h == 'title':
+                        s_tag_l.append(tag_l.get_string(h)[1])
                 else:
                     pass
 
-            #print(self.label_title.get_text())
-            #print(re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M))
-            if len(s_tag_l) > 0 and (self.label_title.get_text() != re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M)):
+            if len(s_tag_l) > 0:
                 try:
                     self.label_title.set_label(re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M))
                 except:
@@ -1994,7 +1993,7 @@ class RadioWin(Gtk.Window):
             for x in self.read_list_adr:
                 if str(x[0][0]) == str(self.liststore_101.get_value(c, 0)):
                     self.id_chan[0] = re.findall(r'.+?(\d+)$', x[0][1])
-                    self.real_adress = re.sub(r'amp;', r'', 'http://101.ru'+x[0][1])
+                    self.real_adress = re.sub(r'amp;', r'', x[0][1])
                     print('----------------------------------------')
                     print(self.liststore_101.get_value(c, 0))
                     print('----------------------------------------')
@@ -2029,19 +2028,18 @@ class RadioWin(Gtk.Window):
             thread_1.start()
 
             self.radio_play = 1
-            print('\nВключение радио 1 ' + self.get_time_now(), '\n')
+            print('\nВключение радио 1 ' + self.get_time_now(), f_name, '\n')
             if f_name:
                 self.uri = f_name
             else:
                 self.uri = self.id_chan[1]
             if not self.pipeline:
                 self.create_pipeline(self.uri)
-                if 'rtmp' in str(f_name):
-                    self.radio_play = 0
-                    self.radio_rtmp_play = 1
-                    self.get_title_song_personal_station(re.sub(r'(.*?pradio22/)(\d+)(\?setst.*)', r'\2', f_name))
-                elif not 'rtmp' in str(f_name):
-                    self.radio_rtmp_play = 0
+
+                self.radio_play = 0
+                self.radio_rtmp_play = 1
+                #self.get_title_song_personal_station(f_name)
+
             else:
                 self.on_click_bt3()
                 self.label_title.set_label('Нет рабочих потоков')
@@ -2062,6 +2060,7 @@ class RadioWin(Gtk.Window):
 
             self.radio_play = 1
             print('\nВключение радио 2 ' + self.get_time_now(), '\n')
+            print(self.real_adress)
             if self.real_adress:
                 self.uri = self.HURL.hack_url_adres(re.sub(r'&amp;', r'&', self.real_adress))
             else:
@@ -2095,7 +2094,7 @@ class RadioWin(Gtk.Window):
             return True
 
         try:
-            if sum(self.id_chan) == 0:
+            if sum(self.id_chan[0]) == 0:
                 return False
         except TypeError:
 
@@ -2269,61 +2268,19 @@ class RadioWin(Gtk.Window):
     def get_title_song_personal_station(self, idch):
 
         if self.radio_rtmp_play == 1:
-            id_ch = idch
+            id_ch = re.sub(r'(http.*?:8000/p)', r'', idch)
             print('id_ch ==> ', id_ch)
 
             person_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
             person_opener.addheaders = [
             ('Host', '101.ru'),
-            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')]
+            ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
-            chek = 0
-            while chek < 3:
-                try:
-                    # Запрос
-                    #with person_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal') as source_person:
-                    with person_opener.open('http://101.ru/api/getplayingtrackinfo.php?station_id='+id_ch+'&typechannel=personal') as source_person:
-                        html = source_person.read().decode('utf-8', errors='ignore')
-                    find_pars = json.loads(html)
-
-                    find_title_song_from_stream = find_pars['result']['title']
-                    find_start_song_stream = int(find_pars['result']['start_time'])
-                    find_stop_song_stream = int(find_pars['result']['finish_time'])
-                    find_query_song_stream = int(find_pars['result']['query_time'])
-                    find_current_song_stream = int(find_pars['result']['current_time'])
-                    find_duration_song_stream = int(find_pars['result']['duration_sec'])
-
-                    self.label_title.set_label(re.sub(r'&amp;|&#\d+;', r'',find_title_song_from_stream))
-
-                    if find_duration_song_stream > 0 and find_start_song_stream == find_stop_song_stream:
-                        print('1', find_duration_song_stream)
-                        t_time_s = find_duration_song_stream - (find_query_song_stream - find_start_song_stream)
-                    elif find_start_song_stream == 0:
-                        print('2', (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream))
-                        t_time_s = 10
-                    elif find_start_song_stream < find_stop_song_stream and find_start_song_stream != 0:
-                        print('3', (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream))
-                        t_time_s = (find_stop_song_stream - find_start_song_stream) - (find_query_song_stream - find_start_song_stream)
-                    elif find_duration_song_stream == 0 and find_start_song_stream == find_stop_song_stream:
-                        print('4', find_current_song_stream - find_query_song_stream)
-                        t_time_s = 10
-                    if t_time_s < 0:
-                        t_time_s = 5
-                    print('t_time_s ==>  In get_title_song_personal_station ', t_time_s)
-                    chek = 3
-                except HTTPError as e:
-                    print('The server couldn\'t fulfill the request. In get_title_song_personal_station')
-                    print('Error code In get_title_song_personal_station: ', e.code)
-                    chek += 1
-                except URLError as e:
-                    print('We failed to reach a server. In get_title_song_personal_station')
-                    print('Reason In get_title_song_personal_station: ', e.reason)
-                    chek += 1
-            self.timer_title_rtmp = GObject.timeout_add_seconds(t_time_s, self.get_title_song_personal_station, id_ch)
-        else:
-            if self.timer_title_rtmp:
-                GObject.source_remove(self.timer_title_rtmp)
-            return False
+            print('http://101.ru/api/channel/getServers/'+id_ch+'/personal/AAC/64')
+            with person_opener.open('http://101.ru/api/channel/getServers/'+id_ch+'/personal/AAC/64') as source_person:
+                html = source_person.read().decode('utf-8', errors='ignore')
+            title_song_ps = re.findall(r'"comment"\:"(.*?)"', html)
+            self.label_title.set_label(re.sub(r'&amp;|&#\d+;', r'', title_song_ps[0]))
 
 # Класс получения источника потока 101.RU
 class HackURL(object):
@@ -2346,24 +2303,28 @@ class HackURL(object):
         r101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         r101_opener.addheaders = [
         ('Host', '101.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
 
+        # http://101.ru/api/channel/getServers/99/channel/MP3/128?rand=0.2719475501216948
         try:
             print('Отправка запроса')
-            with r101_opener.open(adres) as r101_http_source:
-                html = r101_http_source.read().decode('utf-8', errors='ignore')
+
             if person == 0:
-                #find_url_stream = re.findall(r"'st'\:'/design/images/.+?\.st'\,'\w+'\:'(.+?)'\,'wheel'\:\d+", html, re.M)
-                find_url_stream = re.findall(r"'st'\:'\/design\/images\/101main\_player\.st'\,.+?'\:'(.+?)'\,'wheel.+?", re.sub(r"aa\?type\=\.flv", r"aac?type=.flv", html), re.M)
-                if len(find_url_stream) == 0:
-                    find_url_stream = re.findall(r"'st'\:'/design/images/.+?\.st'\,'\w+'\:'(.+?)'\,'wheel'\:\d+", html, re.M)
+                with r101_opener.open('http://101.ru/api/channel/getServers/'+re.sub('(.*?channel\/)', '', adres)+'/channel/MP3/128') as r101_http_source:
+                    html = re.sub(r'\\', '', r101_http_source.read().decode('utf-8', errors='ignore'))
+                find_url_stream = re.findall(r'"file":"(.*?)"', html, re.M)
                 print('person', person)
-                print('find_url_stream', find_url_stream)
+                print('find_url_stream', len(find_url_stream))
             elif person == 1:
-                find_url_stream = re.findall(r"(rtmp://.+?)///main", html, re.S)
+                with r101_opener.open('http://101.ru/api/channel/getServers/'+re.sub(r'(http://101.ru/personal/userid/)', '', adres)+'/personal/AAC/64') as r101_http_source:
+                    html = re.sub(r'\\', '', r101_http_source.read().decode('utf-8', errors='ignore'))
+                # http://101.ru/api/channel/getServers/752413/personal/AAC/64?rand=0.6899887695908546
+                # http://101.ru/personal/userid/752413
+                # http://ic4.101.ru:8000/p752413?type=.flv&userid=0&setst=692gthc6pmjbqtnraoid8iog73&tok=22462098qrfrVY2A%2Br1ppdrrOwh%2FHA%3D%3D1
+                find_url_stream = re.findall(r'"file":"(.*?)\?type\=\.flv\&userid', html, re.S)
                 try:
-                    res_rtmp_url = re.sub(r'\|', r'&', find_url_stream[0], re.S)+'/main'
+                    res_rtmp_url = re.sub(r'\|', r'&', find_url_stream[0], re.S)
                 except IndexError:
                     res_rtmp_url = 0
                 print('res_rtmp_url ==> ', res_rtmp_url)
@@ -2372,45 +2333,7 @@ class HackURL(object):
                 '''http://101.ru/api/getplayingtrackinfo.php?station_id=82&typechannel=channel'''
                 return find_url_stream[0]
             if len(find_url_stream) >= 1:
-
-                with r101_opener.open("http://101.ru/"+re.sub(r"\|", r"&", find_url_stream[0])+"-1") as r101_http_source2:
-                    html2 = r101_http_source2.read().decode('utf-8', errors='ignore')
-
-                print('\n----------------------------------------')
-                print('Разбор ответа на запрос, для заполнения find_url_stream\n')
-                find_url_stream2 = re.findall(r'"file":"(.+?)"', str(html2), re.S)
-                print('Count find_url_stream2 ', len(find_url_stream2), '\n')
-                print(find_url_stream2)
-                print('----------------------------------------\n')
-                len_adr_list = 0
-                for x in find_url_stream2:
-                    print('req = urllib.request.Request(x)\n', x, '\n')
-                    try:
-                        with r101_opener.open(x, timeout=5) as req:
-                            response = req
-                    except:
-                        print('ERROR : ', x)
-                        len_adr_list += 1
-                    else:
-                        print('----------------------------------------\n')
-                        print('OK Response ==>\n', '\n', response.info())
-                        if 'Content-Length' in response.info():
-                            print('Content-Length in response.info()')
-                            pass
-                        else:
-                            if 'Content-Type' in response.info():
-                                print('OK ==> Content-Type in response.info()\n')
-                            if not x in self.used_stream_adress and self.check_stream_adress <= len(find_url_stream2):
-                                print('self.check_stream_adress ==> ', self.check_stream_adress)
-                                print('----------------------------------------\n')
-                                self.check_stream_adress += 1
-                                self.used_stream_adress =[]
-                                self.used_stream_adress.append(x)
-                                return x
-                    if len(find_url_stream2) == len_adr_list or self.check_stream_adress >= len(find_url_stream2):
-                        print('Нет рабочих потоков')
-                        self.check_stream_adress = 0
-                        return 0
+                return find_url_stream
             else:
                 print('ERROR in Requestion Page')
         except HTTPError as e:
@@ -2673,7 +2596,7 @@ class DialogFindMXC(Gtk.Dialog):
         self.find_in_MXC_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         self.find_in_MXC_opener.addheaders = [
         ('Host', 'www.mixcloud.com'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
 
         self.mxc_find_name_station = []
@@ -2797,7 +2720,7 @@ class DialogFindMXC(Gtk.Dialog):
 
         for x in res:
             # Название[0] = адрес[1] = Имя[2]
-            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;', '', x[1]),re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0]), x[2]])
+            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;', '', x[1]),re.sub(r'(https)(://)(\w+)(\d+)(\.mixcloud\.com)(/previews)(.*?\.)(mp3)', r'http\2stream\4\5/c/m4a/64\7m4a', x[0]), x[2]])
             self.mxc_liststore.append([str(re.sub(r'amp;|#\d+;', '', x[1])), False])
 
     # Реакция на нажатие по иконке
@@ -2830,10 +2753,12 @@ class DialogFindMXC(Gtk.Dialog):
                     self.return_list.append(self.mxc_find_name_station[t])
                 self.return_adres = x[1]
                 self.return_name = self.mxc_liststore.get_value(c, 0)
+                print('\n')
                 print('MXC----------------------------------------')
                 print(self.mxc_liststore.get_value(c, 0))
                 print(x[1], x[0])
                 print('MXC----------------------------------------')
+                print('\n')
                 break
             else:
                 z += 1
@@ -2980,7 +2905,7 @@ class DialogFindPersonalStation(Gtk.Dialog):
         find_pers_101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         find_pers_101_opener.addheaders = [
         ('Host', '101.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
         #
         self.s_find_dict = {}
@@ -2989,18 +2914,20 @@ class DialogFindPersonalStation(Gtk.Dialog):
         self.s_treeview.remove_column(self.s_column_radio)
         self.s_treeview.append_column(self.s_column_text)
         self.s_treeview.append_column(self.s_column_radio)
-        zapros = urllib.parse.quote(self.s_entry.get_text(), encoding='utf-8', errors=None)
-        adr_req = 'http://101.ru/?an=port_search_pers&search='+str(zapros)
+        zapros = self.s_entry.get_text()
+        adr_req = 'http://101.ru/pers-search/search/'+str(zapros)+'#'
+        print(adr_req)
         #
         with find_pers_101_opener.open(adr_req) as pers_101:
             sourse = re.sub(r'(&#\d+;)', r'', pers_101.read().decode('utf-8', errors='ignore'), re.S)
-            res_error = re.findall(r'<h3 class="full">(.+?)</h3>', sourse)
-            self.s_res_find_name = re.findall(r'<h2 class="title"><a href=".+?">(.+?)</a></h2>', re.sub(r'&amp;|&quot;|&#\d+?;', r'&', sourse, re.S), re.S)
-            res_find_adr = re.findall(r'<h2 class="title"><a href="(.+?)">.+?</a></h2>', sourse, re.S)
+            res_error = re.findall(r'<h3 class="full">Такой станции нет на 101.ru</h3>', sourse)
+            self.s_res_find_name = re.findall(r'\s<a href="/personal/userid/\d+" class="noajax" data-tooltip-block="#topchan\d+">\s+<div class="cover logo" style="background-color.*?>\s+<img src="http://.*?" alt="(.*?)">', sourse, re.S)
+            res_find_adr = re.findall(r'\s<a href="/personal/userid/(\d+)" class="noajax" data-tooltip-block="#topchan\d+">\s+<div class="cover logo" style="background-color.*?>\s+<img src="http://.*?" alt=".*?">', sourse, re.S)
+            print(len(res_error), len(self.s_res_find_name), len(res_find_adr))
         if not res_error:
             c = 0
             for x in sorted(self.s_res_find_name):
-                self.s_find_dict[x] = 'http://101.ru'+re.sub(r'(&amp;|&#\d+;)', r'&', res_find_adr[c], re.S)
+                self.s_find_dict[x] = 'http://101.ru/personal/userid/'+res_find_adr[c]
                 self.s_liststore.append([str(x), False])
                 c += 1
         else:
@@ -3062,7 +2989,7 @@ class DialogC_A_L(Gtk.Dialog):
         self.IRC_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         self.IRC_opener.addheaders = [
         ('Host', 'www.internet-radio.com'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
         #
 
@@ -3462,7 +3389,7 @@ class Dialog_Update_101(Gtk.Dialog):
         loc_ad_101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
         loc_ad_101_opener.addheaders = [
         ('Host', '101.ru'),
-        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
 
         # Запрос всех разделов
@@ -3517,7 +3444,7 @@ def download_up_date():
     update_prog_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
     update_prog_opener.addheaders = [
     ('Host', 'github.com'),
-    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
     ]
 
     # Загрузка архива
@@ -3565,7 +3492,7 @@ def main_funck():
     version_opener.addheaders = [('Host', 'raw.githubusercontent.com'),
     ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),
     ('Accept-Language', 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3'),
-    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')]
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
     remote_vers = ''
 
@@ -3608,7 +3535,7 @@ try:
     ftest_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
     ftest_opener.addheaders = [
     ('Host', 'www.google.ru'),
-    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:46.0) Gecko/20100101 Firefox/46.0')]
+    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
     with ftest_opener.open('http://www.google.ru/', timeout=5) as check_connection:
         print('Соединение с интернет обнаружено ' + str(datetime.datetime.now().strftime('%H:%M:%S')))
