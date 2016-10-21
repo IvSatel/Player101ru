@@ -47,7 +47,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.84'
+SCRIPT_VERSION = '0.0.0.85'
 
 ####################################################################
 ####################################################################
@@ -94,7 +94,7 @@ class RadioWin(Gtk.Window):
         if os.path.isfile(self.prog_full_path + '/adres_list.ini'):
             print('Файл с адресами найден ' + self.get_time_now())
         else:  # Если файл с адресами станций отсутствует то получаем его
-            print('Файл с адресами создается ' + self.get_time_now())
+            print('Файл с адресами создается ' + self.get_time_now(), '\n')
 
             ad_101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
             ad_101_opener.addheaders = [
@@ -1485,10 +1485,14 @@ class RadioWin(Gtk.Window):
         if response_101_update == -4 or response_101_update == -7:
             dialog_101_update.thread_3_stop.set()
             #
+            #
             loc_final_conf = []
             for x in dialog_101_update.loc_dict_101_ru:
-                for d in x:
-                    loc_final_conf.append(d+'\n')
+                str_creat = str(x[1] + ' = ' + x[0] + '\n')
+                loc_final_conf.append(str_creat)
+
+            for x in loc_final_conf:
+                print(x)
 
             with open(self.prog_full_path + '/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as loc_adr101file:
                 loc_adr101file.writelines(loc_final_conf)
@@ -3392,27 +3396,48 @@ class Dialog_Update_101(Gtk.Dialog):
         ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')
         ]
 
-        # Запрос всех разделов
-        with loc_ad_101_opener.open('http://101.ru/?an=port_allchannels') as loc_source_101_http:
-            loc_razdel_101_http = re.findall(r'<li class\="h4 tab\-item "><a href\="(.+?)">(.+?)<\/a><\/li>', loc_source_101_http.read().decode('utf-8', errors='ignore'), re.M)
-
-        percent = len(loc_razdel_101_http)
-        check = 1
-        for x, y in loc_razdel_101_http:
-            a = []
-            with loc_ad_101_opener.open('http://101.ru'+re.sub(r'amp;', r'', x, re.M)) as loc_source_101_razdel:
-                loc_source_101_http_razdel = re.findall(r'<h2 class\="title"><a href\="(.+?)">(.+?)<\/a><\/h2>', loc_source_101_razdel.read().decode('utf-8', errors='ignore'), re.M)
-                for z, c in loc_source_101_http_razdel:
-                    a.append(c+' = '+re.sub(r'amp;', r'', z, re.M))
-                self.loc_dict_101_ru.append(a)
-
-                if not stop_event.is_set():
-                    GLib.idle_add(self.update_progess, check//(percent/100))
-                else:
-                    return False
-
+        '''
+        adr_and_name_101 = []
+            percent = 20
+            check = 1
+            for x in range(1, 21):
+                with ad_101_opener.open('http://101.ru/radio-group/group/'+str(x)) as f:
+                    adr_and_name_101 += (re.findall(r'\<a href\="\/radio\/channel\/(.*?)" class="noajax" data.*?\<h3 class\="caps htitle"\>(.*?)\<\/h3\>', f.read().decode('utf-8'), re.S))
+                sys.stdout.write("\r%d %%" % int(check//(percent/100)))
+                sys.stdout.flush()
                 check += 1
 
+            print('\n')
+
+            dict_101_ru = [['http://101.ru/radio/channel/'+x[0], x[1]] for x in adr_and_name_101]
+
+            final_conf = []
+
+            for x in dict_101_ru:
+                str_creat = str(x[1] + ' = ' + x[0] +'\n')
+                final_conf.append(str_creat)
+
+            with open(self.prog_full_path + '/adres_list.ini', 'w', encoding='utf-8', errors='ignore') as adr101file:
+                adr101file.writelines(final_conf)
+
+        with open(self.prog_full_path + '/adres_list.ini', 'r', encoding='utf-8', errors='ignore') as file_w:
+            read_adr = file_w.readlines()
+        '''
+        # Запрос всех разделов
+        percent = 20
+        check = 1
+        loc_dict_101_ru = []
+        for x in range(1, 21):
+            with loc_ad_101_opener.open('http://101.ru/radio-group/group/'+str(x)) as loc_source_101_http:
+                loc_dict_101_ru += (re.findall(r'\<a href\="\/radio\/channel\/(.*?)" class="noajax" data.*?\<h3 class\="caps htitle"\>(.*?)\<\/h3\>', loc_source_101_http.read().decode('utf-8'), re.S))
+            check += 1
+
+            if not stop_event.is_set():
+                GLib.idle_add(self.update_progess, check//(percent/100))
+            else:
+                return False
+
+        self.loc_dict_101_ru = [['http://101.ru/radio/channel/'+x[0], x[1]] for x in loc_dict_101_ru]
         self.response(-4)
 
     def __init__(self, parent):
