@@ -47,7 +47,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.88'
+SCRIPT_VERSION = '0.0.0.89'
 
 ####################################################################
 ####################################################################
@@ -1707,6 +1707,7 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::error', self.message_error)
         message_bus.connect('message::element', self.message_element)
         message_bus.connect('message::duration', self.message_duration)
+        message_bus.connect('message::stream', self.message_stremstatus)
         message_bus.connect('message::buffering', self.message_buffering)
 
         self.pipeline.set_state(Gst.State.PAUSED)
@@ -1854,6 +1855,14 @@ class RadioWin(Gtk.Window):
             if self.radio_play or self.radio_rtmp_play:
                 self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
+    def message_stremstatus(self, bus, message):
+
+        if message.type == Gst.MessageType.STREAM_STATUS:
+            print('message.type == Gst.MessageType.STREAM_STATUS')
+            s = Gst.Message.get_structure(message)
+            if self.radio_play or self.radio_rtmp_play:
+                print(s.to_string())
+
     # Обработка сообщений ошибок
     def message_error(self, bus, message):
 
@@ -1861,7 +1870,8 @@ class RadioWin(Gtk.Window):
             self.My_ERROR_Mess = True
             mpe = message.parse_error()
             print('Получено ERROR сообщение об ошибке ' + self.get_time_now(), '\n\n', mpe)
-            if 'Authentication Required' in str(mpe):
+            if 'Authentication Required' in ''.join(mpe):
+                self.My_ERROR_Mess = False
                 return 0
             else:
                 if 'Redirect to: (NULL)' in str(mpe):
@@ -1912,6 +1922,11 @@ class RadioWin(Gtk.Window):
             s_tag_l = re.findall(r'(\w+?)\=\(\w+?\)\"(.*?)\"', re.sub(r'\\\s+\-\\\s+0\:00|101\.ru:\\\s+|\\', r'', tag_l.to_string()))
 
             for x in s_tag_l:
+                if 'personal station' in ''.join(x):
+                    return 0
+
+            for x in s_tag_l:
+
                 if x[0] == 'organization' and not str(self.lang_ident_str(' '.join(x[1]))) in self.label_title.get_text():
                     s_tag_m.append(x[1])
                 if x[0] == 'title' and not str(self.lang_ident_str(' '.join(x[1]))) in self.label_title.get_text():
@@ -1920,7 +1935,8 @@ class RadioWin(Gtk.Window):
 
             if self.label_title.get_text() != str(self.lang_ident_str(' '.join(s_tag_n))):
                 try:
-                    self.label_title.set_label(str(self.lang_ident_str(''.join(s_tag_n))))
+                    if str(self.lang_ident_str(''.join(s_tag_n))) != 'False':
+                        self.label_title.set_label(str(self.lang_ident_str(''.join(s_tag_n))))
                 except:
                     pass
 
@@ -2043,8 +2059,9 @@ class RadioWin(Gtk.Window):
                 self.create_pipeline(self.uri)
 
                 self.radio_play = 0
-                self.radio_rtmp_play = 1
-                #self.get_title_song_personal_station(f_name)
+                if self.id_chan[0] == 'PS':
+                    self.radio_rtmp_play = 1
+                    self.get_title_song_personal_station(f_name)
 
             else:
                 self.on_click_bt3()
@@ -2100,7 +2117,10 @@ class RadioWin(Gtk.Window):
             return True
 
         try:
-            if sum(self.id_chan[0]) == 0:
+            c = 0
+            for x in self.id_chan:
+                c += x
+            if c == 0:
                 return False
         except TypeError:
 
@@ -2275,14 +2295,13 @@ class RadioWin(Gtk.Window):
 
         if self.radio_rtmp_play == 1:
             id_ch = re.sub(r'(http.*?:8000/p)', r'', idch)
-            print('id_ch ==> ', id_ch)
+            print('personal ==> id_ch ==> ', id_ch)
 
             person_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
             person_opener.addheaders = [
             ('Host', '101.ru'),
             ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
-            print('http://101.ru/api/channel/getServers/'+id_ch+'/personal/AAC/64')
             with person_opener.open('http://101.ru/api/channel/getServers/'+id_ch+'/personal/AAC/64') as source_person:
                 html = source_person.read().decode('utf-8', errors='ignore')
             title_song_ps = re.findall(r'"comment"\:"(.*?)"', html)
@@ -2895,10 +2914,10 @@ class DialogFindPersonalStation(Gtk.Dialog):
         c = self.s_liststore.get_iter(path)
         for x in self.s_res_find_name:
             if str(x) == str(self.s_liststore.get_value(c, 0)):
-                print('----------------------------------------')
+                print('DFPS----------------------------------------')
                 print(self.s_liststore.get_value(c, 0))
                 print(self.s_find_dict.get(str(x)))
-                print('----------------------------------------')
+                print('DFPS----------------------------------------\n')
                 self.return_adres = self.hurl.hack_url_adres(self.s_find_dict.get(str(x)))
         for row in self.s_liststore:
             row[1] = (row.path == selected_path)
@@ -2929,7 +2948,6 @@ class DialogFindPersonalStation(Gtk.Dialog):
             res_error = re.findall(r'<h3 class="full">Такой станции нет на 101.ru</h3>', sourse)
             self.s_res_find_name = re.findall(r'\s<a href="/personal/userid/\d+" class="noajax" data-tooltip-block="#topchan\d+">\s+<div class="cover logo" style="background-color.*?>\s+<img src="http://.*?" alt="(.*?)">', sourse, re.S)
             res_find_adr = re.findall(r'\s<a href="/personal/userid/(\d+)" class="noajax" data-tooltip-block="#topchan\d+">\s+<div class="cover logo" style="background-color.*?>\s+<img src="http://.*?" alt=".*?">', sourse, re.S)
-            print(len(res_error), len(self.s_res_find_name), len(res_find_adr))
         if not res_error:
             c = 0
             for x in sorted(self.s_res_find_name):
