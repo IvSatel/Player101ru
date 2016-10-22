@@ -47,7 +47,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.87'
+SCRIPT_VERSION = '0.0.0.88'
 
 ####################################################################
 ####################################################################
@@ -92,9 +92,9 @@ class RadioWin(Gtk.Window):
 
         # Если файл с адресами станций есть, то пропускаем
         if os.path.isfile(self.prog_full_path + '/adres_list.ini'):
-            print('Файл с адресами найден ' + self.get_time_now())
+            print('Файл с адресами для 101.ru найден ' + self.get_time_now())
         else:  # Если файл с адресами станций отсутствует то получаем его
-            print('Файл с адресами создается ' + self.get_time_now(), '\n')
+            print('Файл с адресами для 101.ru создается ' + self.get_time_now(), '\n')
 
             ad_101_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
             ad_101_opener.addheaders = [
@@ -102,7 +102,7 @@ class RadioWin(Gtk.Window):
                 ('User-agent',
                 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:49.0) Gecko/20100101 Firefox/49.0')]
 
-            # Запрос всех разделов
+            # Запрос всех разделов 101.ru
 
             adr_and_name_101 = []
             percent = 20
@@ -152,6 +152,9 @@ class RadioWin(Gtk.Window):
             leq = config['EQ-Settings']['lasteq'].split(' ')
             for x in leq:
                 self.eq_set_preset.append(x)
+
+        # Буферизация
+        self.buf_is_don = 0
 
         # List for MIXCLOUD
         self.Mixcloud_lists = []
@@ -1594,6 +1597,8 @@ class RadioWin(Gtk.Window):
     # Создание объекта Pipeline
     def create_pipeline(self, args):
 
+        self.buf_is_don = 0
+
         ## decodebin имеет динамические pad'ы,
         # которые так же динамически необходимо линковать
         def on_pad_added(decodebin, pad):
@@ -1899,27 +1904,23 @@ class RadioWin(Gtk.Window):
     def message_tag(self, bus, message):
 
         if message.type == Gst.MessageType.TAG:
-            if self.radio_rtmp_play == 1:
-                return 0
-
             tag_l = message.parse_tag()
 
+            s_tag_m = []
             s_tag_l = []
 
-            for h in self.get_info_tag:
+            s_tag_l = re.findall(r'(\w+?)\=\(\w+?\)\"(.*?)\"', re.sub(r'\\\s+\-\\\s+0\:00|101\.ru:\\\s+|\\', r'', tag_l.to_string()))
 
-                if not tag_l.is_empty():
+            for x in s_tag_l:
+                if x[0] == 'organization' and not str(self.lang_ident_str(' '.join(x[1]))) in self.label_title.get_text():
+                    s_tag_m.append(x[1])
+                if x[0] == 'title' and not str(self.lang_ident_str(' '.join(x[1]))) in self.label_title.get_text():
+                    s_tag_m.append(x[1])
+            s_tag_n = ' '.join(s_tag_m)
 
-                    if h == 'organization':
-                        self.tag_organization = tag_l.get_string(h)[1]
-                    if h == 'title':
-                        s_tag_l.append(tag_l.get_string(h)[1])
-                else:
-                    pass
-
-            if len(s_tag_l) > 0:
+            if self.label_title.get_text() != str(self.lang_ident_str(' '.join(s_tag_n))):
                 try:
-                    self.label_title.set_label(re.sub(r' \- 0\:00', r'', str(self.lang_ident_str(' - '.join(s_tag_l))), re.M))
+                    self.label_title.set_label(str(self.lang_ident_str(''.join(s_tag_n))))
                 except:
                     pass
 
@@ -1957,6 +1958,7 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             if message.parse_buffering() == 100:
                 print('\nBuffering is done = ', message.parse_buffering(), '\n')
+                self.buf_is_don = 1
                 self.pipeline.set_state(Gst.State.PLAYING)
 
         ####################### ###########################
