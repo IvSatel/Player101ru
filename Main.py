@@ -47,7 +47,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.89'
+SCRIPT_VERSION = '0.0.0.90'
 
 ####################################################################
 ####################################################################
@@ -1536,7 +1536,7 @@ class RadioWin(Gtk.Window):
             #raise IOError(" 1 Источник %s не найден" % location)
             return 0
         if len(location) != 0:
-            print('***** location ==> ' + self.get_time_now(), location, '\n')
+            print('***** location ==> ' + self.get_time_now(), '\n', location, '\n')
 
             if str(type(location)) == "<class 'str'>" and len(location) > 2:
                 location = [location]
@@ -1707,7 +1707,6 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::error', self.message_error)
         message_bus.connect('message::element', self.message_element)
         message_bus.connect('message::duration', self.message_duration)
-        message_bus.connect('message::stream', self.message_stremstatus)
         message_bus.connect('message::buffering', self.message_buffering)
 
         self.pipeline.set_state(Gst.State.PAUSED)
@@ -1854,14 +1853,6 @@ class RadioWin(Gtk.Window):
             s = Gst.Message.get_structure(message)
             if self.radio_play or self.radio_rtmp_play:
                 self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
-
-    def message_stremstatus(self, bus, message):
-
-        if message.type == Gst.MessageType.STREAM_STATUS:
-            print('message.type == Gst.MessageType.STREAM_STATUS')
-            s = Gst.Message.get_structure(message)
-            if self.radio_play or self.radio_rtmp_play:
-                print(s.to_string())
 
     # Обработка сообщений ошибок
     def message_error(self, bus, message):
