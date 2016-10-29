@@ -47,7 +47,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.90'
+SCRIPT_VERSION = '0.0.0.91'
 
 ####################################################################
 ####################################################################
@@ -1443,8 +1443,9 @@ class RadioWin(Gtk.Window):
             self.real_adress = dialog.return_adres
             self.Mixcloud_lists = dialog.return_list
             self.id_chan = ['MX', self.real_adress]
-            print('self.id_chan & self.real_adress ==> ', self.id_chan)
-            self.label_title.set_text(dialog.return_name + ' By ' + self.Mixcloud_lists[0][2])
+            print('self.id_chan & self.real_adress ==> ', self.id_chan, self.Mixcloud_lists)
+            #self.label_title.set_text(dialog.return_name + ' By ' + self.Mixcloud_lists[0][2])
+            self.label_title.set_text(dialog.return_name)
             self.play_stat_now(self.real_adress)
             self.Mixcloud_lists.pop(0)
             dialog.destroy()
@@ -2799,7 +2800,7 @@ class DialogFindMXC(Gtk.Dialog):
         res = re.findall(r'm-preview="(.*?)".*?m-title="(.*?)"', sourse, re.M)
 
         for x in res:
-            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;|quot;', '', x[1]),re.sub(r'(https.*previews)(.*\.)(mp3)', r'http://stream21.mixcloud.com/c/m4a/64\2m4a', x[0])])
+            self.mxc_find_name_station.append([re.sub(r'amp;|#\d+;|quot;', '', x[1]),re.sub(r'(https://\D+?)(\d+).*?(previews)(.*\.)(mp3)', r'http://stream\2.mixcloud.com/c/m4a/64\4m4a', x[0])])
             self.mxc_liststore.append([str(re.sub(r'amp;|#\d+;|quot;', '', x[1])), False])
 
 #
