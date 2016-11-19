@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.92'
+SCRIPT_VERSION = '0.0.0.93'
 
 ####################################################################
 ####################################################################
@@ -56,6 +56,7 @@ AUTHHANDLER = urllib.request.HTTPBasicAuthHandler()
 MY_COOKIE = urllib.request.HTTPCookieProcessor(
 http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(
 rfc2965=True,strict_ns_domain=http.cookiejar.DefaultCookiePolicy.DomainStrict,blocked_domains=["ads.net", ".ads.net"])))
+
 ####################################################################
 ####################################################################
 
@@ -191,16 +192,11 @@ class RadioWin(Gtk.Window):
         # RMS чекер (отлов тишины)
         self.s_rms_chek = [0]
 
-        # Таймеры
-        #self.timer = 0
-        self.timer_title = 0
-        self.timer_title_rtmp = 0
-
         # Контейнер для Gst.Pipeline
         self.pipeline = 0
 
         # Список хранящий плей лист
-        self.f_name_len = []
+        #self.f_name_len = []
 
         # Предел громкости для шкалы
         self.min_dcb = -45
@@ -209,7 +205,7 @@ class RadioWin(Gtk.Window):
         ## Иннфо канала
         # 0 = буквенное обозначение если не 101, если 101 то ID
         # 1 = адрес если не 101
-        self.id_chan = [0,0]
+        self.id_chan = [0]
         self.real_adress = '' # Адрес потока с контентом
         self.uri = [] # Список хранящий адреса на поток вещания
         self.My_ERROR_Mess = False # Чекер ошибок
@@ -1549,26 +1545,6 @@ class RadioWin(Gtk.Window):
                     print('2 Источник %s не найден' % location)
                     raise IOError("Источник %s не найден" % location)
                     self.My_ERROR_Mess = 0
-
-            #if location[0].endswith('.flv'):
-                #self.media_location = location[0]
-                #source = Gst.ElementFactory.make('uridecodebin', 'source')
-                #self.HURL.used_stream_adress.append(location[0])
-                #source.set_property('uri', location[0])
-                #print("************* ==> Источник HTTP *.flv "+self.get_time_now())
-                #print('----------------------------------------\n')
-                #if '101.ru' in location[0] and not 'flv' in location[0]:
-                    #get_id_chanel = re.sub(r'(.+?\=)(\d+)$', r'\2', self.real_adress, re.M)
-                    #find_time_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
-                    #find_time_opener.addheaders = [
-                    #('Host', '101.ru'),
-                    #('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:50.0) Gecko/20100101 Firefox/50.0')
-                    #]
-                    #with find_time_opener.open('http://f1.101.ru/api/getplayingtrackinfo.php?station_id='+get_id_chanel+'&typechannel=channel') as http_source:
-                        #j_date = json.loads(str(http_source.read().decode('utf-8', errors='ignore')))
-                        #print(j_date)
-                        #restrat_time = int(j_date['result']['finish_time']) - int(j_date['result']['current_time'])
-                        #GObject.timeout_add_seconds(restrat_time, self.play_stat_now, get_id_chanel)
             if location[0].startswith('http'):
                 self.media_location = re.sub(r'https.*?', r'http', location[0])
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
@@ -1707,7 +1683,6 @@ class RadioWin(Gtk.Window):
         message_bus.connect('message::tag', self.message_tag)
         message_bus.connect('message::error', self.message_error)
         message_bus.connect('message::element', self.message_element)
-        message_bus.connect('message::duration', self.message_duration)
         message_bus.connect('message::buffering', self.message_buffering)
 
         self.pipeline.set_state(Gst.State.PAUSED)
@@ -1717,13 +1692,6 @@ class RadioWin(Gtk.Window):
 
     # Получение названия
     def get_title_from_url(self, adres):
-
-        try:
-            print('adres[0] = ', adres[0])
-        except ValueError:
-            if self.timer_title:
-                GObject.source_remove(self.timer_title)
-                return False
 
         id_chan_req  = adres[0]
         title_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
@@ -1749,13 +1717,8 @@ class RadioWin(Gtk.Window):
                 print("if not find_title_in_url_stream[0].replace('&', 'and') in self.label_title.get_text().replace('&', 'and'):")
                 a = self.label_title.get_text()
                 self.label_title.set_label(str(a)+' - '+str(find_title_in_url_stream[0]))
-                if self.timer_title:
-                    GObject.source_remove(self.timer_title)
         except IndexError:
-            if str(self.label_title.get_text()) == '':
-                #self.label_title.set_label('')
-                if self.timer_title:
-                    GObject.source_remove(self.timer_title)
+            return False
 
     #꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾#
     ################### ######### #####################
@@ -1817,15 +1780,6 @@ class RadioWin(Gtk.Window):
         #if Gst.Structure.get_name(Gst.Message.get_structure(message)) == 'level':
         thread_rms = threading.Thread(target=mess_rms_set(message), daemon=True)
         thread_rms.start()
-
-    # Обработка сообщений продолжительности
-    def message_duration(self, bus, message):
-
-        if message.type == Gst.MessageType.DURATION_CHANGED:
-            print('message.type == Gst.MessageType.DURATION_CHANGED')
-            s = Gst.Message.get_structure(message)
-            if self.radio_play or self.radio_rtmp_play:
-                self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
     # Обработка сообщений ошибок
     def message_error(self, bus, message):
@@ -1894,19 +1848,16 @@ class RadioWin(Gtk.Window):
                 if x[0] == 'organization' and not str(self.lang_ident_str(''.join(x[1]))) in self.label_title.get_text():
                     s_tag_m.append(x[1])
                     self.tag_organization = str(self.lang_ident_str(''.join(x[1])))
-                if x[0] == 'title' and not str(self.lang_ident_str(' '.join(x[1]))) in self.label_title.get_text():
+                if x[0] == 'title' and not str(self.lang_ident_str(''.join(x[1]))) in self.label_title.get_text():
                     s_tag_m.append(x[1])
             s_tag_n = ' '.join(s_tag_m)
 
-            if self.label_title.get_text() != str(self.lang_ident_str(' '.join(s_tag_n))):
+            if self.label_title.get_text() != str(self.lang_ident_str(''.join(s_tag_n))):
                 try:
                     if str(self.lang_ident_str(''.join(s_tag_n))) != 'False':
                         self.label_title.set_label(str(self.lang_ident_str(''.join(s_tag_n))))
                 except:
                     pass
-
-            if not self.timer_title and self.id_chan[0][0].isdigit():
-                self.timer_title = GObject.timeout_add(1000, self.get_title_from_url, self.id_chan[0])
 
     # Обработка сообщений конца потока
     def message_eos(self, bus, message):
@@ -1951,9 +1902,6 @@ class RadioWin(Gtk.Window):
         #꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾꙾#
 
     # Действие для передачи пользовательского адреса из диалога
-    '''
-    Нет проверки на 101.ru
-    '''
     def on_dialog_choice(self, widget):
 
         if self.radio_play == 0 and self.radio_rtmp_play == 0:
@@ -2152,15 +2100,11 @@ class RadioWin(Gtk.Window):
             self.rec_obj = 0
 
         self.tooltip_now_text = ''
-        self.id_chan = [0,0]
+        self.id_chan = [0]
         self.real_adress = ''
         self.tag_organization = ''
         self.radio_play = 0
         self.radio_rtmp_play = 0
-        self.timer_title = 0
-
-        if self.timer_title_rtmp:
-            self.timer_title_rtmp = 0
 
         self.label_title.set_label('')
 
@@ -3304,8 +3248,6 @@ class RecorderBin(Gst.Bin):
         message_bus = self.rec_pipeline.get_bus()
         message_bus.add_signal_watch_full(1)
         message_bus.connect('message', self.message_handler)
-
-        #self.rec_pipeline.set_state(Gst.State.PLAYING)
 
     def list_files(self, path):
 
