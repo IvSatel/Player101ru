@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.93'
+SCRIPT_VERSION = '0.0.0.94'
 
 ####################################################################
 ####################################################################
@@ -976,6 +976,29 @@ class RadioWin(Gtk.Window):
     # Распознать кодировку
     def lang_ident_str(self, get_text):
 
+        #Проверка на самописную кодировку
+        c = {'А' : '303200', 'а' : '303240','Б' : '303201', 'б' : '303241', 'В' : '303202','в' : '303242', 'Г' : '303203', 'г' : '303243', 'Д' : '303204', 'д' : '303244', 'Е' : '303205', 'е' : '303245', 'Ё' : '302270', 'ё' : '302270', 'Ж' : '303206', 'ж' : '303246', 'З' : '303207',
+        'з' : '303247', 'И' : '303210', 'и' : '303250', 'Й' : '303211', 'й' : '303251', 'К' : '303212', 'к' : '303252', 'Л' : '303213', 'л' : '303253', 'М' : '303214', 'м' : '303254', 'Н' : '303215', 'н' : '303255', 'О' : '303216', 'о' : '303256', 'П' : '303217', 'п' : '303257',
+        'Р' : '303220', 'р' : '303260', 'С' : '303221', 'с' : '303261', 'Т' : '303222', 'т' : '303262', 'У' : '303223', 'у' : '303263', 'Ф' : '303224', 'ф' : '303264', 'Х' : '303225', 'х' : '303265', 'Ц' : '303226', 'ц' : '303266', 'Ч' : '303227', 'ч' : '303267', 'Ш' : '303228',
+        'ш' : '303270', 'Щ' : '303231', 'щ' : '303271', 'Ъ' : '303272', 'ъ' : '303272', 'Ы' : '303233', 'ы' : '303273', 'Ь' : '303234', 'ь' : '303274', 'Э' : '303235', 'э' : '303275', 'Ю' : '303236', 'ю' : '303276', 'Я' : '303237', 'я' : '303277'}
+
+        if '3032' in get_text or '3022' in get_text:
+
+            d = re.findall(r'(3032\d{2})|(3022\d{2})|(\s+)', get_text)
+            n_str = ''
+
+            for x in d:
+                for j in c.items():
+                    if x[0] == j[1] or x[1] == j[1] or x[2] == ' ':
+                        if x[2] == ' ':
+                            n_str += x[2]
+                            break
+                        n_str += j[0]
+            return n_str
+        else:
+            pass
+        #
+
         lang_ident = ''
         b = []
 
@@ -1439,7 +1462,8 @@ class RadioWin(Gtk.Window):
             self.real_adress = dialog.return_adres
             self.Mixcloud_lists = dialog.return_list
             self.id_chan = ['MX', self.real_adress]
-            print('self.id_chan & self.real_adress ==> ', self.id_chan, self.Mixcloud_lists)
+            #print('self.id_chan & self.real_adress ==> ', self.id_chan, self.Mixcloud_lists)
+            print('self.id_chan & self.real_adress ==> ', self.id_chan)
             self.label_title.set_text(dialog.return_name)
             #self.label_title.set_text(dialog.return_name)
             self.play_stat_now(self.real_adress)
@@ -1839,6 +1863,7 @@ class RadioWin(Gtk.Window):
 
             s_tag_l = re.findall(r'(\w+?)\=\(\w+?\)\"(.*?)\"', re.sub(r'\\\s+\-\\\s+0\:00|101\.ru:\\\s+|\\', r'', tag_l.to_string()))
 
+            #print(s_tag_l)
             for x in s_tag_l:
                 if 'personal station' in ''.join(x):
                     return 0
@@ -1865,6 +1890,7 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.EOS:
 
             print('Получено сообщение об окончании потока ' + self.get_time_now())
+            print('self.radio_play =', self.radio_play, 'self.radio_rtmp_play =', self.radio_rtmp_play)
 
             if self.radio_play == 1 or self.radio_rtmp_play == 1:
                 print('Gst.MessageType.EOS self.My_ERROR_Mess = ' + self.get_time_now(), self.My_ERROR_Mess)
@@ -1876,6 +1902,7 @@ class RadioWin(Gtk.Window):
                     self.play_stat_now()
 
                 if len(self.Mixcloud_lists) > 0:
+                    print('\nПродолжается воспроизведение Mixcloud\n')
                     print('len(self.Mixcloud_lists) ==> ', len(self.Mixcloud_lists))
                     self.id_chan = ['MX', self.Mixcloud_lists[0][1]]
                     self.real_adress = self.Mixcloud_lists[0][1]
@@ -1968,17 +1995,19 @@ class RadioWin(Gtk.Window):
                 self.uri = f_name
             else:
                 self.uri = self.id_chan[1]
+
             if not self.pipeline:
                 self.create_pipeline(self.uri)
+                self.radio_play = 1
 
-                self.radio_play = 0
                 if self.id_chan[0] == 'PS':
                     self.radio_rtmp_play = 1
+                    self.radio_play = 0
                     self.get_title_song_personal_station(f_name)
-
             else:
                 self.on_click_bt3()
                 self.label_title.set_label('Нет рабочих потоков')
+
             if self.My_ERROR_Mess:
                 print('if self.My_ERROR_Mess: ==> self.pipeline.set_state(Gst.State.NULL)')
                 self.pipeline.set_state(Gst.State.NULL)
