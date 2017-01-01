@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.94'
+SCRIPT_VERSION = '0.0.0.95'
 
 ####################################################################
 ####################################################################
@@ -2581,7 +2581,7 @@ class DialogFindMXC(Gtk.Dialog):
             mxc_source = mxc_http.read().decode('utf-8-sig', errors='ignore')
 
 
-        mxc_res = re.findall(r'class\="genre\-title"\>(.*?)\<', mxc_source, re.S)
+        mxc_res = re.findall(r'class\=".*?genre\-title"\>(.*?)\<', mxc_source, re.S)
 
         mxc_find_dict = []
 
