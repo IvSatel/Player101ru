@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.98'
+SCRIPT_VERSION = '0.0.0.99'
 
 ####################################################################
 ####################################################################
@@ -1636,7 +1636,6 @@ class RadioWin(Gtk.Window):
             return 0
         if len(location) != 0:
             print('***** location ==> ' + self.get_time_now(), '\n', location, '\n')
-
             if str(type(location)) == "<class 'str'>" and len(location) > 2:
                 location = [location]
 
@@ -1664,7 +1663,7 @@ class RadioWin(Gtk.Window):
                 print('----------------------------------------\n')
 
             if len(location) > 1:
-                self.id_chan[0] = location[1]
+                self.id_chan[0] = location[0]
 
             self.tooltip_now_text = ''
             return source
@@ -1685,7 +1684,11 @@ class RadioWin(Gtk.Window):
             pad.link_full(audioconvert.get_static_pad('sink'), Gst.PadLinkCheck.TEMPLATE_CAPS)
 
         ## Создаем нужные элементы для плеера
+
+        print('\n## Создаем нужные элементы для плеера', '\n')
+
         source = self.create_source(args)
+
         if source == 0:
             self.pipeline = 0
             return 0
@@ -1889,46 +1892,52 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.ERROR:
             self.My_ERROR_Mess = True
             mpe = message.parse_error()
-            print('Получено ERROR сообщение об ошибке ' + self.get_time_now(), '\n\n', mpe)
-            if 'Authentication Required' in ''.join(mpe):
-                self.My_ERROR_Mess = False
-                return 0
-            else:
-                if 'Redirect to: (NULL)' in str(mpe):
-                    print('\nif Redirect to: (NULL) in str(mpe): ==> self.pipeline.set_state(Gst.State.NULL) ' + self.get_time_now())
-                    #
-                    #
-                    try:
-                        #
-                        test_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
-                        test_opener.addheaders = [
-                        ('Host', 'www.google.ru'),
-                        ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:50.0) Gecko/20100101 Firefox/50.0')]
 
-                        with test_opener.open('http://www.google.ru/') as test_req_http:
-                            self.pipeline.set_state(Gst.State.NULL)
-                            self.pipeline = 0
-                            if not 'File Not Found (404)' in str(mpe):
-                                self.play_stat_now()
-                            else:
-                                self.on_click_bt3()
-                                self.label_title.set_text('Ошибочный адрес на поток')
-                                self.My_ERROR_Mess = 0
-                                print('Ошибочный адрес на поток\n')
-                    except HTTPError as e:
+            if 'Too many clients connected' in str(mpe):
+                print(self.My_ERROR_Mess, '1 Получено ERROR сообщение об ошибке ' + self.get_time_now(), mpe)
+                return 0
+            if 'Внутренняя ошибка передачи данных' in str(mpe):
+                print(self.My_ERROR_Mess, '2 Получено ERROR сообщение об ошибке ' + self.get_time_now(), mpe)
+                return 0
+            if 'Authentication Required' in str(mpe):
+                print(self.My_ERROR_Mess, '3 Получено ERROR сообщение об ошибке ' + self.get_time_now(), mpe)
+                return 0
+            if 'Redirect to: (NULL)' in str(mpe):
+                print(self.My_ERROR_Mess, '4 Получено ERROR сообщение об ошибке ' + self.get_time_now(), mpe)
+                print('\nif Redirect to: (NULL) in str(mpe): ==> self.pipeline.set_state(Gst.State.NULL) ' + self.get_time_now())
+                #
+                #
+                try:
+                    #
+                    test_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
+                    test_opener.addheaders = [
+                    ('Host', 'www.google.ru'),
+                    ('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:50.0) Gecko/20100101 Firefox/50.0')]
+
+                    with test_opener.open('http://www.google.ru/') as test_req_http:
                         self.pipeline.set_state(Gst.State.NULL)
                         self.pipeline = 0
-                        self.on_click_bt3()
-                        self.label_title.set_text('Отсутствует интернет соединение')
-                        self.My_ERROR_Mess = 0
-                    except URLError as e:
-                        self.pipeline.set_state(Gst.State.NULL)
-                        self.pipeline = 0
-                        self.on_click_bt3()
-                        self.label_title.set_text('Отсутствует интернет соединение')
-                        self.My_ERROR_Mess = 0
-                if 'Could not detect type of contents' in str(mpe) or 'No such file' in str(mpe) or 'suitable plugins found' in str(mpe):
-                    self.label_title.set_text('Ошибка чтения потока...')
+                        if not 'File Not Found (404)' in str(mpe):
+                            self.play_stat_now()
+                        else:
+                            self.on_click_bt3()
+                            self.label_title.set_text('Ошибочный адрес на поток')
+                            self.My_ERROR_Mess = 0
+                            print('Ошибочный адрес на поток\n')
+                except HTTPError as e:
+                    self.pipeline.set_state(Gst.State.NULL)
+                    self.pipeline = 0
+                    self.on_click_bt3()
+                    self.label_title.set_text('Отсутствует интернет соединение')
+                    self.My_ERROR_Mess = 0
+                except URLError as e:
+                    self.pipeline.set_state(Gst.State.NULL)
+                    self.pipeline = 0
+                    self.on_click_bt3()
+                    self.label_title.set_text('Отсутствует интернет соединение')
+                    self.My_ERROR_Mess = 0
+            if 'Could not detect type of contents' in str(mpe) or 'No such file' in str(mpe) or 'suitable plugins found' in str(mpe):
+                self.label_title.set_text('Ошибка чтения потока...')
 
     # Обработка сообщений содержащих ТЭГИ
     def message_tag(self, bus, message):
@@ -1940,7 +1949,7 @@ class RadioWin(Gtk.Window):
             s_tag_l = []
 
             s_tag_l = re.findall(r'(\w+?)\=\(\w+?\)\"(.*?)\"', re.sub(r'\\\s+\-\\\s+0\:00|101\.ru:\\\s+|\\', r'', tag_l.to_string()))
-            print(s_tag_l)
+            #print(s_tag_l)
             for x in s_tag_l:
                 if 'personal station' in ''.join(x):
                     return 0
@@ -2105,7 +2114,7 @@ class RadioWin(Gtk.Window):
 
             self.radio_play = 1
             print('\nВключение радио 2 ' + self.get_time_now(), '\n')
-            print(self.real_adress)
+            print('self.real_adress ===>>>', self.real_adress)
             if self.real_adress:
                 self.uri = self.HURL.hack_url_adres(re.sub(r'&amp;', r'&', self.real_adress))
             else:
@@ -2113,7 +2122,6 @@ class RadioWin(Gtk.Window):
             if not self.pipeline and self.uri != 0:
                 self.create_pipeline(self.uri)
                 if self.pipeline != 0:
-                    print('\nself.real_adress ==> 2 ', self.real_adress)
                     print('----------------------------------------\n')
                     thread_2 = threading.Thread(
                     target=self.wr_station_name_adr.write_last_station(
@@ -2350,6 +2358,7 @@ class HackURL(object):
         ]
 
         # http://101.ru/api/channel/getServers/99/channel/MP3/128?rand=0.2719475501216948
+        # http://101.ru/api/channel/getServers/194/channel/MP3/128?rand=0.2073910697363317
         try:
             print('Отправка запроса')
 
@@ -2358,7 +2367,7 @@ class HackURL(object):
                     html = re.sub(r'\\', '', r101_http_source.read().decode('utf-8', errors='ignore'))
                 find_url_stream = re.findall(r'"file":"(.*?)"', html, re.M)
                 print('person', person)
-                print('find_url_stream', len(find_url_stream))
+                print('find_url_stream', len(find_url_stream), '\n')
             elif person == 1:
                 with r101_opener.open('http://101.ru/api/channel/getServers/'+re.sub(r'(http://101.ru/personal/userid/)', '', adres)+'/personal/AAC/64') as r101_http_source:
                     html = re.sub(r'\\', '', r101_http_source.read().decode('utf-8', errors='ignore'))
@@ -2376,6 +2385,19 @@ class HackURL(object):
                 '''http://101.ru/api/getplayingtrackinfo.php?station_id=82&typechannel=channel'''
                 return find_url_stream[0]
             if len(find_url_stream) >= 1:
+
+                #Проверка валидности адресов на поток
+                for x in find_url_stream:
+
+                    try:
+                        with r101_opener.open(x) as r101_http_info:
+                            print('r101_http_info.info() => ',len(r101_http_info.info()))
+                    except HTTPError as e:
+                        print('The server couldn\'t fulfill the request.\n')
+                        print(x)
+                        print('\nError code >>>>>>>: ', e.code, '\n')
+                        find_url_stream.remove(x)
+                #
                 return find_url_stream
             else:
                 print('ERROR in Requestion Page')
