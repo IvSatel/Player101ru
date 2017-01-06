@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.1.99'
+SCRIPT_VERSION = '0.0.2.99'
 
 ####################################################################
 ####################################################################
@@ -957,8 +957,13 @@ class RadioWin(Gtk.Window):
         # Помещение сетки с кнопками в основную сетку
         self.grid.attach(self.grid_button, 1, 1, 5, 1)# Разместить сетку с кнопками
 
-        # Помещение табов в основную сетку
-        self.grid.attach(self.main_note_for_cont, 1, 2, 5, 4)# Окно со станциями
+        # Помещение Gtk.Notebook() в Gtk.Frame()
+        self.framy_scrol = Gtk.Frame()
+        self.framy_scrol.add(self.main_note_for_cont)
+        self.framy_scrol.set_border_width(5)
+
+        # Помещение Gtk.Frame() в основную сетку
+        self.grid.attach(self.framy_scrol, 1, 2, 5, 4)# Окно со станциями
         self.grid.attach(self.label_title, 1, 7, 5, 1)# Лейбл названия
         self.grid.attach(self.scal_sl,     2, 6, 3, 1)# Регулятор громкости
 
@@ -1540,10 +1545,8 @@ class RadioWin(Gtk.Window):
             self.real_adress = dialog.return_adres
             self.Mixcloud_lists = dialog.return_list
             self.id_chan = ['MX', self.real_adress]
-            #print('self.id_chan & self.real_adress ==> ', self.id_chan, self.Mixcloud_lists)
             print('self.id_chan & self.real_adress ==> ', self.id_chan)
             self.label_title.set_text(dialog.return_name)
-            #self.label_title.set_text(dialog.return_name)
             self.play_stat_now(self.real_adress)
             self.Mixcloud_lists.pop(0)
             dialog.destroy()
@@ -1996,7 +1999,6 @@ class RadioWin(Gtk.Window):
                     self.label_title.set_text(self.Mixcloud_lists[0][0] + ' By ' + self.Mixcloud_lists[0][2])
                     self.play_stat_now(self.real_adress)
                     self.Mixcloud_lists.pop(0)
-
 
     # Buffering
     def message_buffering(self, bus, message):
@@ -2859,8 +2861,6 @@ class DialogFindMXC(Gtk.Dialog):
 
 #
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-
 # Диалог поиска персональных станций
 class DialogFindPersonalStation(Gtk.Dialog):
 
@@ -3603,9 +3603,7 @@ def main_funck():
         Radio_for_101.connect("delete-event", Gtk.main_quit)
         Radio_for_101.show_all()
 
-        for x in range(4):
-            if x == 3:
-                Radio_for_101.button_array[x].hide()
+        Radio_for_101.button_array[3].hide()
 
         GObject.threads_init()
         Gtk.main()
