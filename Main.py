@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.0.99'
+SCRIPT_VERSION = '0.0.1.99'
 
 ####################################################################
 ####################################################################
@@ -82,6 +82,7 @@ class RadioWin(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_type_hint(Gdk.WindowTypeHint.MENU)
         self.connect('key_press_event', self.on_key_press_event)
+        self.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.000, 1.000, 1.000))
         self.window_state_on_desctop = 1
         #
         #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -152,7 +153,7 @@ class RadioWin(Gtk.Window):
             for x in leq:
                 self.eq_set_preset.append(x)
 
-        # Создпние словаря кирилицы для title
+        # Создпние dict кирилицы для title
         self.html_rus_cod_dict = { '&#'+str(i)+';':chr(i) for i in range(256,10000) if 'а'<=chr(i)<='я' or 'А'<=chr(i)<='Я' }
         self.html_rus_cod_dict.update({'&#1025;':'Ё','&#1105;':'ё'})
         self.mdict_cp1251 = {'Ђ': '302200', 'х': '303265', 'С': '303221', 'ж': '303246',
@@ -207,9 +208,6 @@ class RadioWin(Gtk.Window):
                                    '320254': 'ь', '321275': 'Н', '321276': 'О',
                                     '321266': 'Ж'}
 
-        # Буферизация
-        self.buf_is_don = 0
-
         # List for MIXCLOUD
         self.Mixcloud_lists = []
 
@@ -228,8 +226,8 @@ class RadioWin(Gtk.Window):
         # Статус Записи
         self.rec_status = False
 
-        # Медиа данные (битрейт, моно или стерео)
-        self.media_location = ''
+        # Медиа данные (адрес на поток, битрейт, моно или стерео)
+        self.media_url_location = ''
         self.tooltip_now_text = ''
 
         # Отображается окно радио плеера или нет
@@ -754,9 +752,8 @@ class RadioWin(Gtk.Window):
         try:
             with record_opener.open('http://www.radiorecord.ru/player/') as http_source:
                 http_read = http_source.read().decode('utf-8', errors='ignore')
-            record_res = re.findall(r'class\=\"station\-name\"\>(.*?)\<\/div\>.*?url\"\>(.*?)\<\/div\>', http_read, re.S)
-
-            self.record_dict = {x[0]:x[1] for x in record_res}
+                record_res = re.findall(r'class\=\"station\-name\"\>(.*?)\<\/div\>.*?url\"\>(.*?)\<\/div\>', http_read, re.S)
+                self.record_dict = {x[0]:x[1] for x in record_res}
         except:
             print('Ошибка получения адресов для Радио рекорд')
             self.record_dict = {
@@ -864,6 +861,7 @@ class RadioWin(Gtk.Window):
         self.main_note_for_cont.set_property('expand', False)
         self.main_note_for_cont.set_property('enable-popup', True)
         self.main_note_for_cont.set_property('show-border', False)
+        self.main_note_for_cont.modify_bg(Gtk.StateType.NORMAL, Gdk.Color.from_floats(1.000, 1.000, 1.000))
 
         # Добавление табов с порталами
         self.main_note_for_cont.append_page(self.scrolled_window_101, Gtk.Label('Radio 101'))
@@ -1092,7 +1090,7 @@ class RadioWin(Gtk.Window):
                         pass
             return get_text
         #
-
+        # Проверка на смешаную кодировку
         for x in get_text:
             if ord(x):
                 b.append(ord(x))
@@ -1142,7 +1140,7 @@ class RadioWin(Gtk.Window):
         for x in sorted(self.del_my_pls_config.sections()):
             self.my_pls_liststore.append([x, False])
 
-    # Удаление записи из моего листа
+    # Создание меню для удаление записи из моего листа
     def menu_del_line(self, widget, event):
 
         d = self.my_pls_liststore.get_value(self.my_pls_liststore.get_iter(widget.get_cursor()[0]), 0)
@@ -1156,7 +1154,7 @@ class RadioWin(Gtk.Window):
             self.menu_pop_show.popup(None, None, None, None, event.button, event.get_time())
 
     ## Pop-up menu for 101 RU
-    # Обновление плейлиста
+    # ПопАп меню для обновления плейлиста
     def button_press(self, widget, event):
 
         if event.button == 3:
@@ -1174,7 +1172,7 @@ class RadioWin(Gtk.Window):
         about.set_transient_for(self)
         about.set_program_name("Internet Radio Player")
         about.set_version(SCRIPT_VERSION)
-        about.set_copyright("(c) IvSatel 2015 - 2016")
+        about.set_copyright("(c) IvSatel 2015 - 2017")
         about.set_comments("Internet Radio Player")
         about.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(self.prog_full_path + '/resource/Radio256.png', 256, 256))
         about.run()
@@ -1259,7 +1257,7 @@ class RadioWin(Gtk.Window):
 
             media_info = []
             discoverer = GstPbutils.Discoverer()
-            info = discoverer.discover_uri(self.media_location)# Create = GstPbutils.DiscovererInfo
+            info = discoverer.discover_uri(self.media_url_location)# Create = GstPbutils.DiscovererInfo
 
             name_command_info = ['формат','разное', 'следующее', 'тип',
             'токен', 'битность', 'каналы', 'глубина', 'язык',
@@ -1425,6 +1423,8 @@ class RadioWin(Gtk.Window):
         if self.radio_play == 0 and self.radio_rtmp_play == 0:
             last_adr = self.wr_station_name_adr.read_last_station()
 
+            #self.id_chan = [0][0]
+
             print('1 last_adr = self.wr_station_name_adr.read_last_station()', last_adr)
 
             if '101.ru'.find(last_adr[0]) and not 'pradio22' in str(last_adr[0]):
@@ -1438,7 +1438,6 @@ class RadioWin(Gtk.Window):
             if 'pradio22'.find(last_adr[0]):
                 self.id_chan[0] = re.sub(r'(rtmp\:\/\/wz\d+\.101\.ru\/pradio\d+\/)(\d+)(\?setst\=&uid\=\-\d+\/main)', r'\2', str(last_adr[0]), re.S)
                 self.play_stat_now(last_adr[0])
-
             if 'PS' == last_adr[1]:
                 print('Select PS')
                 self.id_chan[0] = 'PS'
@@ -1450,12 +1449,13 @@ class RadioWin(Gtk.Window):
             elif 'MX' == last_adr[1]:
                 print('Select MX')
                 self.id_chan[0] = 'MX'
-            elif 'Internet Radio COM' == last_adr[1]:
+            elif 'IRC' == last_adr[1]:
                 print('Select Internet Radio COM')
                 self.id_chan[0] = 'IRC'
             elif 'D-FM' == last_adr[1]:
                 print('Select D-FM')
                 self.id_chan[0] = 'DI'
+            self.id_chan.append(last_adr[1])
             self.play_stat_now(last_adr)
 
     # Воспроизвести лучшую станцию
@@ -1647,7 +1647,7 @@ class RadioWin(Gtk.Window):
                     raise IOError("Источник %s не найден" % location)
                     self.My_ERROR_Mess = 0
             if location[0].startswith('http'):
-                self.media_location = re.sub(r'https.*?', r'http', location[0])
+                self.media_url_location = re.sub(r'https.*?', r'http', location[0])
                 source = Gst.ElementFactory.make('souphttpsrc', 'source')
                 #source.set_property('user-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:50.0) Gecko/20100101 Firefox/50.0')
                 self.HURL.used_stream_adress.append(re.sub(r'https://.*?', r'http://', location[0]))
@@ -1655,7 +1655,7 @@ class RadioWin(Gtk.Window):
                 print("************* ==> Источник HTTP "+self.get_time_now(), location[0])
                 print('----------------------------------------\n')
             elif location[0].startswith('rtmp'):
-                self.media_location = location[0]
+                self.media_url_location = location[0]
                 source = Gst.ElementFactory.make('rtmpsrc', 'source')
                 self.HURL.used_stream_adress.append(location[0])
                 source.set_property('location', location[0])
@@ -1674,8 +1674,6 @@ class RadioWin(Gtk.Window):
 
     # Создание объекта Pipeline
     def create_pipeline(self, args):
-
-        self.buf_is_don = 0
 
         ## decodebin имеет динамические pad'ы,
         # которые так же динамически необходимо линковать
@@ -2006,7 +2004,6 @@ class RadioWin(Gtk.Window):
         if message.type == Gst.MessageType.BUFFERING:
             if message.parse_buffering() == 100:
                 print('\nBuffering is done = ', message.parse_buffering(), '\n')
-                self.buf_is_don = 1
                 self.pipeline.set_state(Gst.State.PLAYING)
 
         ####################### ###########################
@@ -2065,7 +2062,8 @@ class RadioWin(Gtk.Window):
         or self.id_chan[0] == 'IRC' \
         or self.id_chan[0] == 'My' \
         or self.id_chan[0] == 'MX' \
-        or self.id_chan[0] == 'PS') and not '101.ru' in str(self.id_chan[1]):
+        or self.id_chan[0] == 'PS'):
+        #or self.id_chan[0] == 'PS') and not '101.ru' in str(self.id_chan[1]):
 
             for x in range(4):
                 if x == 3:
@@ -2375,9 +2373,17 @@ class HackURL(object):
                 # http://101.ru/personal/userid/752413
                 # http://ic4.101.ru:8000/p752413?type=.flv&userid=0&setst=692gthc6pmjbqtnraoid8iog73&tok=22462098qrfrVY2A%2Br1ppdrrOwh%2FHA%3D%3D1
                 find_url_stream = re.findall(r'"file":"(.*?)\?type\=\.flv\&userid', html, re.S)
+                print('****', find_url_stream)
                 try:
-                    res_rtmp_url = re.sub(r'\|', r'&', find_url_stream[0], re.S)
-                except IndexError:
+                    #
+                    with r101_opener.open(find_url_stream[0]) as r101_http_info:
+                        print('r101_http_info.info() => ',len(r101_http_info.info()))
+                        res_rtmp_url = re.sub(r'\|', r'&', find_url_stream[0], re.S)
+                        return res_rtmp_url
+                except  HTTPError as e:
+                    print('The server couldn\'t fulfill the request.\n')
+                    print(find_url_stream[0])
+                    print('\nError code >>>>>>>: ', e.code, '\n')
                     res_rtmp_url = 0
                 print('res_rtmp_url ==> ', res_rtmp_url)
                 return res_rtmp_url
@@ -2980,7 +2986,9 @@ class DialogFindPersonalStation(Gtk.Dialog):
         self.s_treeview.append_column(self.s_column_text)
         self.s_treeview.append_column(self.s_column_radio)
         zapros = self.s_entry.get_text()
-        adr_req = 'http://101.ru/pers-search/search/'+str(zapros)+'#'
+        # Кодировка запроса
+        adr_req = 'http://101.ru/pers-search/search/'+str(urllib.parse.quote(str(zapros)+'#', safe='/', encoding=None, errors=None)).encode('utf-8').decode()
+        #
         print(adr_req)
         #
         with find_pers_101_opener.open(adr_req) as pers_101:
