@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.2.99'
+SCRIPT_VERSION = '0.0.3.99'
 
 ####################################################################
 ####################################################################
@@ -283,7 +283,7 @@ class RadioWin(Gtk.Window):
         # Установки частот
         self.freq = [16,20,60,120,200,250,400,500,800,1000,2000,3000,4000,5000,6000,10000,12000,16000]
         # Установки ширины полосы частот
-        self.bandwidth = [2, 2, 30, 40, 25, 75, 50, 150, 100, 500, 500, 500, 500, 500, 1000, 1000, 1000, 1000]
+        self.bandwidth = [50, 10, 25, 100, 250, 350, 450, 500, 550, 600, 700, 800, 1000, 1500, 2000, 2500, 5000, 10000]
         # Предустановки эквалайзера
         self.equalizer_presets_dict = {
         'EQ Premaster': [0, 1, 3, 0, -3, -3, 0, 0, 0, 2, 0, 0, 3, 0, 3, 1, 3, 2],
@@ -2261,7 +2261,7 @@ class RadioWin(Gtk.Window):
                     band = eq.get_child_by_index(chek)
                     band.set_property('freq', self.freq[chek])
                     band.set_property('bandwidth', self.bandwidth[chek])
-                    band.set_property('gain', x)
+                    band.set_property('gain', round(x))
                     eq_set.append(int(x))
                     chek += 1
             except:
