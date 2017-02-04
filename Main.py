@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.4.99'
+SCRIPT_VERSION = '0.0.5.99'
 
 ####################################################################
 ####################################################################
@@ -870,13 +870,14 @@ class RadioWin(Gtk.Window):
         self.main_note_for_cont.append_page(self.record_scrolled_window, Gtk.Label('Radio Record'))
         self.main_note_for_cont.append_page(self.my_pls_scrolled_window, Gtk.Label('My Play List'))
 
-        # Создание кнопки громкости
+        # Создание кнопки "Громкость"
         self.scal_sl = Gtk.VolumeButton()
         self.scal_sl.set_hexpand_set(True)
-        self.scal_sl.set_adjustment(Gtk.Adjustment.new(0.50, 0.00, 1.00, 0.01, 0.02, 0.01))
+        self.scal_sl.set_adjustment(Gtk.Adjustment.new(0.50, 0.00, 1.00, 0.05, 0.00, 0.00))
         self.scal_sl.set_relief(2)
         self.scal_sl.set_border_width(5)
         self.scal_sl.connect("value-changed", self.on_valu_ch)
+        self.scal_sl.set_property("use-symbolic", False)
 
         ## Создание левого и правого "Эквалайзеров"
         self.level_bar_l = Gtk.ProgressBar.new()
@@ -2289,6 +2290,9 @@ class RadioWin(Gtk.Window):
             self.scal_sl.set_value(r_value)
             self.volume.set_property('volume', r_value)
 
+        print('----------------------------------------', '\n')
+        print('Громкость изменена => ', self.real_vol_save, '\n')
+        print('----------------------------------------', '\n')
         self.real_vol_save = r_value
 
     # Диалог редактирования пользовательских пресетов эквалайзера
@@ -2379,7 +2383,6 @@ class HackURL(object):
                 try:
                     #
                     with r101_opener.open(find_url_stream[0]) as r101_http_info:
-                        print('r101_http_info.info() => ',len(r101_http_info.info()))
                         res_rtmp_url = re.sub(r'\|', r'&', find_url_stream[0], re.S)
                         return res_rtmp_url
                 except  HTTPError as e:
