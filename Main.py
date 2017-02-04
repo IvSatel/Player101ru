@@ -19,11 +19,18 @@ from decimal import Decimal
 from collections import OrderedDict
 from urllib.error import URLError, HTTPError
 
-gi.require_version('Gst', '1.0')
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-gi.require_version('GstPbutils', '1.0')
-gi.require_version('AppIndicator3', '0.1')
+# Для Windows на наличие AppIndicator3
+try:
+
+    gi.require_version('Gst', '1.0')
+    gi.require_version('Gtk', '3.0')
+    gi.require_version('Gdk', '3.0')
+    gi.require_version('GstPbutils', '1.0')
+    gi.require_version('AppIndicator3', '0.1')
+
+except ValueError:
+
+    pass
 
 from gi.repository import Gst
 from gi.repository import Gdk
@@ -45,7 +52,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.5.99'
+SCRIPT_VERSION = '0.0.6.99'
 
 ####################################################################
 ####################################################################
