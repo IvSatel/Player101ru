@@ -52,7 +52,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.6.99'
+SCRIPT_VERSION = '0.0.7.99'
 
 ####################################################################
 ####################################################################
@@ -2297,9 +2297,6 @@ class RadioWin(Gtk.Window):
             self.scal_sl.set_value(r_value)
             self.volume.set_property('volume', r_value)
 
-        print('----------------------------------------', '\n')
-        print('Громкость изменена => ', self.real_vol_save, '\n')
-        print('----------------------------------------', '\n')
         self.real_vol_save = r_value
 
     # Диалог редактирования пользовательских пресетов эквалайзера
