@@ -45,7 +45,7 @@ except:
     APP_INDICATOR = False
 
 # Версия скрипта
-SCRIPT_VERSION = '0.0.3.99'
+SCRIPT_VERSION = '0.0.4.99'
 
 ####################################################################
 ####################################################################
@@ -283,7 +283,7 @@ class RadioWin(Gtk.Window):
         # Установки частот
         self.freq = [16,20,60,120,200,250,400,500,800,1000,2000,3000,4000,5000,6000,10000,12000,16000]
         # Установки ширины полосы частот
-        self.bandwidth = [50, 10, 25, 100, 250, 350, 450, 500, 550, 600, 700, 800, 1000, 1500, 2000, 2500, 5000, 10000]
+        self.bandwidth = [5, 5, 5, 50, 100, 100, 150, 500, 550, 600, 700, 800, 1000, 1500, 2000, 2500, 5000, 10000]
         # Предустановки эквалайзера
         self.equalizer_presets_dict = {
         'EQ Premaster': [0, 1, 3, 0, -3, -3, 0, 0, 0, 2, 0, 0, 3, 0, 3, 1, 3, 2],
@@ -302,11 +302,11 @@ class RadioWin(Gtk.Window):
         'EQ Chamber': [3, 2, -3, -5, -6, -5, -4, -5, -6, -7, -3, -1, 0, 0, 5, 5, 4, 3],
         'EQ Jazz': [0, 1, 2, 2, 3, 1, 2, 0, 0, 2, 1, 2, 4, 3, 3, 2, 1, 0],
         'EQ Paty': [7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7],
-        'EQ Line high up': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 9, 14, 20],
+        'EQ Line high up': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 9, 12, 12],
         'EQ New Age': [3, 1, 3, 2, 2, 2, 3, 2, 0, 2, 4, 1, 3, 2, 4, 2, 1, 1],
         'EQ Soft Maniac': [0, -12, -7, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, -7, -12],
         'EQ Shimmer': [0, 0, 0, -2, -2, -7, -5, 0, 0, 0, 0, 0, 4, 1, 3, 3, 4, 0],
-        'EQ Death': [20, 17, 12, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        'EQ Death': [12, 12, 12, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         'EQ Reggae': [0, 0, 0, -1, -3, -5, -8, -4, 0, 3, 4, 4, 4, 3, 1, 0, 0, 0],
         'EQ Strings': [-3, -4, -4, -5, -5, -4, -4, -3, -2, -2, -2, -2, -1, 2, 3, 0, -2, -2],
         'EQ Dark': [-6, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -5, -8, -10, -12, -14, -18, -18],
@@ -314,7 +314,7 @@ class RadioWin(Gtk.Window):
         'EQ 1965': [-20, -16, -7, -4, -4, -4, -7, -7, 3, 3, -2, -4, 4, 1, 1, -4, -6, -12],
         'EQ Bass': [3, 5, 4, 0, -13, -7, -5, -5, -1, 2, 5, 1, -1, -1, -2, -7, -9, -14],
         'EQ Dance 1': [11, 11, 8, 8, 8, 5, 5, 0, 0, 0, 0, -5, -5, -5, -8, -8, 0, 0],
-        'EQ Rock 3': [7, 5, 3, 1, -2, -5, -6, -6, -5, -2, -1, 1, 2, 4, 8, 10, 15, 20],
+        'EQ Rock 3': [7, 5, 3, 1, -2, -5, -6, -6, -5, -2, -1, 1, 2, 4, 8, 10, 12, 12],
         'EQ Pop 2': [-3, -3, -3, 3, 4, 6, 6, 6, 6, 3, 3, 3, -1, -1, -4, -4, -1, -1],
         'EQ Clear 1': [1, 1, 0, 0, 0, -3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 1],
         'EQ Soft 1': [3, 2, 0, 0, -1, -2, -2, 0, 2, 4, 5, 6, 7, 9, 9, 9, 10, 11],
@@ -324,7 +324,7 @@ class RadioWin(Gtk.Window):
         'EQ Pop 1': [1, -1, -3, 0, 1, 2, 3, 1, 1, 2, 0, -1, -2, 0, 1, 2, 2, 2],
         'EQ Heavy Metal': [4, 3, 2, 3, 6, 6, 6, 6, 6, 5, 4, 3, 3, 3, 2, 2, 2, 1],
         'EQ Metal': [4, 5, 5, 3, 0, -1, -2, -1, 0, 1, 1, 1, 1, 0, -1, -1, -1, -1],
-        'EQ Dance 2': [14, 12, 10, 8, 6, 4, 4, 5, 5, 4, 1, 0, 0, 1, 3, 4, 5, 6],
+        'EQ Dance 2': [12, 12, 10, 8, 6, 4, 4, 5, 5, 4, 1, 0, 0, 1, 3, 4, 5, 6],
         'EQ Brittle': [-12, -10, -9, -8, -7, -6, -5, -3, -2, -2, -2, -2, -1, 1, 4, 4, 1, 0],
         'EQ Techno 1': [3, 5, 3, 1, -1, 0, 1, 1, 2, 5, 3, 2, 5, 1, 2, 3, 4, 4],
         'EQ Vocal': [2, -1, -1, -1, 2, 2, 4, 3, 4, 4, 3, 2, 0, 0, 0, 0, -1, -1],
@@ -341,7 +341,7 @@ class RadioWin(Gtk.Window):
         'EQ Rock 1': [3, -3, -2, -2, -2, -2, -2, -2, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5],
         'EQ Presence': [0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 4, 3, 2, 0, 0, 0, 0],
         'EQ Drums': [2, 1, 0, 0, 0, -2, 0, -2, 0, 0, 0, 0, 2, 0, 0, 3, 0, 0],
-        'EQ Clear 2': [0, -12, -7, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 7, 20],
+        'EQ Clear 2': [0, -12, -7, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 7, 12],
         'EQ Classical': [3, 2, 1, 0, 2, 1, 2, 1, 2, 3, 1, 1, 1, 2, 4, 3, 2, 1]}
 
         dinamit_opener = urllib.request.build_opener(IF_PROXI, AUTHHANDLER, MY_COOKIE)
@@ -1712,7 +1712,7 @@ class RadioWin(Gtk.Window):
                     band = equalizer.get_child_by_index(chek)
                     band.set_property('freq', self.freq[chek])
                     band.set_property('bandwidth', self.bandwidth[chek])
-                    band.set_property('gain', float(x))
+                    band.set_property('gain', float(int(x)-0.000001))
                     chek += 1
             except TypeError:
                 print('self.eq_set_preset ==> ', self.eq_set_preset, ' ', self.get_time_now())
@@ -1720,7 +1720,7 @@ class RadioWin(Gtk.Window):
                     band = equalizer.get_child_by_index(chek)
                     band.set_property('freq', self.freq[chek])
                     band.set_property('bandwidth', self.bandwidth[chek])
-                    band.set_property('gain', float(x))
+                    band.set_property('gain', float(int(x)-0.000001))
                     chek += 1
         elif str(type(self.eq_set_preset)) == "<class 'list'>":
             equalizer.set_property('num-bands', 18)
@@ -1730,7 +1730,7 @@ class RadioWin(Gtk.Window):
                     band = equalizer.get_child_by_index(chek)
                     band.set_property('freq', self.freq[chek])
                     band.set_property('bandwidth', self.bandwidth[chek])
-                    band.set_property('gain', float(x))
+                    band.set_property('gain', float(int(x)-0.000001))
                     chek += 1
             except:# Если отсутствует значение
                 no_config = configparser.ConfigParser()
@@ -1747,7 +1747,7 @@ class RadioWin(Gtk.Window):
                     band = equalizer.get_child_by_index(chek)
                     band.set_property('freq', self.freq[chek])
                     band.set_property('bandwidth', self.bandwidth[chek])
-                    band.set_property('gain', float(x))
+                    band.set_property('gain', float(int(x)-0.000001))
                     chek += 1
 
         self.pipeline = Gst.Pipeline()
@@ -2261,7 +2261,7 @@ class RadioWin(Gtk.Window):
                     band = eq.get_child_by_index(chek)
                     band.set_property('freq', self.freq[chek])
                     band.set_property('bandwidth', self.bandwidth[chek])
-                    band.set_property('gain', round(x))
+                    band.set_property('gain', float(int(x)-0.000001))
                     eq_set.append(int(x))
                     chek += 1
             except:
@@ -2309,7 +2309,7 @@ class RadioWin(Gtk.Window):
                     band = eq.get_child_by_index(chek)
                     band.set_property('freq', self.freq[chek])
                     band.set_property('bandwidth', self.bandwidth[chek])
-                    band.set_property('gain', float(x))
+                    band.set_property('gain', float(int(x)-0.000001))
                     chek += 1
             elif response == Gtk.ResponseType.CANCEL:
                 print("The Cancel button was clicked")
@@ -3225,7 +3225,7 @@ class EQWindow(Gtk.Dialog):
         self.grid_edit = Gtk.Grid()
         self.grid_edit.set_border_width(5)
 
-        self.sc_l = [Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, 0, 36, 0.1) for x in range(18)]
+        self.sc_l = [Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, 0, 36, 1) for x in range(18)]
         self.label_l = [Gtk.Label() for x in range(18)]
         self.label_Hz = [Gtk.Label.new(str(self.m_freq[x])) for x in range(18)]
 
