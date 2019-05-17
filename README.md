@@ -1,4 +1,4 @@
-# Player101ru
+# << abandoned >> Player101ru
 
 Player for online radio http://101.ru/
 Player for online radio http://www.dfm.ru/
